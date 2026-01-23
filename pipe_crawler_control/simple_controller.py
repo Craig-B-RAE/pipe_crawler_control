@@ -26,7 +26,7 @@ class SimpleController(Node):
         )
     
         self.default_speed = 300  # Default motor speed (QPPS)
-        self.speed_percent = 100  # Speed percentage (0-100)
+        self.speed_percent = 50  # Speed percentage (0-100), matches web interface default
         self.default_accel = 200  # Default acceleration
     
         self.get_logger().info('Simple Controller started')
@@ -52,8 +52,9 @@ class SimpleController(Node):
         try:
             speed = int(msg.data)
             if 0 <= speed <= 100:
+                old_speed = self.speed_percent
                 self.speed_percent = speed
-                self.get_logger().info(f'Speed set to {speed}%')
+                self.get_logger().info(f'Speed changed from {old_speed}% to {speed}%')
             else:
                 self.get_logger().warn(f'Speed must be 0-100, got {speed}')
         except ValueError:
@@ -62,29 +63,33 @@ class SimpleController(Node):
     def move_forward(self):
         msg = SpeedCommand()
         actual_speed = int(self.default_speed * self.speed_percent / 100)
+        # Scale acceleration with speed (min 50 to avoid issues at very low speeds)
+        actual_accel = max(50, int(self.default_accel * self.speed_percent / 100))
         msg.m1_qpps = actual_speed
         msg.m2_qpps = actual_speed
-        msg.accel = int(self.default_accel)
-        msg.max_secs = int(10)
+        msg.accel = actual_accel
+        msg.max_secs = 10
         self.speed_pub.publish(msg)
-        self.get_logger().info(f'Moving forward at {self.speed_percent}% ({actual_speed} QPPS)')
+        self.get_logger().info(f'Moving forward at {self.speed_percent}% ({actual_speed} QPPS, accel={actual_accel})')
     
     def move_backward(self):
         msg = SpeedCommand()
         actual_speed = int(self.default_speed * self.speed_percent / 100)
+        # Scale acceleration with speed (min 50 to avoid issues at very low speeds)
+        actual_accel = max(50, int(self.default_accel * self.speed_percent / 100))
         msg.m1_qpps = -actual_speed
         msg.m2_qpps = -actual_speed
-        msg.accel = int(self.default_accel)
-        msg.max_secs = int(10)
+        msg.accel = actual_accel
+        msg.max_secs = 10
         self.speed_pub.publish(msg)
-        self.get_logger().info(f'Moving backward at {self.speed_percent}% ({actual_speed} QPPS)')
+        self.get_logger().info(f'Moving backward at {self.speed_percent}% ({actual_speed} QPPS, accel={actual_accel})')
 
     def stop(self):
         msg = SpeedCommand()
-        msg.m1_qpps = int(0)
-        msg.m2_qpps = int(0)
-        msg.accel = int(5000)
-        msg.max_secs = int(1)
+        msg.m1_qpps = 0
+        msg.m2_qpps = 0
+        msg.accel = 5000
+        msg.max_secs = 1
         self.speed_pub.publish(msg)
         self.get_logger().info('Stopping')
 
