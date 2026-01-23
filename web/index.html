@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipe Crawler Control</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2vw;
+        }
+        .container {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: clamp(20px, 5vw, 40px);
+            width: 90vw;
+            max-width: 500px;
+            min-width: 280px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+        }
+        h1 { 
+            text-align: center; 
+            color: #1d1d1f; 
+            margin-bottom: 20px; 
+            font-size: clamp(22px, 5vw, 28px);
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        .status.connected { background: #e8f5e9; color: #2e7d32; }
+        .status.disconnected { background: #ffebee; color: #c62828; }
+        .stats-button {
+            background: #f5f5f7;
+            color: #1d1d1f;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            display: inline-block;
+            position: relative;
+            border: none;
+            transition: background 0.2s;
+        }
+        .stats-button:hover { background: #e8e8ed; }
+        .stats-button:hover .stats-popup { display: block; }
+        .stats-popup {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 16px;
+            min-width: 200px;
+            z-index: 100;
+            color: #1d1d1f;
+            text-align: left;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .stats-row-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f5f5f7;
+            font-size: 14px;
+        }
+        .stats-row-item:last-child { border-bottom: none; }
+        .stats-label { color: #86868b; }
+        .stats-value { font-weight: 600; color: #1d1d1f; }
+        .stats-value.warning { color: #ff9500; }
+        .stats-value.alarm { color: #ff3b30; }
+        
+        .update-banner {
+            display: none;
+            background: #007aff;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .update-banner:hover { background: #0056b3; }
+        .update-banner.show { display: block; }
+        .update-banner.updating { background: #ff9500; cursor: wait; }
+        .update-banner.success { background: #34c759; }
+        .update-banner.error { background: #ff3b30; }
+        
+        .pipe-section {
+            background: #f5f5f7;
+            padding: clamp(15px, 3vw, 25px);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .pipe-title { font-weight: 600; color: #1d1d1f; margin-bottom: 15px; font-size: 15px; }
+        .pipe-container {
+            position: relative;
+            width: clamp(180px, 45vw, 260px);
+            height: clamp(180px, 45vw, 260px);
+            margin: 0 auto 15px;
+        }
+        .pipe-circle {
+            position: absolute;
+            top: 20%; left: 20%;
+            width: 60%; height: 60%;
+            border-radius: 50%;
+            border: 3px solid #86868b;
+            background: transparent;
+        }
+        .degree-display {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: clamp(28px, 7vw, 36px);
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        .degree-display .distance {
+            font-size: clamp(12px, 3vw, 14px);
+            font-weight: 500;
+            color: #86868b;
+            display: block;
+        }
+        .bug, .radiation {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .bug { width: clamp(45px, 12vw, 65px); height: clamp(18px, 5vw, 28px); }
+        .radiation { width: clamp(30px, 8vw, 45px); height: clamp(30px, 8vw, 45px); }
+        .bug svg, .radiation svg { width: 100%; height: 100%; }
+        .degree-input-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .degree-input {
+            width: 80px;
+            padding: 10px;
+            font-size: 15px;
+            border: none;
+            border-radius: 10px;
+            text-align: center;
+            background: #ffffff;
+            color: #1d1d1f;
+            font-weight: 500;
+        }
+        .degree-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3); }
+        .pipe-calc-row {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .pipe-calc-item { text-align: center; }
+        .pipe-calc-label { font-size: 12px; color: #86868b; display: block; margin-bottom: 5px; }
+        .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .pipe-calc-input-row { display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .pipe-calc-unit { font-size: 14px; color: #86868b; }
+        .controls { display: grid; gap: 12px; margin-bottom: 20px; }
+        .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        button.control-btn {
+            padding: clamp(16px, 3vw, 20px);
+            font-size: clamp(14px, 3vw, 16px);
+            font-weight: 600;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            color: #ffffff;
+            background: #007aff;
+            transition: all 0.2s;
+        }
+        button.control-btn:hover { background: #0056b3; transform: scale(1.02); }
+        button.control-btn:active { transform: scale(0.98); }
+        button.control-btn.btn-stop { grid-column: 1 / -1; background: #ff3b30; }
+        button.control-btn.btn-stop:hover { background: #d63027; }
+        .speed-control { background: #f5f5f7; padding: clamp(15px, 3vw, 20px); border-radius: 16px; }
+        .speed-label { display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: 600; font-size: 15px; color: #1d1d1f; }
+        .speed-value { color: #007aff; font-size: 17px; }
+        input[type="range"] { width: 100%; height: 6px; border-radius: 3px; background: #d1d1d6; -webkit-appearance: none; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #ffffff; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); }
+        .footer { text-align: center; color: #86868b; font-size: 12px; margin-top: 20px; }
+        @media (max-width: 400px) { .control-row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pipe Crawler</h1>
+        <div class="update-banner" id="updateBanner" onclick="installUpdate()">
+            🔄 Update available! Click to install (v<span id="newVersion"></span>)
+        </div>
+        <div class="status-row">
+            <div class="status disconnected" id="status">Disconnected</div>
+            <div class="stats-button">
+                📊 Stats
+                <div class="stats-popup">
+                    <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value" id="voltage">--.-V</span></div>
+                    <div class="stats-row-item"><span class="stats-label">Min</span><span class="stats-value" id="minVoltage">--.-V</span></div>
+                    <div class="stats-row-item"><span class="stats-label">Max</span><span class="stats-value" id="maxVoltage">--.-V</span></div>
+                    <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value" id="cpuTemp">--°C</span></div>
+                    <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
+                    <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.1.0</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="pipe-section">
+            <div class="pipe-title">Pipe Position</div>
+            <div class="pipe-container">
+                <div class="pipe-circle"></div>
+                <div class="degree-display">
+                    <span id="degreeValue">0</span>°
+                    <span class="distance" id="distanceInPipe">0.0 in</span>
+                </div>
+                <div class="radiation" id="radiation">
+                    <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#FFD700" stroke="#1d1d1f" stroke-width="2"/><circle cx="50" cy="50" r="12" fill="#1d1d1f"/><path d="M50,50 L50,10 A40,40 0 0,1 84.6,70 Z" fill="#1d1d1f"/><path d="M50,50 L84.6,70 A40,40 0 0,1 15.4,70 Z" fill="#1d1d1f"/><path d="M50,50 L15.4,70 A40,40 0 0,1 50,10 Z" fill="#1d1d1f"/></svg>
+                </div>
+                <div class="bug" id="bug">
+                    <svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#1d1d1f"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg>
+                </div>
+            </div>
+            <div class="degree-input-row">
+                <input type="number" class="degree-input" id="degreeInput" min="0" max="359" value="0" oninput="setDegree()">
+            </div>
+            <div class="pipe-calc-row">
+                <div class="pipe-calc-item">
+                    <span class="pipe-calc-label">Pipe Diameter</span>
+                    <div class="pipe-calc-input-row">
+                        <input type="number" class="degree-input" id="pipeDiameter" min="1" value="12" style="width:60px;" oninput="updateDistance()">
+                        <span class="pipe-calc-unit">in</span>
+                    </div>
+                </div>
+                <div class="pipe-calc-item">
+                    <span class="pipe-calc-label">Distance Traveled</span>
+                    <span class="pipe-calc-value" id="distanceTraveled">0.0 in</span>
+                </div>
+            </div>
+        </div>
+        <div class="controls">
+            <div class="control-row">
+                <button class="control-btn" onclick="sendCommand('forward')">▲ Forward</button>
+                <button class="control-btn" onclick="sendCommand('backward')">▼ Backward</button>
+            </div>
+            <button class="control-btn btn-stop" onclick="sendCommand('stop')">■ Stop</button>
+        </div>
+        <div class="speed-control">
+            <div class="speed-label"><span>Speed</span><span class="speed-value" id="speedValue">50%</span></div>
+            <input type="range" id="speedSlider" min="0" max="100" value="50" oninput="updateSpeed(this.value)">
+        </div>
+        <div class="footer">Pipe Crawler Control System v<span id="footerVersion">1.1.0</span></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
+    <script>
+        var CURRENT_VERSION = '1.1.0';
+        var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
+        var isUpdating = false;
+        
+        document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
+        document.getElementById('footerVersion').textContent = CURRENT_VERSION;
+        
+        function checkForUpdates() {
+            fetch(GITHUB_VERSION_URL + '?t=' + Date.now())
+                .then(r => r.text())
+                .then(v => {
+                    v = v.trim();
+                    if (v !== CURRENT_VERSION) {
+                        document.getElementById('updateBanner').classList.add('show');
+                        document.getElementById('newVersion').textContent = v;
+                    } else {
+                        document.getElementById('updateBanner').classList.remove('show');
+                    }
+                })
+                .catch(e => console.log('Version check failed:', e));
+        }
+        checkForUpdates();
+        setInterval(checkForUpdates, 300000);
+
+        var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
+        var minVoltage = 999, maxVoltage = 0;
+
+        ros.on('connection', function() {
+            document.getElementById('status').className = 'status connected';
+            document.getElementById('status').textContent = 'Connected';
+            updateSpeed(50);
+        });
+        ros.on('error', function() {
+            document.getElementById('status').className = 'status disconnected';
+            document.getElementById('status').textContent = 'Connection Error';
+        });
+        ros.on('close', function() {
+            document.getElementById('status').className = 'status disconnected';
+            document.getElementById('status').textContent = 'Disconnected';
+        });
+
+        var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
+        var speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
+        var systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
+        var batterySubscriber = new ROSLIB.Topic({ ros: ros, name: '/stats', messageType: 'roboclaw_interfaces/Stats' });
+        var cpuTempSubscriber = new ROSLIB.Topic({ ros: ros, name: '/cpu_temp', messageType: 'std_msgs/Float32' });
+        var updateStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/update_status', messageType: 'std_msgs/String' });
+
+        updateStatusSubscriber.subscribe(function(msg) {
+            var banner = document.getElementById('updateBanner');
+            if (msg.data === 'updating') {
+                banner.innerHTML = '⏳ Installing update...';
+                banner.className = 'update-banner show updating';
+            } else if (msg.data === 'update_complete') {
+                banner.innerHTML = '✅ Update complete! Refreshing...';
+                banner.className = 'update-banner show success';
+                isUpdating = false;
+                setTimeout(function() { location.reload(true); }, 3000);
+            } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) {
+                banner.innerHTML = '❌ ' + msg.data;
+                banner.className = 'update-banner show error';
+                isUpdating = false;
+            }
+        });
+
+        function installUpdate() {
+            if (isUpdating) return;
+            isUpdating = true;
+            var banner = document.getElementById('updateBanner');
+            banner.innerHTML = '⏳ Starting update...';
+            banner.className = 'update-banner show updating';
+            systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' }));
+        }
+
+        batterySubscriber.subscribe(function(msg) {
+            var v = msg.battery_voltage, el = document.getElementById('voltage');
+            el.textContent = v.toFixed(1) + 'V';
+            el.className = 'stats-value' + (v < 15 ? ' alarm' : v < 17 ? ' warning' : '');
+            if (v > 0 && v < minVoltage) { minVoltage = v; document.getElementById('minVoltage').textContent = v.toFixed(1) + 'V'; }
+            if (v > maxVoltage) { maxVoltage = v; document.getElementById('maxVoltage').textContent = v.toFixed(1) + 'V'; }
+        });
+
+        cpuTempSubscriber.subscribe(function(msg) {
+            var t = msg.data, el = document.getElementById('cpuTemp');
+            el.textContent = t.toFixed(1) + '°C';
+            el.className = 'stats-value' + (t > 80 ? ' alarm' : t > 70 ? ' warning' : '');
+        });
+
+        function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }
+        function updateSpeed(val) {
+            document.getElementById('speedValue').textContent = val + '%';
+            speedPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+        }
+        function setDegree() {
+            var deg = parseInt(document.getElementById('degreeInput').value) || 0;
+            updateBugPosition(((deg % 360) + 360) % 360);
+        }
+        function updateBugPosition(deg) {
+            document.getElementById('degreeValue').textContent = deg;
+            document.getElementById('degreeValueStats').textContent = deg;
+            document.getElementById('degreeInput').value = deg;
+            var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug'), rad = document.getElementById('radiation');
+            var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2;
+            var a = (deg - 90) * Math.PI / 180;
+            bug.style.left = (cx + r * Math.cos(a) - bug.offsetWidth / 2) + 'px';
+            bug.style.top = (cy + r * Math.sin(a) - bug.offsetHeight / 2) + 'px';
+            bug.style.transform = 'rotate(' + deg + 'deg) scaleX(-1)';
+            var ra = (deg + 90) * Math.PI / 180;
+            rad.style.left = (cx + r * Math.cos(ra) - rad.offsetWidth / 2) + 'px';
+            rad.style.top = (cy + r * Math.sin(ra) - rad.offsetHeight / 2) + 'px';
+            updateDistance();
+        }
+        function updateDistance() {
+            var deg = parseInt(document.getElementById('degreeInput').value) || 0;
+            var dia = parseFloat(document.getElementById('pipeDiameter').value) || 12;
+            var dist = (deg / 360) * Math.PI * dia;
+            document.getElementById('distanceTraveled').textContent = dist.toFixed(2) + ' in';
+            document.getElementById('distanceInPipe').textContent = dist.toFixed(2) + ' in';
+        }
+        window.onload = function() { setTimeout(function() { updateBugPosition(0); }, 100); };
+        document.getElementById('degreeInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') this.blur(); });
+    </script>
+</body>
+</html>
