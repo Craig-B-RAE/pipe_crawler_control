@@ -25,7 +25,7 @@ class SimpleController(Node):
             10
         )
     
-        self.default_speed = 6000  # Default motor speed (QPPS)
+        self.default_speed = 8000  # Default motor speed (QPPS)
         self.speed_percent = 50  # Speed percentage (0-100), matches web interface default
         self.default_accel = 3000  # Default acceleration
     
@@ -68,7 +68,7 @@ class SimpleController(Node):
         msg.m1_qpps = actual_speed
         msg.m2_qpps = actual_speed
         msg.accel = actual_accel
-        msg.max_secs = 10
+        msg.max_secs = 120
         self.speed_pub.publish(msg)
         self.get_logger().info(f'Moving forward at {self.speed_percent}% ({actual_speed} QPPS, accel={actual_accel})')
     
@@ -80,7 +80,7 @@ class SimpleController(Node):
         msg.m1_qpps = -actual_speed
         msg.m2_qpps = -actual_speed
         msg.accel = actual_accel
-        msg.max_secs = 10
+        msg.max_secs = 120
         self.speed_pub.publish(msg)
         self.get_logger().info(f'Moving backward at {self.speed_percent}% ({actual_speed} QPPS, accel={actual_accel})')
 

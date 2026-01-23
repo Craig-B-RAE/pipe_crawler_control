@@ -32,21 +32,29 @@
             font-weight: 600;
             letter-spacing: -0.5px;
         }
+        .info-toolbar {
+            display: flex;
+            justify-content: space-around;
+            background: #f5f5f7;
+            border-radius: 12px;
+            padding: 12px 8px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        .info-item { text-align: center; flex: 1; }
+        .info-label { color: #86868b; font-size: 11px; margin-right: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-weight: 600; color: #1d1d1f; font-size: 13px; }
+        .info-value .current { color: #1d1d1f; }
+        .info-value .rpm { color: #007aff; font-size: 11px; }
+        .motor-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+        .motor-status.running { background: #2e7d32; }
+        .motor-status.stopped { background: #c62828; }
         .status-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-        .status {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 500;
-            font-size: 13px;
-        .wifi-icon { margin-left: 8px; display: inline-flex; }
-        }
-        .status.connected { background: #e8f5e9; color: #2e7d32; }
-        .status.disconnected { background: #ffebee; color: #c62828; }
         .stats-button {
             background: #f5f5f7;
             color: #1d1d1f;
@@ -277,18 +285,41 @@
     <div class="container">
         <h1>Pipe Crawler</h1>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">🔄 Update available! Click to install (v<span id="newVersion"></span>)</div>
+        
+        <div class="info-toolbar">
+            <div class="info-item">
+                <span class="info-value">
+                    <span class="motor-status stopped" id="m1Status"></span>
+                    <span class="info-label">M1</span>
+                    <span class="current" id="m1CurrentBar">--A</span>
+                    <span class="rpm" id="m1RpmBar">0rpm</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-value">
+                    <span class="motor-status stopped" id="m2Status"></span>
+                    <span class="info-label">M2</span>
+                    <span class="current" id="m2CurrentBar">--A</span>
+                    <span class="rpm" id="m2RpmBar">0rpm</span>
+                </span>
+            </div>
+        </div>
+        
         <div class="status-row">
-            <div style="display:flex;align-items:center;gap:8px;"><div class="status disconnected" id="status">Disconnected</div><span id="wifiIcon" title="Internet: Checking..." style="color:#86868b;display:inline-flex;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span></div>
-            <div class="stats-button" onclick="toggleStats(event)">
-                📊 Stats
-                <div class="stats-popup" id="statsPopup">
-                    <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value-group"><span class="stats-value" id="voltage">--.-V</span><button class="icon-btn" onclick="showGraph(event,'battery')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                    <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value-group"><span class="stats-value" id="cpuTemp">--°C</span><button class="icon-btn" onclick="showGraph(event,'temp')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                    <div class="stats-row-item"><span class="stats-label">M1 Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                    <div class="stats-row-item"><span class="stats-label">M2 Current</span><span class="stats-value-group"><span class="stats-value" id="m2Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m2')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                    <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
-                    <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.4.0</span></div>
+            <span id="internetStatus" style="font-size: 13px; font-weight: 500; color: #86868b;" title="Internet Connection">Internet</span>
+            <div style="display: flex; gap: 10px;">
+                <div class="stats-button" onclick="toggleStats(event)">
+                    📈 Stats
+                    <div class="stats-popup" id="statsPopup">
+                        <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value-group"><span class="stats-value" id="voltage">--.-V</span><button class="icon-btn" onclick="showGraph(event,'battery')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                        <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value-group"><span class="stats-value" id="cpuTemp">--°C</span><button class="icon-btn" onclick="showGraph(event,'temp')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                        <div class="stats-row-item"><span class="stats-label">M1 Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                        <div class="stats-row-item"><span class="stats-label">M2 Current</span><span class="stats-value-group"><span class="stats-value" id="m2Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m2')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                        <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.5.0</span></div>
+                    </div>
                 </div>
+                <div class="stats-button" onclick="openSettings()" title="Settings">⚙️ Settings</div>
             </div>
         </div>
         <div class="pipe-section">
@@ -316,7 +347,7 @@
             <div class="speed-label"><span>Speed</span><span class="speed-value" id="speedValue">50%</span></div>
             <input type="range" id="speedSlider" min="0" max="100" value="50" oninput="updateSpeed(this.value)">
         </div>
-        <div class="footer">Pipe Crawler Control System v<span id="footerVersion">1.4.0</span></div>
+        <div class="footer">Pipe Crawler Control System v<span id="footerVersion">1.5.0</span></div>
     </div>
     <div class="modal-overlay" id="graphModal" onclick="closeGraph(event)">
         <div class="modal" onclick="event.stopPropagation()">
@@ -327,7 +358,7 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '1.4.0';
+        var CURRENT_VERSION = '1.5.0';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var isUpdating = false;
         document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
@@ -347,6 +378,7 @@
         function showGraph(event, type) { event.stopPropagation(); currentGraphType = type; document.getElementById('graphModal').classList.add('show'); document.getElementById('graphTitle').textContent = graphConfig[type].title; drawGraph(type); }
         function closeGraph(event) { document.getElementById('graphModal').classList.remove('show'); }
         function resetStats(event) { event.stopPropagation(); stats[currentGraphType].min = 999; stats[currentGraphType].max = 0; var btn = event.currentTarget; btn.style.background = '#34c759'; btn.style.color = '#fff'; setTimeout(function() { btn.style.background = ''; btn.style.color = ''; }, 300); document.getElementById('graphMin').textContent = '--'; document.getElementById('graphMax').textContent = '--'; }
+        function openSettings() { alert('Settings - Coming soon'); }
 
         function drawGraph(type) {
             var svg = document.getElementById('graphSvg'), config = graphConfig[type];
@@ -364,32 +396,34 @@
                 var maxVal = stats[type].max > 0 ? stats[type].max.toFixed(1) + config.unit : '--';
                 statsRow.innerHTML = '<div class="graph-stat"><div class="graph-stat-label">Min</div><div class="graph-stat-value low" id="graphMin">' + minVal + '</div></div><div class="graph-stat"><div class="graph-stat-label">Avg</div><div class="graph-stat-value" id="graphAvg">' + avg.toFixed(1) + config.unit + '</div></div><div class="graph-stat"><div class="graph-stat-label">Max</div><div class="graph-stat-value high" id="graphMax">' + maxVal + '</div></div><button class="reset-btn-large" onclick="resetStats(event)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Reset</button>';
             }
-            var xScale = function(hour) { return padding.left + (hour / 23) * graphWidth; };
+            var xScale = function(idx) { return padding.left + (idx / (data.length - 1)) * graphWidth; };
             var yScale = function(v) { return padding.top + (1 - (v - config.minScale) / (config.maxScale - config.minScale)) * graphHeight; };
             var svgContent = '<defs><linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="' + config.color + '"/><stop offset="100%" stop-color="' + config.color + '" stop-opacity="0"/></linearGradient>';
             if (config.dual) svgContent += '<linearGradient id="areaGradient2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="' + config.color2 + '"/><stop offset="100%" stop-color="' + config.color2 + '" stop-opacity="0"/></linearGradient>';
             svgContent += '</defs>';
             var steps = 5, stepValue = (config.maxScale - config.minScale) / steps;
             for (var i = 0; i <= steps; i++) { var v = config.minScale + i * stepValue, y = yScale(v); svgContent += '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (width - padding.right) + '" y2="' + y + '" stroke="#e0e0e0" stroke-width="1"/>'; svgContent += '<text x="' + (padding.left - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#86868b">' + v.toFixed(0) + '</text>'; }
-            for (var h = 0; h < 24; h += 6) { svgContent += '<text x="' + xScale(h) + '" y="' + (height - 8) + '" text-anchor="middle" font-size="10" fill="#86868b">' + h + 'h</text>'; }
             if (config.warningLow) { var wy = yScale(config.warningLow); svgContent += '<rect x="' + padding.left + '" y="' + wy + '" width="' + graphWidth + '" height="' + (height - padding.bottom - wy) + '" fill="rgba(255,59,48,0.1)"/>'; }
             if (config.warningHigh) { var wy = yScale(config.warningHigh); svgContent += '<rect x="' + padding.left + '" y="' + padding.top + '" width="' + graphWidth + '" height="' + (wy - padding.top) + '" fill="rgba(255,59,48,0.1)"/>'; }
-            if (config.dual && data2) { var pathD2 = 'M'; data2.forEach(function(d, i) { pathD2 += (i === 0 ? '' : ' L') + xScale(d.hour) + ' ' + yScale(d.value); }); svgContent += '<path d="' + pathD2 + '" fill="none" stroke="' + config.color2 + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>'; data2.forEach(function(d) { svgContent += '<circle cx="' + xScale(d.hour) + '" cy="' + yScale(d.value) + '" r="3" fill="' + config.color2 + '"/>'; }); }
-            var pathD = 'M'; data.forEach(function(d, i) { pathD += (i === 0 ? '' : ' L') + xScale(d.hour) + ' ' + yScale(d.value); });
-            if (!config.dual) { var areaD = pathD + ' L' + xScale(23) + ' ' + (height - padding.bottom) + ' L' + padding.left + ' ' + (height - padding.bottom) + ' Z'; svgContent += '<path d="' + areaD + '" fill="url(#areaGradient)" opacity="0.3"/>'; }
+            if (config.dual && data2) { var pathD2 = 'M'; data2.forEach(function(d, i) { pathD2 += (i === 0 ? '' : ' L') + xScale(i) + ' ' + yScale(d.value); }); svgContent += '<path d="' + pathD2 + '" fill="none" stroke="' + config.color2 + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>'; data2.forEach(function(d, i) { svgContent += '<circle cx="' + xScale(i) + '" cy="' + yScale(d.value) + '" r="3" fill="' + config.color2 + '"/>'; }); }
+            var pathD = 'M'; data.forEach(function(d, i) { pathD += (i === 0 ? '' : ' L') + xScale(i) + ' ' + yScale(d.value); });
+            if (!config.dual) { var areaD = pathD + ' L' + xScale(data.length - 1) + ' ' + (height - padding.bottom) + ' L' + padding.left + ' ' + (height - padding.bottom) + ' Z'; svgContent += '<path d="' + areaD + '" fill="url(#areaGradient)" opacity="0.3"/>'; }
             svgContent += '<path d="' + pathD + '" fill="none" stroke="' + config.color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
-            data.forEach(function(d) { var inWarning = (config.warningLow && d.value < config.warningLow) || (config.warningHigh && d.value > config.warningHigh); svgContent += '<circle cx="' + xScale(d.hour) + '" cy="' + yScale(d.value) + '" r="4" fill="' + (inWarning ? '#ff3b30' : config.color) + '"/>'; });
+            data.forEach(function(d, i) { var inWarning = (config.warningLow && d.value < config.warningLow) || (config.warningHigh && d.value > config.warningHigh); svgContent += '<circle cx="' + xScale(i) + '" cy="' + yScale(d.value) + '" r="4" fill="' + (inWarning ? '#ff3b30' : config.color) + '"/>'; });
             svg.innerHTML = svgContent;
         }
-        function generateDemoData(type, isSecondary) { var config = graphConfig[type], data = [], range = config.maxScale - config.minScale, mid = (config.maxScale + config.minScale) / 2; if (isSecondary && type === 'temp') mid = mid - 15; for (var i = 0; i < 24; i++) { var variation = Math.sin(i / 4) * (range * 0.15) + (Math.random() - 0.5) * (range * 0.1); var value = Math.max(config.minScale + range * 0.05, Math.min(config.maxScale - range * 0.1, mid + variation)); data.push({ hour: i, value: value }); } return data; }
+        function generateDemoData(type, isSecondary) { var config = graphConfig[type], data = [], range = config.maxScale - config.minScale, mid = (config.maxScale + config.minScale) / 2; if (isSecondary && type === 'temp') mid = mid - 15; for (var i = 0; i < 24; i++) { var variation = Math.sin(i / 4) * (range * 0.15) + (Math.random() - 0.5) * (range * 0.1); var value = Math.max(config.minScale + range * 0.05, Math.min(config.maxScale - range * 0.1, mid + variation)); data.push({ minute: i, value: value }); } return data; }
 
         function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (v !== CURRENT_VERSION) { document.getElementById('updateBanner').classList.add('show'); document.getElementById('newVersion').textContent = v; } else { document.getElementById('updateBanner').classList.remove('show'); } }).catch(function(e) { console.log('Version check failed:', e); }); }
         setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
+        
+        function checkInternet() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { if (r.ok) { document.getElementById('internetStatus').style.color = '#2e7d32'; } else { throw new Error(); } }).catch(function() { document.getElementById('internetStatus').style.color = '#c62828'; }); }
+        checkInternet(); setInterval(checkInternet, 30000);
 
         var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
-        ros.on('connection', function() { document.getElementById('status').className = 'status connected'; document.getElementById('status').textContent = 'Connected'; updateSpeed(50); });
-        ros.on('error', function() { document.getElementById('status').className = 'status disconnected'; document.getElementById('status').textContent = 'Connection Error'; });
-        ros.on('close', function() { document.getElementById('status').className = 'status disconnected'; document.getElementById('status').textContent = 'Disconnected'; });
+        ros.on('connection', function() { updateSpeed(50); });
+        ros.on('error', function() { });
+        ros.on('close', function() { });
 
         var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
         var speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
@@ -412,11 +446,21 @@
             m1El.className = 'stats-value' + (m1 > 5 ? ' alarm' : m1 > 3 ? ' warning' : '');
             if (m1 > 0 && m1 < stats.m1.min) stats.m1.min = m1;
             if (m1 > stats.m1.max) stats.m1.max = m1;
+            document.getElementById('m1CurrentBar').textContent = m1.toFixed(2) + 'A';
             var m2 = msg.m2_current, m2El = document.getElementById('m2Current');
             m2El.textContent = m2.toFixed(2) + 'A';
             m2El.className = 'stats-value' + (m2 > 5 ? ' alarm' : m2 > 3 ? ' warning' : '');
             if (m2 > 0 && m2 < stats.m2.min) stats.m2.min = m2;
             if (m2 > stats.m2.max) stats.m2.max = m2;
+            document.getElementById('m2CurrentBar').textContent = m2.toFixed(2) + 'A';
+            
+            var m1Rpm = Math.abs(msg.m1_enc_qpps) * 60 / 1425.1;
+            var m2Rpm = Math.abs(msg.m2_enc_qpps) * 60 / 1425.1;
+            document.getElementById('m1RpmBar').textContent = m1Rpm.toFixed(0) + 'rpm';
+            document.getElementById('m2RpmBar').textContent = m2Rpm.toFixed(0) + 'rpm';
+            document.getElementById('m1Status').className = 'motor-status ' + (m1Rpm > 1 ? 'running' : 'stopped');
+            document.getElementById('m2Status').className = 'motor-status ' + (m2Rpm > 1 ? 'running' : 'stopped');
+            
             if (msg.board_temp !== undefined) { var now = new Date(), minute = now.getHours() * 60 + now.getMinutes(), found = false; for (var i = 0; i < stats.temp.data2.length; i++) { if (stats.temp.data2[i].minute === minute) { stats.temp.data2[i].value = msg.board_temp; found = true; break; } } if (!found) stats.temp.data2.push({ minute: minute, value: msg.board_temp }); }
         });
 
@@ -436,7 +480,6 @@
         function updateDistance() { var deg = parseInt(document.getElementById('degreeInput').value) || 0; var dia = parseFloat(document.getElementById('pipeDiameter').value) || 12; var dist = (deg / 360) * Math.PI * dia; document.getElementById('distanceTraveled').textContent = dist.toFixed(2) + ' in'; document.getElementById('distanceInPipe').textContent = dist.toFixed(2) + ' in'; }
         window.onload = function() { setTimeout(function() { updateBugPosition(0); }, 100); };
         document.getElementById('degreeInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') this.blur(); });
-        function checkInternet() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { if (r.ok) { document.getElementById('wifiIcon').style.color = '#2e7d32'; document.getElementById('wifiIcon').title = 'Internet: Online'; } else { throw new Error(); } }).catch(function() { document.getElementById('wifiIcon').style.color = '#c62828'; document.getElementById('wifiIcon').title = 'Internet: Offline'; }); } checkInternet(); setInterval(checkInternet, 30000);
     </script>
 </body>
 </html>
