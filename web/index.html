@@ -227,8 +227,6 @@
                     <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value" id="cpuTemp">--°C</span></div>
                     <div class="stats-row-item"><span class="stats-label">M1 Current</span><span class="stats-value" id="m1Current">--A</span></div>
                     <div class="stats-row-item"><span class="stats-label">M2 Current</span><span class="stats-value" id="m2Current">--A</span></div>
-                    <div class="stats-row-item"><span class="stats-label">M1 Current</span><span class="stats-value" id="m1Current">--A</span></div>
-                    <div class="stats-row-item"><span class="stats-label">M2 Current</span><span class="stats-value" id="m2Current">--A</span></div>
                     <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
                     <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.2.0</span></div>
                 </div>
@@ -374,12 +372,6 @@
             el.className = 'stats-value' + (v < 15 ? ' alarm' : v < 17 ? ' warning' : '');
             if (v > 0 && v < minVoltage) { minVoltage = v; document.getElementById('minVoltage').textContent = v.toFixed(1) + 'V'; }
             if (v > maxVoltage) { maxVoltage = v; document.getElementById('maxVoltage').textContent = v.toFixed(1) + 'V'; }
-            var m1 = msg.m1_current, m1El = document.getElementById('m1Current');
-            m1El.textContent = m1.toFixed(2) + 'A';
-            m1El.className = 'stats-value' + (m1 > 5 ? ' alarm' : m1 > 3 ? ' warning' : '');
-            var m2 = msg.m2_current, m2El = document.getElementById('m2Current');
-            m2El.textContent = m2.toFixed(2) + 'A';
-            m2El.className = 'stats-value' + (m2 > 5 ? ' alarm' : m2 > 3 ? ' warning' : '');
             var m1 = msg.m1_current, m1El = document.getElementById('m1Current');
             m1El.textContent = m1.toFixed(2) + 'A';
             m1El.className = 'stats-value' + (m1 > 5 ? ' alarm' : m1 > 3 ? ' warning' : '');
