@@ -298,7 +298,7 @@
                 })
                 .catch(e => console.log('Version check failed:', e));
         }
-        checkForUpdates();
+        setTimeout(checkForUpdates, 1000);
         setInterval(checkForUpdates, 300000);
 
         var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
