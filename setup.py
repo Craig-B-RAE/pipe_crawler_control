@@ -23,6 +23,7 @@ setup(
         'console_scripts': [
             'simple_controller = pipe_crawler_control.simple_controller:main',
             'cpu_temp_publisher = pipe_crawler_control.cpu_temp_publisher:main',
+            'update_manager = pipe_crawler_control.update_manager:main',
         ],
     },
     scripts=[],

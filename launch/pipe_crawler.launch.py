@@ -28,4 +28,9 @@ def generate_launch_description():
             executable='simple_controller',
             name='simple_controller'
         ),
+        Node(
+            package='pipe_crawler_control',
+            executable='update_manager',
+            name='update_manager'
+        ),
     ])
