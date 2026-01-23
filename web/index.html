@@ -350,8 +350,8 @@
 
         function drawGraph(type) {
             var svg = document.getElementById('graphSvg'), config = graphConfig[type];
-            var data = stats[type].data.length > 0 ? stats[type].data : generateDemoData(type);
-            var data2 = config.dual ? (stats[type].data2.length > 0 ? stats[type].data2 : generateDemoData(type, true)) : null;
+            var data = stats[type].data.length >= 5 ? stats[type].data : generateDemoData(type);
+            var data2 = config.dual ? (stats[type].data2.length >= 5 ? stats[type].data2 : generateDemoData(type, true)) : null;
             var width = 450, height = 200, padding = { top: 20, right: 20, bottom: 30, left: 45 };
             var graphWidth = width - padding.left - padding.right, graphHeight = height - padding.top - padding.bottom;
             var values = data.map(function(d) { return d.value; });
@@ -417,16 +417,16 @@
             m2El.className = 'stats-value' + (m2 > 5 ? ' alarm' : m2 > 3 ? ' warning' : '');
             if (m2 > 0 && m2 < stats.m2.min) stats.m2.min = m2;
             if (m2 > stats.m2.max) stats.m2.max = m2;
-            if (msg.board_temp !== undefined) { var now = new Date(), hour = now.getHours(), found = false; for (var i = 0; i < stats.temp.data2.length; i++) { if (stats.temp.data2[i].hour === hour) { stats.temp.data2[i].value = msg.board_temp; found = true; break; } } if (!found) stats.temp.data2.push({ hour: hour, value: msg.board_temp }); }
+            if (msg.board_temp !== undefined) { var now = new Date(), minute = now.getHours() * 60 + now.getMinutes(), found = false; for (var i = 0; i < stats.temp.data2.length; i++) { if (stats.temp.data2[i].minute === minute) { stats.temp.data2[i].value = msg.board_temp; found = true; break; } } if (!found) stats.temp.data2.push({ minute: minute, value: msg.board_temp }); }
         });
 
         cpuTempSubscriber.subscribe(function(msg) {
             var t = msg.data, el = document.getElementById('cpuTemp');
             el.textContent = t.toFixed(1) + '°C';
             el.className = 'stats-value' + (t > 80 ? ' alarm' : t > 70 ? ' warning' : '');
-            var now = new Date(), hour = now.getHours(), found = false;
-            for (var i = 0; i < stats.temp.data.length; i++) { if (stats.temp.data[i].hour === hour) { stats.temp.data[i].value = t; found = true; break; } }
-            if (!found) stats.temp.data.push({ hour: hour, value: t });
+            var now = new Date(), minute = now.getHours() * 60 + now.getMinutes(), found = false;
+            for (var i = 0; i < stats.temp.data.length; i++) { if (stats.temp.data[i].minute === minute) { stats.temp.data[i].value = t; found = true; break; } }
+            if (!found) stats.temp.data.push({ minute: minute, value: t });
         });
 
         function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }

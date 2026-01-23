@@ -25,9 +25,9 @@ class SimpleController(Node):
             10
         )
     
-        self.default_speed = 300  # Default motor speed (QPPS)
+        self.default_speed = 6000  # Default motor speed (QPPS)
         self.speed_percent = 50  # Speed percentage (0-100), matches web interface default
-        self.default_accel = 200  # Default acceleration
+        self.default_accel = 3000  # Default acceleration
     
         self.get_logger().info('Simple Controller started')
         self.get_logger().info('Send commands to /robot_command:')
