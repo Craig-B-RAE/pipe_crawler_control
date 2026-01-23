@@ -24,10 +24,10 @@
             min-width: 280px;
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
         }
-        h1 { 
-            text-align: center; 
-            color: #1d1d1f; 
-            margin-bottom: 20px; 
+        h1 {
+            text-align: center;
+            color: #1d1d1f;
+            margin-bottom: 20px;
             font-size: clamp(22px, 5vw, 28px);
             font-weight: 600;
             letter-spacing: -0.5px;
@@ -78,6 +78,7 @@
         .stats-row-item {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 10px 0;
             border-bottom: 1px solid #f5f5f7;
             font-size: 14px;
@@ -87,7 +88,86 @@
         .stats-value { font-weight: 600; color: #1d1d1f; }
         .stats-value.warning { color: #ff9500; }
         .stats-value.alarm { color: #ff3b30; }
-        
+        .stats-value-group { display: flex; align-items: center; gap: 6px; }
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px;
+            color: #86868b;
+            line-height: 1;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-btn:hover { background: #f5f5f7; color: #1d1d1f; }
+        .icon-btn:active { transform: scale(0.9); }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: auto;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-title { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .modal-close {
+            background: #f5f5f7;
+            border: none;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #86868b;
+            transition: all 0.2s;
+        }
+        .modal-close:hover { background: #e8e8ed; color: #1d1d1f; }
+        .graph-container { background: #f5f5f7; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .graph-svg { width: 100%; height: 200px; }
+        .graph-stats { display: flex; justify-content: space-around; align-items: flex-end; padding-top: 16px; border-top: 1px solid #e0e0e0; }
+        .graph-stat { text-align: center; }
+        .graph-stat-label { font-size: 12px; color: #86868b; margin-bottom: 4px; }
+        .graph-stat-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .graph-stat-value.low { color: #ff3b30; }
+        .graph-stat-value.high { color: #34c759; }
+        .reset-btn-large {
+            background: #f5f5f7;
+            border: none;
+            cursor: pointer;
+            padding: 8px 12px;
+            color: #86868b;
+            font-size: 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .reset-btn-large:hover { background: #e8e8ed; color: #1d1d1f; }
+        .reset-btn-large:active { transform: scale(0.95); }
         .update-banner {
             display: none;
             background: #007aff;
@@ -106,7 +186,6 @@
         .update-banner.updating { background: #ff9500; cursor: wait; }
         .update-banner.success { background: #34c759; }
         .update-banner.error { background: #ff3b30; }
-        
         .pipe-section {
             background: #f5f5f7;
             padding: clamp(15px, 3vw, 25px);
@@ -144,22 +223,11 @@
             color: #86868b;
             display: block;
         }
-        .bug, .radiation {
-            position: absolute;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .bug, .radiation { position: absolute; display: flex; align-items: center; justify-content: center; }
         .bug { width: clamp(45px, 12vw, 65px); height: clamp(18px, 5vw, 28px); }
         .radiation { width: clamp(30px, 8vw, 45px); height: clamp(30px, 8vw, 45px); }
         .bug svg, .radiation svg { width: 100%; height: 100%; }
-        .degree-input-row {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 12px;
-        }
+        .degree-input-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; }
         .degree-input {
             width: 80px;
             padding: 10px;
@@ -172,13 +240,7 @@
             font-weight: 500;
         }
         .degree-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3); }
-        .pipe-calc-row {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #e0e0e0;
-        }
+        .pipe-calc-row { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
         .pipe-calc-item { text-align: center; }
         .pipe-calc-label { font-size: 12px; color: #86868b; display: block; margin-bottom: 5px; }
         .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
@@ -213,22 +275,18 @@
 <body>
     <div class="container">
         <h1>Pipe Crawler</h1>
-        <div class="update-banner" id="updateBanner" onclick="installUpdate()">
-            🔄 Update available! Click to install (v<span id="newVersion"></span>)
-        </div>
+        <div class="update-banner" id="updateBanner" onclick="installUpdate()">🔄 Update available! Click to install (v<span id="newVersion"></span>)</div>
         <div class="status-row">
             <div class="status disconnected" id="status">Disconnected</div>
             <div class="stats-button" onclick="toggleStats(event)">
                 📊 Stats
                 <div class="stats-popup" id="statsPopup">
-                    <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value" id="voltage">--.-V</span></div>
-                    <div class="stats-row-item"><span class="stats-label">Min</span><span class="stats-value" id="minVoltage">--.-V</span></div>
-                    <div class="stats-row-item"><span class="stats-label">Max</span><span class="stats-value" id="maxVoltage">--.-V</span></div>
-                    <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value" id="cpuTemp">--°C</span></div>
-                    <div class="stats-row-item"><span class="stats-label">M1 Current</span><span class="stats-value" id="m1Current">--A</span></div>
-                    <div class="stats-row-item"><span class="stats-label">M2 Current</span><span class="stats-value" id="m2Current">--A</span></div>
+                    <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value-group"><span class="stats-value" id="voltage">--.-V</span><button class="icon-btn" onclick="showGraph(event,'battery')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                    <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value-group"><span class="stats-value" id="cpuTemp">--°C</span><button class="icon-btn" onclick="showGraph(event,'temp')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                    <div class="stats-row-item"><span class="stats-label">M1 Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                    <div class="stats-row-item"><span class="stats-label">M2 Current</span><span class="stats-value-group"><span class="stats-value" id="m2Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m2')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                     <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
-                    <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.2.0</span></div>
+                    <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.4.0</span></div>
                 </div>
             </div>
         </div>
@@ -236,32 +294,14 @@
             <div class="pipe-title">Pipe Position</div>
             <div class="pipe-container">
                 <div class="pipe-circle"></div>
-                <div class="degree-display">
-                    <span id="degreeValue">0</span>°
-                    <span class="distance" id="distanceInPipe">0.0 in</span>
-                </div>
-                <div class="radiation" id="radiation">
-                    <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#FFD700" stroke="#1d1d1f" stroke-width="2"/><circle cx="50" cy="50" r="12" fill="#1d1d1f"/><path d="M50,50 L50,10 A40,40 0 0,1 84.6,70 Z" fill="#1d1d1f"/><path d="M50,50 L84.6,70 A40,40 0 0,1 15.4,70 Z" fill="#1d1d1f"/><path d="M50,50 L15.4,70 A40,40 0 0,1 50,10 Z" fill="#1d1d1f"/></svg>
-                </div>
-                <div class="bug" id="bug">
-                    <svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#1d1d1f"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg>
-                </div>
+                <div class="degree-display"><span id="degreeValue">0</span>°<span class="distance" id="distanceInPipe">0.0 in</span></div>
+                <div class="radiation" id="radiation"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#FFD700" stroke="#1d1d1f" stroke-width="2"/><circle cx="50" cy="50" r="12" fill="#1d1d1f"/><path d="M50,50 L50,10 A40,40 0 0,1 84.6,70 Z" fill="#1d1d1f"/><path d="M50,50 L84.6,70 A40,40 0 0,1 15.4,70 Z" fill="#1d1d1f"/><path d="M50,50 L15.4,70 A40,40 0 0,1 50,10 Z" fill="#1d1d1f"/></svg></div>
+                <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#1d1d1f"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
             </div>
-            <div class="degree-input-row">
-                <input type="number" class="degree-input" id="degreeInput" min="0" max="359" value="0" oninput="setDegree()">
-            </div>
+            <div class="degree-input-row"><input type="number" class="degree-input" id="degreeInput" min="0" max="359" value="0" oninput="setDegree()"></div>
             <div class="pipe-calc-row">
-                <div class="pipe-calc-item">
-                    <span class="pipe-calc-label">Pipe Diameter</span>
-                    <div class="pipe-calc-input-row">
-                        <input type="number" class="degree-input" id="pipeDiameter" min="1" value="12" style="width:60px;" oninput="updateDistance()">
-                        <span class="pipe-calc-unit">in</span>
-                    </div>
-                </div>
-                <div class="pipe-calc-item">
-                    <span class="pipe-calc-label">Distance Traveled</span>
-                    <span class="pipe-calc-value" id="distanceTraveled">0.0 in</span>
-                </div>
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Pipe Diameter</span><div class="pipe-calc-input-row"><input type="number" class="degree-input" id="pipeDiameter" min="1" value="12" style="width:60px;" oninput="updateDistance()"><span class="pipe-calc-unit">in</span></div></div>
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Distance Traveled</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
             </div>
         </div>
         <div class="controls">
@@ -275,148 +315,124 @@
             <div class="speed-label"><span>Speed</span><span class="speed-value" id="speedValue">50%</span></div>
             <input type="range" id="speedSlider" min="0" max="100" value="50" oninput="updateSpeed(this.value)">
         </div>
-        <div class="footer">Pipe Crawler Control System v<span id="footerVersion">1.2.0</span></div>
+        <div class="footer">Pipe Crawler Control System v<span id="footerVersion">1.4.0</span></div>
+    </div>
+    <div class="modal-overlay" id="graphModal" onclick="closeGraph(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header"><span class="modal-title" id="graphTitle">Graph</span><button class="modal-close" onclick="closeGraph(event)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="graph-container"><svg class="graph-svg" id="graphSvg" viewBox="0 0 450 200"></svg></div>
+            <div class="graph-stats" id="graphStats"></div>
+        </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '1.3.0';
+        var CURRENT_VERSION = '1.4.0';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var isUpdating = false;
-        
         document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
         document.getElementById('footerVersion').textContent = CURRENT_VERSION;
-        
-        function toggleStats(event) {
-            event.stopPropagation();
-            document.getElementById('statsPopup').classList.toggle('show');
-        }
-        
-        document.addEventListener('click', function(e) {
-            var popup = document.getElementById('statsPopup');
-            var button = document.querySelector('.stats-button');
-            if (!button.contains(e.target)) {
-                popup.classList.remove('show');
+
+        var stats = { battery: { min: 999, max: 0, data: [] }, temp: { data: [], data2: [] }, m1: { min: 999, max: 0, data: [] }, m2: { min: 999, max: 0, data: [] } };
+        var currentGraphType = 'battery';
+        var graphConfig = {
+            battery: { title: 'Battery Voltage - Last 24 Hours', unit: 'V', minScale: 16, maxScale: 20, warningLow: 17, color: '#007aff' },
+            temp: { title: 'Temperature - Last 24 Hours', unit: '°C', minScale: 30, maxScale: 90, warningHigh: 80, color: '#ff9500', color2: '#34c759', dual: true, label1: 'CPU', label2: 'Motor Board' },
+            m1: { title: 'M1 Current - Last 24 Hours', unit: 'A', minScale: 0, maxScale: 6, warningHigh: 5, color: '#34c759' },
+            m2: { title: 'M2 Current - Last 24 Hours', unit: 'A', minScale: 0, maxScale: 6, warningHigh: 5, color: '#af52de' }
+        };
+
+        function toggleStats(event) { event.stopPropagation(); document.getElementById('statsPopup').classList.toggle('show'); }
+        document.addEventListener('click', function(e) { var popup = document.getElementById('statsPopup'); var button = document.querySelector('.stats-button'); if (!button.contains(e.target)) popup.classList.remove('show'); });
+        function showGraph(event, type) { event.stopPropagation(); currentGraphType = type; document.getElementById('graphModal').classList.add('show'); document.getElementById('graphTitle').textContent = graphConfig[type].title; drawGraph(type); }
+        function closeGraph(event) { document.getElementById('graphModal').classList.remove('show'); }
+        function resetStats(event) { event.stopPropagation(); stats[currentGraphType].min = 999; stats[currentGraphType].max = 0; var btn = event.currentTarget; btn.style.background = '#34c759'; btn.style.color = '#fff'; setTimeout(function() { btn.style.background = ''; btn.style.color = ''; }, 300); document.getElementById('graphMin').textContent = '--'; document.getElementById('graphMax').textContent = '--'; }
+
+        function drawGraph(type) {
+            var svg = document.getElementById('graphSvg'), config = graphConfig[type];
+            var data = stats[type].data.length > 0 ? stats[type].data : generateDemoData(type);
+            var data2 = config.dual ? (stats[type].data2.length > 0 ? stats[type].data2 : generateDemoData(type, true)) : null;
+            var width = 450, height = 200, padding = { top: 20, right: 20, bottom: 30, left: 45 };
+            var graphWidth = width - padding.left - padding.right, graphHeight = height - padding.top - padding.bottom;
+            var values = data.map(function(d) { return d.value; });
+            var avg = values.reduce(function(a, b) { return a + b; }, 0) / values.length;
+            var statsRow = document.getElementById('graphStats');
+            if (config.dual) {
+                statsRow.innerHTML = '<div style="display:flex;gap:20px;align-items:center;width:100%;justify-content:center;"><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:' + config.color + '"></div><span style="font-size:14px;color:#1d1d1f;">' + config.label1 + '</span></div><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:' + config.color2 + '"></div><span style="font-size:14px;color:#1d1d1f;">' + config.label2 + '</span></div></div>';
+            } else {
+                var minVal = stats[type].min < 900 ? stats[type].min.toFixed(1) + config.unit : '--';
+                var maxVal = stats[type].max > 0 ? stats[type].max.toFixed(1) + config.unit : '--';
+                statsRow.innerHTML = '<div class="graph-stat"><div class="graph-stat-label">Min</div><div class="graph-stat-value low" id="graphMin">' + minVal + '</div></div><div class="graph-stat"><div class="graph-stat-label">Avg</div><div class="graph-stat-value" id="graphAvg">' + avg.toFixed(1) + config.unit + '</div></div><div class="graph-stat"><div class="graph-stat-label">Max</div><div class="graph-stat-value high" id="graphMax">' + maxVal + '</div></div><button class="reset-btn-large" onclick="resetStats(event)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Reset</button>';
             }
-        });
-        
-        function checkForUpdates() {
-            fetch(GITHUB_VERSION_URL + '?t=' + Date.now())
-                .then(r => r.text())
-                .then(v => {
-                    v = v.trim();
-                    if (v !== CURRENT_VERSION) {
-                        document.getElementById('updateBanner').classList.add('show');
-                        document.getElementById('newVersion').textContent = v;
-                    } else {
-                        document.getElementById('updateBanner').classList.remove('show');
-                    }
-                })
-                .catch(e => console.log('Version check failed:', e));
+            var xScale = function(hour) { return padding.left + (hour / 23) * graphWidth; };
+            var yScale = function(v) { return padding.top + (1 - (v - config.minScale) / (config.maxScale - config.minScale)) * graphHeight; };
+            var svgContent = '<defs><linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="' + config.color + '"/><stop offset="100%" stop-color="' + config.color + '" stop-opacity="0"/></linearGradient>';
+            if (config.dual) svgContent += '<linearGradient id="areaGradient2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="' + config.color2 + '"/><stop offset="100%" stop-color="' + config.color2 + '" stop-opacity="0"/></linearGradient>';
+            svgContent += '</defs>';
+            var steps = 5, stepValue = (config.maxScale - config.minScale) / steps;
+            for (var i = 0; i <= steps; i++) { var v = config.minScale + i * stepValue, y = yScale(v); svgContent += '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (width - padding.right) + '" y2="' + y + '" stroke="#e0e0e0" stroke-width="1"/>'; svgContent += '<text x="' + (padding.left - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#86868b">' + v.toFixed(0) + '</text>'; }
+            for (var h = 0; h < 24; h += 6) { svgContent += '<text x="' + xScale(h) + '" y="' + (height - 8) + '" text-anchor="middle" font-size="10" fill="#86868b">' + h + 'h</text>'; }
+            if (config.warningLow) { var wy = yScale(config.warningLow); svgContent += '<rect x="' + padding.left + '" y="' + wy + '" width="' + graphWidth + '" height="' + (height - padding.bottom - wy) + '" fill="rgba(255,59,48,0.1)"/>'; }
+            if (config.warningHigh) { var wy = yScale(config.warningHigh); svgContent += '<rect x="' + padding.left + '" y="' + padding.top + '" width="' + graphWidth + '" height="' + (wy - padding.top) + '" fill="rgba(255,59,48,0.1)"/>'; }
+            if (config.dual && data2) { var pathD2 = 'M'; data2.forEach(function(d, i) { pathD2 += (i === 0 ? '' : ' L') + xScale(d.hour) + ' ' + yScale(d.value); }); svgContent += '<path d="' + pathD2 + '" fill="none" stroke="' + config.color2 + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>'; data2.forEach(function(d) { svgContent += '<circle cx="' + xScale(d.hour) + '" cy="' + yScale(d.value) + '" r="3" fill="' + config.color2 + '"/>'; }); }
+            var pathD = 'M'; data.forEach(function(d, i) { pathD += (i === 0 ? '' : ' L') + xScale(d.hour) + ' ' + yScale(d.value); });
+            if (!config.dual) { var areaD = pathD + ' L' + xScale(23) + ' ' + (height - padding.bottom) + ' L' + padding.left + ' ' + (height - padding.bottom) + ' Z'; svgContent += '<path d="' + areaD + '" fill="url(#areaGradient)" opacity="0.3"/>'; }
+            svgContent += '<path d="' + pathD + '" fill="none" stroke="' + config.color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+            data.forEach(function(d) { var inWarning = (config.warningLow && d.value < config.warningLow) || (config.warningHigh && d.value > config.warningHigh); svgContent += '<circle cx="' + xScale(d.hour) + '" cy="' + yScale(d.value) + '" r="4" fill="' + (inWarning ? '#ff3b30' : config.color) + '"/>'; });
+            svg.innerHTML = svgContent;
         }
-        setTimeout(checkForUpdates, 1000);
-        setInterval(checkForUpdates, 300000);
+        function generateDemoData(type, isSecondary) { var config = graphConfig[type], data = [], range = config.maxScale - config.minScale, mid = (config.maxScale + config.minScale) / 2; if (isSecondary && type === 'temp') mid = mid - 15; for (var i = 0; i < 24; i++) { var variation = Math.sin(i / 4) * (range * 0.15) + (Math.random() - 0.5) * (range * 0.1); var value = Math.max(config.minScale + range * 0.05, Math.min(config.maxScale - range * 0.1, mid + variation)); data.push({ hour: i, value: value }); } return data; }
+
+        function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (v !== CURRENT_VERSION) { document.getElementById('updateBanner').classList.add('show'); document.getElementById('newVersion').textContent = v; } else { document.getElementById('updateBanner').classList.remove('show'); } }).catch(function(e) { console.log('Version check failed:', e); }); }
+        setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
 
         var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
-        var minVoltage = 999, maxVoltage = 0;
-
-        ros.on('connection', function() {
-            document.getElementById('status').className = 'status connected';
-            document.getElementById('status').textContent = 'Connected';
-            updateSpeed(50);
-        });
-        ros.on('error', function() {
-            document.getElementById('status').className = 'status disconnected';
-            document.getElementById('status').textContent = 'Connection Error';
-        });
-        ros.on('close', function() {
-            document.getElementById('status').className = 'status disconnected';
-            document.getElementById('status').textContent = 'Disconnected';
-        });
+        ros.on('connection', function() { document.getElementById('status').className = 'status connected'; document.getElementById('status').textContent = 'Connected'; updateSpeed(50); });
+        ros.on('error', function() { document.getElementById('status').className = 'status disconnected'; document.getElementById('status').textContent = 'Connection Error'; });
+        ros.on('close', function() { document.getElementById('status').className = 'status disconnected'; document.getElementById('status').textContent = 'Disconnected'; });
 
         var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
         var speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
         var systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
-        var batterySubscriber = new ROSLIB.Topic({ ros: ros, name: '/stats', messageType: 'roboclaw_interfaces/Stats' });
+        var statsSubscriber = new ROSLIB.Topic({ ros: ros, name: '/stats', messageType: 'roboclaw_interfaces/Stats' });
         var cpuTempSubscriber = new ROSLIB.Topic({ ros: ros, name: '/cpu_temp', messageType: 'std_msgs/Float32' });
         var updateStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/update_status', messageType: 'std_msgs/String' });
 
-        updateStatusSubscriber.subscribe(function(msg) {
-            var banner = document.getElementById('updateBanner');
-            if (msg.data === 'updating') {
-                banner.innerHTML = '⏳ Installing update...';
-                banner.className = 'update-banner show updating';
-            } else if (msg.data === 'update_complete') {
-                banner.innerHTML = '✅ Update complete! Refreshing...';
-                banner.className = 'update-banner show success';
-                isUpdating = false;
-                setTimeout(function() { location.reload(true); }, 3000);
-            } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) {
-                banner.innerHTML = '❌ ' + msg.data;
-                banner.className = 'update-banner show error';
-                isUpdating = false;
-            }
-        });
+        updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = '⏳ Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = '✅ Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = '❌ ' + msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
+        function installUpdate() { if (isUpdating) return; isUpdating = true; var banner = document.getElementById('updateBanner'); banner.innerHTML = '⏳ Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
 
-        function installUpdate() {
-            if (isUpdating) return;
-            isUpdating = true;
-            var banner = document.getElementById('updateBanner');
-            banner.innerHTML = '⏳ Starting update...';
-            banner.className = 'update-banner show updating';
-            systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' }));
-        }
-
-        batterySubscriber.subscribe(function(msg) {
+        statsSubscriber.subscribe(function(msg) {
             var v = msg.battery_voltage, el = document.getElementById('voltage');
             el.textContent = v.toFixed(1) + 'V';
             el.className = 'stats-value' + (v < 15 ? ' alarm' : v < 17 ? ' warning' : '');
-            if (v > 0 && v < minVoltage) { minVoltage = v; document.getElementById('minVoltage').textContent = v.toFixed(1) + 'V'; }
-            if (v > maxVoltage) { maxVoltage = v; document.getElementById('maxVoltage').textContent = v.toFixed(1) + 'V'; }
+            if (v > 0 && v < stats.battery.min) stats.battery.min = v;
+            if (v > stats.battery.max) stats.battery.max = v;
             var m1 = msg.m1_current, m1El = document.getElementById('m1Current');
             m1El.textContent = m1.toFixed(2) + 'A';
             m1El.className = 'stats-value' + (m1 > 5 ? ' alarm' : m1 > 3 ? ' warning' : '');
+            if (m1 > 0 && m1 < stats.m1.min) stats.m1.min = m1;
+            if (m1 > stats.m1.max) stats.m1.max = m1;
             var m2 = msg.m2_current, m2El = document.getElementById('m2Current');
             m2El.textContent = m2.toFixed(2) + 'A';
             m2El.className = 'stats-value' + (m2 > 5 ? ' alarm' : m2 > 3 ? ' warning' : '');
+            if (m2 > 0 && m2 < stats.m2.min) stats.m2.min = m2;
+            if (m2 > stats.m2.max) stats.m2.max = m2;
+            if (msg.board_temp !== undefined) { var now = new Date(), hour = now.getHours(), found = false; for (var i = 0; i < stats.temp.data2.length; i++) { if (stats.temp.data2[i].hour === hour) { stats.temp.data2[i].value = msg.board_temp; found = true; break; } } if (!found) stats.temp.data2.push({ hour: hour, value: msg.board_temp }); }
         });
 
         cpuTempSubscriber.subscribe(function(msg) {
             var t = msg.data, el = document.getElementById('cpuTemp');
             el.textContent = t.toFixed(1) + '°C';
             el.className = 'stats-value' + (t > 80 ? ' alarm' : t > 70 ? ' warning' : '');
+            var now = new Date(), hour = now.getHours(), found = false;
+            for (var i = 0; i < stats.temp.data.length; i++) { if (stats.temp.data[i].hour === hour) { stats.temp.data[i].value = t; found = true; break; } }
+            if (!found) stats.temp.data.push({ hour: hour, value: t });
         });
 
         function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }
-        function updateSpeed(val) {
-            document.getElementById('speedValue').textContent = val + '%';
-            speedPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
-        }
-        function setDegree() {
-            var deg = parseInt(document.getElementById('degreeInput').value) || 0;
-            updateBugPosition(((deg % 360) + 360) % 360);
-        }
-        function updateBugPosition(deg) {
-            document.getElementById('degreeValue').textContent = deg;
-            document.getElementById('degreeValueStats').textContent = deg;
-            document.getElementById('degreeInput').value = deg;
-            var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug'), rad = document.getElementById('radiation');
-            var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2;
-            var a = (deg - 90) * Math.PI / 180;
-            bug.style.left = (cx + r * Math.cos(a) - bug.offsetWidth / 2) + 'px';
-            bug.style.top = (cy + r * Math.sin(a) - bug.offsetHeight / 2) + 'px';
-            bug.style.transform = 'rotate(' + deg + 'deg) scaleX(-1)';
-            var ra = (deg + 90) * Math.PI / 180;
-            rad.style.left = (cx + r * Math.cos(ra) - rad.offsetWidth / 2) + 'px';
-            rad.style.top = (cy + r * Math.sin(ra) - rad.offsetHeight / 2) + 'px';
-            updateDistance();
-        }
-        function updateDistance() {
-            var deg = parseInt(document.getElementById('degreeInput').value) || 0;
-            var dia = parseFloat(document.getElementById('pipeDiameter').value) || 12;
-            var dist = (deg / 360) * Math.PI * dia;
-            document.getElementById('distanceTraveled').textContent = dist.toFixed(2) + ' in';
-            document.getElementById('distanceInPipe').textContent = dist.toFixed(2) + ' in';
-        }
+        function updateSpeed(val) { document.getElementById('speedValue').textContent = val + '%'; speedPublisher.publish(new ROSLIB.Message({ data: val.toString() })); }
+        function setDegree() { var deg = parseInt(document.getElementById('degreeInput').value) || 0; updateBugPosition(((deg % 360) + 360) % 360); }
+        function updateBugPosition(deg) { document.getElementById('degreeValue').textContent = deg; document.getElementById('degreeValueStats').textContent = deg; document.getElementById('degreeInput').value = deg; var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug'), rad = document.getElementById('radiation'); var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2; var a = (deg - 90) * Math.PI / 180; bug.style.left = (cx + r * Math.cos(a) - bug.offsetWidth / 2) + 'px'; bug.style.top = (cy + r * Math.sin(a) - bug.offsetHeight / 2) + 'px'; bug.style.transform = 'rotate(' + deg + 'deg) scaleX(-1)'; var ra = (deg + 90) * Math.PI / 180; rad.style.left = (cx + r * Math.cos(ra) - rad.offsetWidth / 2) + 'px'; rad.style.top = (cy + r * Math.sin(ra) - rad.offsetHeight / 2) + 'px'; updateDistance(); }
+        function updateDistance() { var deg = parseInt(document.getElementById('degreeInput').value) || 0; var dia = parseFloat(document.getElementById('pipeDiameter').value) || 12; var dist = (deg / 360) * Math.PI * dia; document.getElementById('distanceTraveled').textContent = dist.toFixed(2) + ' in'; document.getElementById('distanceInPipe').textContent = dist.toFixed(2) + ' in'; }
         window.onload = function() { setTimeout(function() { updateBugPosition(0); }, 100); };
         document.getElementById('degreeInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') this.blur(); });
     </script>
