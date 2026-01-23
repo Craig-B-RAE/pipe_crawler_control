@@ -43,6 +43,7 @@
             border-radius: 20px;
             font-weight: 500;
             font-size: 13px;
+        .wifi-icon { margin-left: 8px; display: inline-flex; }
         }
         .status.connected { background: #e8f5e9; color: #2e7d32; }
         .status.disconnected { background: #ffebee; color: #c62828; }
@@ -277,7 +278,7 @@
         <h1>Pipe Crawler</h1>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">🔄 Update available! Click to install (v<span id="newVersion"></span>)</div>
         <div class="status-row">
-            <div class="status disconnected" id="status">Disconnected</div>
+            <div style="display:flex;align-items:center;gap:8px;"><div class="status disconnected" id="status">Disconnected</div><span id="wifiIcon" title="Internet: Checking..." style="color:#86868b;display:inline-flex;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span></div>
             <div class="stats-button" onclick="toggleStats(event)">
                 📊 Stats
                 <div class="stats-popup" id="statsPopup">
@@ -435,6 +436,7 @@
         function updateDistance() { var deg = parseInt(document.getElementById('degreeInput').value) || 0; var dia = parseFloat(document.getElementById('pipeDiameter').value) || 12; var dist = (deg / 360) * Math.PI * dia; document.getElementById('distanceTraveled').textContent = dist.toFixed(2) + ' in'; document.getElementById('distanceInPipe').textContent = dist.toFixed(2) + ' in'; }
         window.onload = function() { setTimeout(function() { updateBugPosition(0); }, 100); };
         document.getElementById('degreeInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') this.blur(); });
+        function checkInternet() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { if (r.ok) { document.getElementById('wifiIcon').style.color = '#2e7d32'; document.getElementById('wifiIcon').title = 'Internet: Online'; } else { throw new Error(); } }).catch(function() { document.getElementById('wifiIcon').style.color = '#c62828'; document.getElementById('wifiIcon').title = 'Internet: Offline'; }); } checkInternet(); setInterval(checkInternet, 30000);
     </script>
 </body>
 </html>
