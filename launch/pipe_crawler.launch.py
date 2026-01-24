@@ -33,4 +33,9 @@ def generate_launch_description():
             executable='update_manager',
             name='update_manager'
         ),
+       # Node(
+       #    package='pipe_crawler_control',
+       #    executable='network_info_publisher',
+       #    name='network_info_publisher'
+       # ),
     ])

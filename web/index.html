@@ -290,6 +290,19 @@
         .radiation { width: clamp(30px, 8vw, 45px); height: clamp(30px, 8vw, 45px); }
         .bug svg, .radiation svg { width: 100%; height: 100%; }
         .degree-input-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; }
+        .reset-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #e0e0e0;
+            color: #1d1d1f;
+            transition: all 0.2s;
+        }
+        .reset-btn:hover { background: #d0d0d0; }
+        .reset-btn:active { transform: scale(0.95); }
         .degree-input {
             width: 80px;
             padding: 10px;
@@ -352,7 +365,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">Pipe Crawler Control System v<span id="footerVersion">1.6.0</span></div>
+        <div class="header">Pipe Crawler Control System v<span id="footerVersion">1.7.0</span></div>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">🔄 Update available! Click to install (v<span id="newVersion"></span>)</div>
         
         <div class="info-toolbar">
@@ -361,7 +374,7 @@
                     <span class="motor-status stopped" id="m1Status"></span>
                     <span class="info-label">M1</span>
                     <span class="current" id="m1CurrentBar">--A</span>
-                    <span class="rpm" id="m1RpmBar">0rpm</span>
+                    <span class="rpm" id="m1RpmBar">0"/s</span>
                 </span>
             </div>
             <div class="info-item">
@@ -375,7 +388,7 @@
                     <span class="motor-status stopped" id="m2Status"></span>
                     <span class="info-label">M2</span>
                     <span class="current" id="m2CurrentBar">--A</span>
-                    <span class="rpm" id="m2RpmBar">0rpm</span>
+                    <span class="rpm" id="m2RpmBar">0"/s</span>
                 </span>
             </div>
         </div>
@@ -391,7 +404,9 @@
                         <div class="stats-row-item"><span class="stats-label">M1 Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                         <div class="stats-row-item"><span class="stats-label">M2 Current</span><span class="stats-value-group"><span class="stats-value" id="m2Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m2')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                         <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.6.0</span></div>
+                        <div class="stats-row-item"><span class="stats-label">WiFi IP</span><span class="stats-value" id="wifiIp">No Network</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Ethernet IP</span><span class="stats-value" id="ethIp">No Network</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.7.0</span></div>
                     </div>
                 </div>
                 <div class="stats-button" id="settingsButton" onclick="toggleSettings(event)" style="position: relative;">
@@ -436,7 +451,7 @@
                 <div class="radiation" id="radiation"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#FFD700" stroke="#1d1d1f" stroke-width="2"/><circle cx="50" cy="50" r="12" fill="#1d1d1f"/><path d="M50,50 L50,10 A40,40 0 0,1 84.6,70 Z" fill="#1d1d1f"/><path d="M50,50 L84.6,70 A40,40 0 0,1 15.4,70 Z" fill="#1d1d1f"/><path d="M50,50 L15.4,70 A40,40 0 0,1 50,10 Z" fill="#1d1d1f"/></svg></div>
                 <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#1d1d1f"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
             </div>
-            <div class="degree-input-row"><input type="number" class="degree-input" id="degreeInput" min="0" max="359" value="0" oninput="setDegree()"></div>
+            <div class="degree-input-row"><button class="reset-btn" onclick="resetPosition()">Reset Position</button></div>
             <div class="pipe-calc-row">
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Distance Traveled</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
             </div>
@@ -451,9 +466,26 @@
         <div class="camera-section">
             <div class="camera-frame" id="cameraFrame">
                 <div class="camera-placeholder">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                        <circle cx="12" cy="13" r="4"/>
+                    <svg width="80" height="80" viewBox="0 0 100 100">
+                        <!-- Wall-E body -->
+                        <rect x="25" y="50" width="50" height="35" rx="5" fill="#d4a03c"/>
+                        <rect x="28" y="53" width="44" height="29" rx="3" fill="#b8860b"/>
+                        <!-- Treads -->
+                        <rect x="15" y="82" width="25" height="12" rx="4" fill="#4a4a4a"/>
+                        <rect x="60" y="82" width="25" height="12" rx="4" fill="#4a4a4a"/>
+                        <!-- Neck -->
+                        <rect x="45" y="35" width="10" height="18" fill="#888"/>
+                        <!-- Head/Eyes -->
+                        <rect x="30" y="15" width="40" height="25" rx="3" fill="#5a5a5a"/>
+                        <circle cx="40" cy="27" r="9" fill="#222"/>
+                        <circle cx="60" cy="27" r="9" fill="#222"/>
+                        <circle cx="40" cy="27" r="6" fill="#4a90d9"/>
+                        <circle cx="60" cy="27" r="6" fill="#4a90d9"/>
+                        <circle cx="42" cy="25" r="2" fill="#fff"/>
+                        <circle cx="62" cy="25" r="2" fill="#fff"/>
+                        <!-- Binocular housing -->
+                        <rect x="28" y="20" width="12" height="14" rx="2" fill="#3a3a3a"/>
+                        <rect x="60" y="20" width="12" height="14" rx="2" fill="#3a3a3a"/>
                     </svg>
                     <span>Camera Feed</span>
                 </div>
@@ -470,10 +502,13 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '1.6.0';
+        var CURRENT_VERSION = '1.7.0';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var isUpdating = false;
         var pipeDiameter = 12;
+        var totalDistance = 0;  // Total distance traveled in inches
+        var lastM1Qpps = 0;
+        var lastUpdateTime = Date.now();
         document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
         document.getElementById('footerVersion').textContent = CURRENT_VERSION;
 
@@ -582,6 +617,7 @@
         var systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
         var statsSubscriber = new ROSLIB.Topic({ ros: ros, name: '/stats', messageType: 'roboclaw_interfaces/Stats' });
         var cpuTempSubscriber = new ROSLIB.Topic({ ros: ros, name: '/cpu_temp', messageType: 'std_msgs/Float32' });
+        var networkInfoSubscriber = new ROSLIB.Topic({ ros: ros, name: '/network_info', messageType: 'std_msgs/String' });
         var updateStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/update_status', messageType: 'std_msgs/String' });
 
         updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = '⏳ Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = '✅ Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = '❌ ' + msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
@@ -616,10 +652,20 @@
             
             var m1Rpm = Math.abs(msg.m1_enc_qpps) * 60 / 1425.1;
             var m2Rpm = Math.abs(msg.m2_enc_qpps) * 60 / 1425.1;
-            document.getElementById('m1RpmBar').textContent = m1Rpm.toFixed(0) + 'rpm';
-            document.getElementById('m2RpmBar').textContent = m2Rpm.toFixed(0) + 'rpm';
+            var m1Speed = ((m1Rpm / 2) * Math.PI * 1.77 / 60).toFixed(1);
+            var m2Speed = ((m2Rpm / 2) * Math.PI * 1.77 / 60).toFixed(1);
+            document.getElementById('m1RpmBar').textContent = m1Speed + '"/s';
+            document.getElementById('m2RpmBar').textContent = m2Speed + '"/s';
             document.getElementById('m1Status').className = 'motor-status ' + (m1Rpm > 1 ? 'running' : 'stopped');
             document.getElementById('m2Status').className = 'motor-status ' + (m2Rpm > 1 ? 'running' : 'stopped');
+            
+            // Calculate distance traveled from M1 encoder
+            var now = Date.now();
+            var dt = (now - lastUpdateTime) / 60000;  // Time in minutes
+            lastUpdateTime = now;
+            var m1SpeedSigned = (msg.m1_enc_qpps / 1425.1) * 60 / 2 * Math.PI * 1.77;  // inches per minute, signed
+            totalDistance += m1SpeedSigned * dt;
+            updatePositionFromDistance();
             
             if (msg.board_temp !== undefined) { var now = new Date(), minute = now.getHours() * 60 + now.getMinutes(), found = false; for (var i = 0; i < stats.temp.data2.length; i++) { if (stats.temp.data2[i].minute === minute) { stats.temp.data2[i].value = msg.board_temp; found = true; break; } } if (!found) stats.temp.data2.push({ minute: minute, value: msg.board_temp }); }
         });
@@ -633,12 +679,35 @@
             if (!found) stats.temp.data.push({ minute: minute, value: t });
         });
 
+        networkInfoSubscriber.subscribe(function(msg) {
+            try {
+                var info = JSON.parse(msg.data);
+                document.getElementById('wifiIp').textContent = info.wifi === '--' ? 'No Network' : info.wifi;
+                document.getElementById('ethIp').textContent = info.eth === '--' ? 'No Network' : info.eth;
+            } catch(e) { }
+        });
+
         function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }
-        function setDegree() { var deg = parseInt(document.getElementById('degreeInput').value) || 0; updateBugPosition(((deg % 360) + 360) % 360); }
-        function updateBugPosition(deg) { document.getElementById('degreeValue').textContent = deg; document.getElementById('degreeValueStats').textContent = deg; document.getElementById('degreeInput').value = deg; var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug'), rad = document.getElementById('radiation'); var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2; var a = (deg - 90) * Math.PI / 180; bug.style.left = (cx + r * Math.cos(a) - bug.offsetWidth / 2) + 'px'; bug.style.top = (cy + r * Math.sin(a) - bug.offsetHeight / 2) + 'px'; bug.style.transform = 'rotate(' + deg + 'deg) scaleX(-1)'; var ra = (deg + 90) * Math.PI / 180; rad.style.left = (cx + r * Math.cos(ra) - rad.offsetWidth / 2) + 'px'; rad.style.top = (cy + r * Math.sin(ra) - rad.offsetHeight / 2) + 'px'; updateDistance(); }
-        function updateDistance() { var deg = parseInt(document.getElementById('degreeInput').value) || 0; var dist = (deg / 360) * Math.PI * pipeDiameter; document.getElementById('distanceTraveled').textContent = dist.toFixed(2) + ' in'; document.getElementById('distanceInPipe').textContent = dist.toFixed(2) + ' in'; }
-        window.onload = function() { setTimeout(function() { updateBugPosition(0); }, 100); };
-        document.getElementById('degreeInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') this.blur(); });
+        
+        function updatePositionFromDistance() {
+            var circumference = Math.PI * pipeDiameter;
+            var deg = (totalDistance / circumference) * 360;
+            deg = ((deg % 360) + 360) % 360;  // Normalize to 0-359
+            updateBugPosition(deg);
+            document.getElementById('distanceTraveled').textContent = Math.abs(totalDistance).toFixed(1) + ' in';
+            document.getElementById('distanceInPipe').textContent = Math.abs(totalDistance).toFixed(1) + ' in';
+        }
+        
+        function resetPosition() {
+            totalDistance = 0;
+            updateBugPosition(0);
+            document.getElementById('distanceTraveled').textContent = '0.0 in';
+            document.getElementById('distanceInPipe').textContent = '0.0 in';
+        }
+        
+        function setDegree() { }  // Keep for compatibility
+        function updateBugPosition(deg) { document.getElementById('degreeValue').textContent = Math.round(deg); document.getElementById('degreeValueStats').textContent = Math.round(deg); var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug'), rad = document.getElementById('radiation'); var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2; var a = (deg - 90) * Math.PI / 180; bug.style.left = (cx + r * Math.cos(a) - bug.offsetWidth / 2) + 'px'; bug.style.top = (cy + r * Math.sin(a) - bug.offsetHeight / 2) + 'px'; bug.style.transform = 'rotate(' + deg + 'deg) scaleX(-1)'; var ra = (deg + 90) * Math.PI / 180; rad.style.left = (cx + r * Math.cos(ra) - rad.offsetWidth / 2) + 'px'; rad.style.top = (cy + r * Math.sin(ra) - rad.offsetHeight / 2) + 'px'; }
+        window.onload = function() { setTimeout(function() { resetPosition(); }, 100); };
     </script>
 </body>
 </html>
