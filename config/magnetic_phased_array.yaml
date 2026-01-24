@@ -1,0 +1,19 @@
+system:
+  name: "Magnetic Phased Array Crawler"
+  id: magnetic_phased_array
+  web_interface: "magnetic_phased_array.html"
+
+driver:
+  type: roboclaw
+  device: /dev/ttyACM0
+  baud_rate: 115200
+  address: 128
+  loop_hz: 10
+  deadman_secs: 3
+
+motors:
+  - name: drive
+    max_speed: 8500
+    default_speed: 4250
+    max_accel: 10000
+    invert: false

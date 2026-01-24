@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magnetic Phased Array Crawler</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2vw;
+        }
+        .container {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: clamp(20px, 5vw, 40px);
+            width: 90vw;
+            max-width: 500px;
+            min-width: 280px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+            text-align: center;
+            color: #1d1d1f;
+            margin-bottom: 20px;
+            font-size: clamp(22px, 5vw, 28px);
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        .system-badge {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .system-badge span {
+            background: #5856d6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-toolbar {
+            display: flex;
+            justify-content: space-around;
+            background: #f5f5f7;
+            border-radius: 12px;
+            padding: 12px 8px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        .info-item { text-align: center; flex: 1; }
+        .info-label { color: #86868b; font-size: 11px; margin-right: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-weight: 600; color: #1d1d1f; font-size: 13px; }
+        .info-value .current { color: #1d1d1f; }
+        .info-value .rpm { color: #007aff; font-size: 11px; }
+        .motor-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+        .motor-status.running { background: #2e7d32; }
+        .motor-status.stopped { background: #c62828; }
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .stats-button {
+            background: #f5f5f7;
+            color: #1d1d1f;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            display: inline-block;
+            position: relative;
+            border: none;
+            transition: background 0.2s;
+        }
+        .stats-button:hover { background: #e8e8ed; }
+        .stats-popup {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 16px;
+            min-width: 200px;
+            z-index: 100;
+            color: #1d1d1f;
+            text-align: left;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .stats-popup.show { display: block; }
+        .stats-row-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f5f5f7;
+            font-size: 14px;
+        }
+        .stats-row-item:last-child { border-bottom: none; }
+        .stats-label { color: #86868b; }
+        .stats-value { font-weight: 600; color: #1d1d1f; }
+        .stats-value.warning { color: #ff9500; }
+        .stats-value.alarm { color: #ff3b30; }
+        .stats-value-group { display: flex; align-items: center; gap: 6px; }
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px;
+            color: #86868b;
+            line-height: 1;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-btn:hover { background: #f5f5f7; color: #1d1d1f; }
+        .icon-btn:active { transform: scale(0.9); }
+        .settings-popup {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 16px;
+            min-width: 220px;
+            z-index: 100;
+            color: #1d1d1f;
+            text-align: left;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .settings-popup.show { display: block; }
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f7;
+        }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-label { color: #1d1d1f; font-weight: 500; font-size: 14px; }
+        .settings-input {
+            width: 70px;
+            padding: 8px 10px;
+            font-size: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            font-weight: 600;
+        }
+        .settings-input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+        }
+        .settings-input::-webkit-outer-spin-button,
+        .settings-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .settings-input[type=number] { -moz-appearance: textfield; }
+        .settings-unit { color: #86868b; font-size: 13px; margin-left: 4px; }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: auto;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-title { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .modal-close {
+            background: #f5f5f7;
+            border: none;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #86868b;
+            transition: all 0.2s;
+        }
+        .modal-close:hover { background: #e8e8ed; color: #1d1d1f; }
+        .graph-container { background: #f5f5f7; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .graph-svg { width: 100%; height: 200px; }
+        .graph-stats { display: flex; justify-content: space-around; align-items: flex-end; padding-top: 16px; border-top: 1px solid #e0e0e0; }
+        .graph-stat { text-align: center; }
+        .graph-stat-label { font-size: 12px; color: #86868b; margin-bottom: 4px; }
+        .graph-stat-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .graph-stat-value.low { color: #ff3b30; }
+        .graph-stat-value.high { color: #34c759; }
+        .reset-btn-large {
+            background: #f5f5f7;
+            border: none;
+            cursor: pointer;
+            padding: 8px 12px;
+            color: #86868b;
+            font-size: 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .reset-btn-large:hover { background: #e8e8ed; color: #1d1d1f; }
+        .reset-btn-large:active { transform: scale(0.95); }
+        .update-banner {
+            display: none;
+            background: #007aff;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .update-banner:hover { background: #0056b3; }
+        .update-banner.show { display: block; }
+        .update-banner.updating { background: #ff9500; cursor: wait; }
+        .update-banner.success { background: #34c759; }
+        .update-banner.error { background: #ff3b30; }
+        .pipe-section {
+            background: #f5f5f7;
+            padding: clamp(15px, 3vw, 25px);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .pipe-title { font-weight: 600; color: #1d1d1f; margin-bottom: 15px; font-size: 15px; }
+        .pipe-container {
+            position: relative;
+            width: clamp(180px, 45vw, 260px);
+            height: clamp(180px, 45vw, 260px);
+            margin: 0 auto 15px;
+        }
+        .pipe-circle {
+            position: absolute;
+            top: 20%; left: 20%;
+            width: 60%; height: 60%;
+            border-radius: 50%;
+            border: 3px solid #86868b;
+            background: transparent;
+        }
+        .degree-display {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: clamp(28px, 7vw, 36px);
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        .degree-display .distance {
+            font-size: clamp(12px, 3vw, 14px);
+            font-weight: 500;
+            color: #86868b;
+            display: block;
+        }
+        .bug { position: absolute; display: flex; align-items: center; justify-content: center; width: clamp(45px, 12vw, 65px); height: clamp(18px, 5vw, 28px); }
+        .bug svg { width: 100%; height: 100%; }
+        .degree-input-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; }
+        .reset-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #e0e0e0;
+            color: #1d1d1f;
+            transition: all 0.2s;
+        }
+        .reset-btn:hover { background: #d0d0d0; }
+        .reset-btn:active { transform: scale(0.95); }
+        .pipe-calc-row { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
+        .pipe-calc-item { text-align: center; }
+        .pipe-calc-label { font-size: 12px; color: #86868b; display: block; margin-bottom: 5px; }
+        .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .controls { display: grid; gap: 12px; margin-bottom: 20px; }
+        .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .camera-section {
+            background: #f5f5f7;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .camera-frame {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #1d1d1f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .camera-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #86868b;
+            font-size: 14px;
+        }
+        button.control-btn {
+            padding: clamp(16px, 3vw, 20px);
+            font-size: clamp(14px, 3vw, 16px);
+            font-weight: 600;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            color: #ffffff;
+            background: #007aff;
+            transition: all 0.2s;
+        }
+        button.control-btn:hover { background: #0056b3; transform: scale(1.02); }
+        button.control-btn:active { transform: scale(0.98); }
+        button.control-btn.btn-stop { grid-column: 1 / -1; background: #ff3b30; }
+        button.control-btn.btn-stop:hover { background: #d63027; }
+        .header { text-align: center; color: #86868b; font-size: 12px; margin-bottom: 15px; }
+        .footer { text-align: center; color: #86868b; font-size: 11px; margin-top: 15px; }
+        @media (max-width: 400px) { .control-row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="system-badge"><span>Magnetic Crawler System</span></div>
+        <div class="update-banner" id="updateBanner" onclick="installUpdate()">Update available! Click to install (v<span id="newVersion"></span>)</div>
+
+        <!-- Single motor info toolbar -->
+        <div class="info-toolbar">
+            <div class="info-item">
+                <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="display: flex; align-items: center; margin-bottom: 4px;">
+                        <span class="motor-status stopped" id="m1Status"></span>
+                        <span class="info-label">Drive Motor</span>
+                    </span>
+                    <span style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px;">
+                        <span class="current" id="m1CurrentBar">--A</span>
+                        <span class="rpm" id="m1RpmBar">0"/s</span>
+                    </span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="font-size: 10px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Pipe Diameter</span>
+                    <span id="pipeDiameterDisplay" style="font-weight: 600; color: #1d1d1f;">12"</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="font-size: 10px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Battery</span>
+                    <span id="batteryDisplay" style="font-weight: 600; color: #1d1d1f;">--V</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="status-row">
+            <span id="connectionStatus" style="font-size: 13px; font-weight: 500; color: #86868b;">Connecting...</span>
+            <div style="display: flex; gap: 10px;">
+                <div class="stats-button" onclick="toggleStats(event)">
+                    Stats
+                    <div class="stats-popup" id="statsPopup">
+                        <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value-group"><span class="stats-value" id="voltage">--.-V</span><button class="icon-btn" onclick="showGraph(event,'battery')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                        <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value-group"><span class="stats-value" id="cpuTemp">--°C</span><button class="icon-btn" onclick="showGraph(event,'temp')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                        <div class="stats-row-item"><span class="stats-label">Motor Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                        <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
+                        <div class="stats-row-item"><span class="stats-label">WiFi IP</span><span class="stats-value" id="wifiIp">--</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Ethernet IP</span><span class="stats-value" id="ethIp">--</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.7.0</span></div>
+                    </div>
+                </div>
+                <div class="stats-button" id="settingsButton" onclick="toggleSettings(event)" style="position: relative;">
+                    Settings
+                    <div class="settings-popup" id="settingsPopup" onclick="event.stopPropagation()">
+                        <div class="settings-row">
+                            <span class="settings-label">Pipe Diameter</span>
+                            <div>
+                                <input type="number" class="settings-input" id="pipeDiameterSetting" min="1" max="100" value="12" onchange="updatePipeDiameter(this.value)">
+                                <span class="settings-unit">in</span>
+                            </div>
+                        </div>
+                        <div class="settings-row" style="padding-top: 0;">
+                            <span class="settings-label">Circumference</span>
+                            <div>
+                                <span id="circumferenceValue" class="settings-input" style="display: inline-block; background: none; border: none;">37.7</span>
+                                <span class="settings-unit">in</span>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Speed</span>
+                            <div>
+                                <input type="number" class="settings-input" id="speedInput" min="0" max="100" value="50" onchange="updateSpeed(this.value)">
+                                <span class="settings-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Ramp</span>
+                            <div>
+                                <input type="number" class="settings-input" id="rampInput" min="0" max="100" value="50" onchange="updateRamp(this.value)">
+                                <span class="settings-unit">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pipe-section">
+            <div class="pipe-container">
+                <div class="pipe-circle"></div>
+                <div class="degree-display"><span id="degreeValue">0</span>°<span class="distance" id="distanceInPipe">0.0 in</span></div>
+                <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#5856d6"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
+            </div>
+            <div class="degree-input-row"><button class="reset-btn" onclick="resetPosition()">Reset Position</button></div>
+            <div class="pipe-calc-row">
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Distance Traveled</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <button class="control-btn" onclick="sendCommand('forward')">Forward</button>
+                <button class="control-btn" onclick="sendCommand('backward')">Backward</button>
+            </div>
+            <button class="control-btn btn-stop" onclick="sendCommand('stop')">Stop</button>
+        </div>
+
+        <div class="camera-section">
+            <div class="camera-frame" id="cameraFrame">
+                <div class="camera-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <span>Camera Feed</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">v<span id="footerVersion">1.7.0</span> rev.1 | Last updated: <span id="lastUpdated">--</span></div>
+    </div>
+
+    <div class="modal-overlay" id="graphModal" onclick="closeGraph(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header"><span class="modal-title" id="graphTitle">Graph</span><button class="modal-close" onclick="closeGraph(event)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="graph-container"><svg class="graph-svg" id="graphSvg" viewBox="0 0 450 200"></svg></div>
+            <div class="graph-stats" id="graphStats"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
+    <script>
+        var CURRENT_VERSION = '1.7.0';
+        var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
+        var SYSTEM_ID = 'magnetic_phased_array';
+        var MOTOR_COUNT = 1;
+        var isUpdating = false;
+        var pipeDiameter = 12;
+        var totalDistance = 0;
+        var lastUpdateTime = Date.now();
+
+        document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
+        document.getElementById('footerVersion').textContent = CURRENT_VERSION;
+
+        var stats = { battery: { min: 999, max: 0, data: [] }, temp: { data: [], data2: [] }, m1: { min: 999, max: 0, data: [] } };
+        var currentGraphType = 'battery';
+        var graphConfig = {
+            battery: { title: 'Battery Voltage', unit: 'V', minScale: 16, maxScale: 20, warningLow: 17, color: '#007aff' },
+            temp: { title: 'Temperature', unit: '°C', minScale: 30, maxScale: 90, warningHigh: 80, color: '#ff9500', color2: '#34c759', dual: true, label1: 'CPU', label2: 'Motor Board' },
+            m1: { title: 'Motor Current', unit: 'A', minScale: 0, maxScale: 6, warningHigh: 5, color: '#5856d6' }
+        };
+
+        function toggleStats(event) { event.stopPropagation(); document.getElementById('statsPopup').classList.toggle('show'); document.getElementById('settingsPopup').classList.remove('show'); }
+        function toggleSettings(event) { event.stopPropagation(); document.getElementById('settingsPopup').classList.toggle('show'); document.getElementById('statsPopup').classList.remove('show'); }
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.stats-button:not(#settingsButton)')) document.getElementById('statsPopup').classList.remove('show');
+            if (!document.getElementById('settingsButton').contains(e.target)) document.getElementById('settingsPopup').classList.remove('show');
+        });
+
+        function showGraph(event, type) { event.stopPropagation(); currentGraphType = type; document.getElementById('graphModal').classList.add('show'); document.getElementById('graphTitle').textContent = graphConfig[type].title; drawGraph(type); }
+        function closeGraph(event) { document.getElementById('graphModal').classList.remove('show'); }
+        function resetStats(event) { event.stopPropagation(); stats[currentGraphType].min = 999; stats[currentGraphType].max = 0; }
+
+        function updatePipeDiameter(val) {
+            val = Math.max(1, Math.min(100, parseFloat(val) || 12));
+            pipeDiameter = val;
+            document.getElementById('pipeDiameterSetting').value = val;
+            document.getElementById('circumferenceValue').textContent = (Math.PI * val).toFixed(1);
+            document.getElementById('pipeDiameterDisplay').textContent = val + '"';
+            updatePositionFromDistance();
+        }
+
+        function updateSpeed(val) {
+            val = Math.max(0, Math.min(100, parseInt(val) || 0));
+            document.getElementById('speedInput').value = val;
+            speedPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+        }
+
+        function updateRamp(val) {
+            val = Math.max(0, Math.min(100, parseInt(val) || 50));
+            document.getElementById('rampInput').value = val;
+            rampPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+        }
+
+        function drawGraph(type) {
+            var svg = document.getElementById('graphSvg'), config = graphConfig[type];
+            var data = stats[type].data.length >= 5 ? stats[type].data : generateDemoData(type);
+            var data2 = config.dual ? (stats[type].data2.length >= 5 ? stats[type].data2 : generateDemoData(type, true)) : null;
+            var width = 450, height = 200, padding = { top: 20, right: 20, bottom: 30, left: 45 };
+            var graphWidth = width - padding.left - padding.right, graphHeight = height - padding.top - padding.bottom;
+            var values = data.map(function(d) { return d.value; });
+            var avg = values.reduce(function(a, b) { return a + b; }, 0) / values.length;
+            var statsRow = document.getElementById('graphStats');
+            if (config.dual) {
+                statsRow.innerHTML = '<div style="display:flex;gap:20px;align-items:center;width:100%;justify-content:center;"><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:' + config.color + '"></div><span style="font-size:14px;color:#1d1d1f;">' + config.label1 + '</span></div><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:' + config.color2 + '"></div><span style="font-size:14px;color:#1d1d1f;">' + config.label2 + '</span></div></div>';
+            } else {
+                var minVal = stats[type].min < 900 ? stats[type].min.toFixed(1) + config.unit : '--';
+                var maxVal = stats[type].max > 0 ? stats[type].max.toFixed(1) + config.unit : '--';
+                statsRow.innerHTML = '<div class="graph-stat"><div class="graph-stat-label">Min</div><div class="graph-stat-value low">' + minVal + '</div></div><div class="graph-stat"><div class="graph-stat-label">Avg</div><div class="graph-stat-value">' + avg.toFixed(1) + config.unit + '</div></div><div class="graph-stat"><div class="graph-stat-label">Max</div><div class="graph-stat-value high">' + maxVal + '</div></div><button class="reset-btn-large" onclick="resetStats(event)">Reset</button>';
+            }
+            var xScale = function(idx) { return padding.left + (idx / (data.length - 1)) * graphWidth; };
+            var yScale = function(v) { return padding.top + (1 - (v - config.minScale) / (config.maxScale - config.minScale)) * graphHeight; };
+            var svgContent = '<defs><linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="' + config.color + '"/><stop offset="100%" stop-color="' + config.color + '" stop-opacity="0"/></linearGradient>';
+            if (config.dual) svgContent += '<linearGradient id="areaGradient2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="' + config.color2 + '"/><stop offset="100%" stop-color="' + config.color2 + '" stop-opacity="0"/></linearGradient>';
+            svgContent += '</defs>';
+            var steps = 5, stepValue = (config.maxScale - config.minScale) / steps;
+            for (var i = 0; i <= steps; i++) { var v = config.minScale + i * stepValue, y = yScale(v); svgContent += '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (width - padding.right) + '" y2="' + y + '" stroke="#e0e0e0" stroke-width="1"/>'; svgContent += '<text x="' + (padding.left - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#86868b">' + v.toFixed(0) + '</text>'; }
+            if (config.warningLow) { var wy = yScale(config.warningLow); svgContent += '<rect x="' + padding.left + '" y="' + wy + '" width="' + graphWidth + '" height="' + (height - padding.bottom - wy) + '" fill="rgba(255,59,48,0.1)"/>'; }
+            if (config.warningHigh) { var wy = yScale(config.warningHigh); svgContent += '<rect x="' + padding.left + '" y="' + padding.top + '" width="' + graphWidth + '" height="' + (wy - padding.top) + '" fill="rgba(255,59,48,0.1)"/>'; }
+            if (config.dual && data2) { var pathD2 = 'M'; data2.forEach(function(d, i) { pathD2 += (i === 0 ? '' : ' L') + xScale(i) + ' ' + yScale(d.value); }); svgContent += '<path d="' + pathD2 + '" fill="none" stroke="' + config.color2 + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>'; }
+            var pathD = 'M'; data.forEach(function(d, i) { pathD += (i === 0 ? '' : ' L') + xScale(i) + ' ' + yScale(d.value); });
+            if (!config.dual) { var areaD = pathD + ' L' + xScale(data.length - 1) + ' ' + (height - padding.bottom) + ' L' + padding.left + ' ' + (height - padding.bottom) + ' Z'; svgContent += '<path d="' + areaD + '" fill="url(#areaGradient)" opacity="0.3"/>'; }
+            svgContent += '<path d="' + pathD + '" fill="none" stroke="' + config.color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+            data.forEach(function(d, i) { var inWarning = (config.warningLow && d.value < config.warningLow) || (config.warningHigh && d.value > config.warningHigh); svgContent += '<circle cx="' + xScale(i) + '" cy="' + yScale(d.value) + '" r="4" fill="' + (inWarning ? '#ff3b30' : config.color) + '"/>'; });
+            svg.innerHTML = svgContent;
+        }
+
+        function generateDemoData(type, isSecondary) { var config = graphConfig[type], data = [], range = config.maxScale - config.minScale, mid = (config.maxScale + config.minScale) / 2; if (isSecondary && type === 'temp') mid = mid - 15; for (var i = 0; i < 24; i++) { var variation = Math.sin(i / 4) * (range * 0.15) + (Math.random() - 0.5) * (range * 0.1); var value = Math.max(config.minScale + range * 0.05, Math.min(config.maxScale - range * 0.1, mid + variation)); data.push({ minute: i, value: value }); } return data; }
+
+        function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (v !== CURRENT_VERSION) { document.getElementById('updateBanner').classList.add('show'); document.getElementById('newVersion').textContent = v; } }).catch(function(e) { }); }
+        setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
+
+        var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
+        ros.on('connection', function() { document.getElementById('connectionStatus').textContent = 'Connected'; document.getElementById('connectionStatus').style.color = '#2e7d32'; updateSpeed(50); updateRamp(50); });
+        ros.on('error', function() { document.getElementById('connectionStatus').textContent = 'Error'; document.getElementById('connectionStatus').style.color = '#c62828'; });
+        ros.on('close', function() { document.getElementById('connectionStatus').textContent = 'Disconnected'; document.getElementById('connectionStatus').style.color = '#c62828'; });
+
+        var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
+        var speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
+        var rampPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_ramp', messageType: 'std_msgs/String' });
+        var systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
+        var statsSubscriber = new ROSLIB.Topic({ ros: ros, name: '/stats', messageType: 'roboclaw_interfaces/Stats' });
+        var cpuTempSubscriber = new ROSLIB.Topic({ ros: ros, name: '/cpu_temp', messageType: 'std_msgs/Float32' });
+        var networkInfoSubscriber = new ROSLIB.Topic({ ros: ros, name: '/network_info', messageType: 'std_msgs/String' });
+        var updateStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/update_status', messageType: 'std_msgs/String' });
+
+        updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = 'Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = 'Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
+        function installUpdate() { if (isUpdating) return; isUpdating = true; var banner = document.getElementById('updateBanner'); banner.innerHTML = 'Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
+
+        function updateLastUpdated() {
+            var now = new Date();
+            document.getElementById('lastUpdated').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        statsSubscriber.subscribe(function(msg) {
+            updateLastUpdated();
+            var v = msg.battery_voltage;
+            document.getElementById('voltage').textContent = v.toFixed(1) + 'V';
+            document.getElementById('voltage').className = 'stats-value' + (v < 15 ? ' alarm' : v < 17 ? ' warning' : '');
+            document.getElementById('batteryDisplay').textContent = v.toFixed(1) + 'V';
+            if (v > 0 && v < stats.battery.min) stats.battery.min = v;
+            if (v > stats.battery.max) stats.battery.max = v;
+
+            var m1 = msg.m1_current;
+            document.getElementById('m1Current').textContent = m1.toFixed(1) + 'A';
+            document.getElementById('m1Current').className = 'stats-value' + (m1 > 5 ? ' alarm' : m1 > 3 ? ' warning' : '');
+            document.getElementById('m1CurrentBar').textContent = m1.toFixed(1) + 'A';
+            if (m1 > 0 && m1 < stats.m1.min) stats.m1.min = m1;
+            if (m1 > stats.m1.max) stats.m1.max = m1;
+
+            var m1Rpm = Math.abs(msg.m1_enc_qpps) * 60 / 1425.1;
+            var m1Speed = ((m1Rpm / 2) * Math.PI * 1.77 / 60).toFixed(1);
+            document.getElementById('m1RpmBar').textContent = m1Speed + '"/s';
+            document.getElementById('m1Status').className = 'motor-status ' + (m1Rpm > 1 ? 'running' : 'stopped');
+
+            var now = Date.now();
+            var dt = (now - lastUpdateTime) / 60000;
+            lastUpdateTime = now;
+            var m1SpeedSigned = (msg.m1_enc_qpps / 1425.1) * 60 / 2 * Math.PI * 1.77;
+            totalDistance += m1SpeedSigned * dt;
+            updatePositionFromDistance();
+        });
+
+        cpuTempSubscriber.subscribe(function(msg) {
+            var t = msg.data;
+            document.getElementById('cpuTemp').textContent = t.toFixed(1) + '°C';
+            document.getElementById('cpuTemp').className = 'stats-value' + (t > 80 ? ' alarm' : t > 70 ? ' warning' : '');
+        });
+
+        networkInfoSubscriber.subscribe(function(msg) {
+            try {
+                var info = JSON.parse(msg.data);
+                document.getElementById('wifiIp').textContent = info.wifi === '--' ? '--' : info.wifi;
+                document.getElementById('ethIp').textContent = info.eth === '--' ? '--' : info.eth;
+            } catch(e) { }
+        });
+
+        function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }
+
+        function updatePositionFromDistance() {
+            var circumference = Math.PI * pipeDiameter;
+            var deg = (totalDistance / circumference) * 360;
+            deg = ((deg % 360) + 360) % 360;
+            updateBugPosition(deg);
+            document.getElementById('distanceTraveled').textContent = Math.abs(totalDistance).toFixed(1) + ' in';
+            document.getElementById('distanceInPipe').textContent = Math.abs(totalDistance).toFixed(1) + ' in';
+        }
+
+        function resetPosition() {
+            totalDistance = 0;
+            updateBugPosition(0);
+            document.getElementById('distanceTraveled').textContent = '0.0 in';
+            document.getElementById('distanceInPipe').textContent = '0.0 in';
+        }
+
+        function updateBugPosition(deg) {
+            document.getElementById('degreeValue').textContent = Math.round(deg);
+            document.getElementById('degreeValueStats').textContent = Math.round(deg);
+            var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug');
+            var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2;
+            var a = (deg - 90) * Math.PI / 180;
+            bug.style.left = (cx + r * Math.cos(a) - bug.offsetWidth / 2) + 'px';
+            bug.style.top = (cy + r * Math.sin(a) - bug.offsetHeight / 2) + 'px';
+            bug.style.transform = 'rotate(' + deg + 'deg) scaleX(-1)';
+        }
+
+        window.onload = function() { setTimeout(function() { resetPosition(); }, 100); };
+    </script>
+</body>
+</html>

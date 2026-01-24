@@ -1,0 +1,22 @@
+system:
+  name: "EdgeFlex"
+  id: edgeflex
+  web_interface: "edgeflex.html"
+
+driver:
+  type: clearlink
+  device: /dev/ttyUSB0
+  loop_hz: 10
+  deadman_secs: 3
+
+motors:
+  - name: left
+    max_speed: 10000
+    default_speed: 5000
+    max_accel: 8000
+    invert: false
+  - name: right
+    max_speed: 10000
+    default_speed: 5000
+    max_accel: 8000
+    invert: true

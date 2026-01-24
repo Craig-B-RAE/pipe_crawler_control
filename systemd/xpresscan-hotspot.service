@@ -1,0 +1,13 @@
+[Unit]
+Description=XPressCan Field WiFi Hotspot
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/nmcli connection up XPressCan-Hotspot
+ExecStop=/usr/bin/nmcli connection down XPressCan-Hotspot
+
+[Install]
+WantedBy=multi-user.target

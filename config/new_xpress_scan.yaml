@@ -1,0 +1,27 @@
+system:
+  name: "New Xpress Scan"
+  id: new_xpress_scan
+  web_interface: "new_xpress_scan.html"
+
+driver:
+  type: roboclaw
+  device: /dev/ttyACM0
+  baud_rate: 115200
+  address: 128
+  loop_hz: 10
+  deadman_secs: 3
+
+motors:
+  - name: left
+    max_speed: 8500
+    default_speed: 4250
+    max_accel: 10000
+    invert: false
+  - name: right
+    max_speed: 8500
+    default_speed: 4250
+    max_accel: 10000
+    invert: true
+
+sync:
+  enabled: false

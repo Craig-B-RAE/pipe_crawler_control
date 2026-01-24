@@ -1,3 +1,5 @@
+import os
+from glob import glob
 from setuptools import setup
 
 package_name = 'pipe_crawler_control'
@@ -11,6 +13,9 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', ['launch/pipe_crawler.launch.py']),
+        ('share/' + package_name + '/config', glob('config/*.yaml')),
+        ('share/' + package_name + '/scripts', glob('scripts/*.sh')),
+        ('share/' + package_name + '/web', glob('web/*.html')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -21,6 +26,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'motor_controller = pipe_crawler_control.motor_controller:main',
             'simple_controller = pipe_crawler_control.simple_controller:main',
             'cpu_temp_publisher = pipe_crawler_control.cpu_temp_publisher:main',
             'update_manager = pipe_crawler_control.update_manager:main',

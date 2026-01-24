@@ -1,0 +1,13 @@
+[Unit]
+Description=XPressCan Configuration Portal
+After=network-online.target xpresscan-hotspot.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/xpresscan/captive_portal.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
