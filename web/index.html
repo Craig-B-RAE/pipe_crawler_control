@@ -308,6 +308,28 @@
         .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
         .controls { display: grid; gap: 12px; margin-bottom: 20px; }
         .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .camera-section {
+            background: #f5f5f7;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .camera-frame {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #1d1d1f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .camera-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #86868b;
+            font-size: 14px;
+        }
         button.control-btn {
             padding: clamp(16px, 3vw, 20px);
             font-size: clamp(14px, 3vw, 16px);
@@ -323,13 +345,14 @@
         button.control-btn:active { transform: scale(0.98); }
         button.control-btn.btn-stop { grid-column: 1 / -1; background: #ff3b30; }
         button.control-btn.btn-stop:hover { background: #d63027; }
-        .footer { text-align: center; color: #86868b; font-size: 12px; margin-top: 20px; }
+        .header { text-align: center; color: #86868b; font-size: 12px; margin-bottom: 15px; }
+        .footer { text-align: center; color: #86868b; font-size: 11px; margin-top: 15px; }
         @media (max-width: 400px) { .control-row { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Pipe Crawler</h1>
+        <div class="header">Pipe Crawler Control System v<span id="footerVersion">1.6.0</span></div>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">🔄 Update available! Click to install (v<span id="newVersion"></span>)</div>
         
         <div class="info-toolbar">
@@ -407,7 +430,6 @@
             </div>
         </div>
         <div class="pipe-section">
-            <div class="pipe-title">Pipe Position</div>
             <div class="pipe-container">
                 <div class="pipe-circle"></div>
                 <div class="degree-display"><span id="degreeValue">0</span>°<span class="distance" id="distanceInPipe">0.0 in</span></div>
@@ -426,7 +448,18 @@
             </div>
             <button class="control-btn btn-stop" onclick="sendCommand('stop')">■ Stop</button>
         </div>
-        <div class="footer">Pipe Crawler Control System v<span id="footerVersion">1.6.0</span></div>
+        <div class="camera-section">
+            <div class="camera-frame" id="cameraFrame">
+                <div class="camera-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <span>Camera Feed</span>
+                </div>
+            </div>
+        </div>
+        <div class="footer">Last updated: <span id="lastUpdated">--</span></div>
     </div>
     <div class="modal-overlay" id="graphModal" onclick="closeGraph(event)">
         <div class="modal" onclick="event.stopPropagation()">
@@ -554,7 +587,15 @@
         updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = '⏳ Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = '✅ Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = '❌ ' + msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
         function installUpdate() { if (isUpdating) return; isUpdating = true; var banner = document.getElementById('updateBanner'); banner.innerHTML = '⏳ Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
 
+        function updateLastUpdated() {
+            var now = new Date();
+            var time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            var date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            document.getElementById('lastUpdated').textContent = date + ' ' + time;
+        }
+
         statsSubscriber.subscribe(function(msg) {
+            updateLastUpdated();
             var v = msg.battery_voltage, el = document.getElementById('voltage');
             el.textContent = v.toFixed(1) + 'V';
             el.className = 'stats-value' + (v < 15 ? ' alarm' : v < 17 ? ' warning' : '');
