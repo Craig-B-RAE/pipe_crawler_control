@@ -7,35 +7,45 @@ from std_msgs.msg import String
 class SimpleController(Node):
     def __init__(self):
         super().__init__('simple_controller')
-        
+
         # Publisher to send commands to RoboClaw
         self.speed_pub = self.create_publisher(SpeedCommand, '/speed_command', 10)
-        
+
         # Subscriber to receive high-level commands
         self.cmd_sub = self.create_subscription(
-        String, '/robot_command',
-        self.command_callback, 10
-	)
+            String, '/robot_command',
+            self.command_callback, 10
+        )
 
-         # NEW: Subscriber for speed adjustment (0-100%)
+        # Subscriber for speed adjustment (0-100%)
         self.speed_sub = self.create_subscription(
             String,
             '/robot_speed',
             self.speed_callback,
             10
         )
-    
-        self.default_speed = 8000  # Default motor speed (QPPS)
-        self.speed_percent = 50  # Speed percentage (0-100), matches web interface default
-        self.default_accel = 3000  # Default acceleration
-    
+
+        # Subscriber for ramp adjustment (0-100%)
+        self.ramp_sub = self.create_subscription(
+            String,
+            '/robot_ramp',
+            self.ramp_callback,
+            10
+        )
+
+        self.default_speed = 8500  # Default motor speed (QPPS)
+        self.speed_percent = 50  # Speed percentage (0-100)
+        self.max_accel = 10000  # Max acceleration at 100%
+        self.ramp_percent = 50  # Ramp percentage (0-100)
+
         self.get_logger().info('Simple Controller started')
         self.get_logger().info('Send commands to /robot_command:')
         self.get_logger().info('  "forward" - move forward')
-        self.get_logger().info('  "backward" - move backward')  
+        self.get_logger().info('  "backward" - move backward')
         self.get_logger().info('  "stop" - stop motors')
         self.get_logger().info('Send speed (0-100) to /robot_speed')
-    
+        self.get_logger().info('Send ramp (0-100) to /robot_ramp')
+
     def command_callback(self, msg):
         cmd = msg.data.lower().strip()
         self.get_logger().info(f'Received command: {cmd}')
@@ -60,23 +70,37 @@ class SimpleController(Node):
         except ValueError:
             self.get_logger().warn(f'Invalid speed value: {msg.data}')
 
+    def ramp_callback(self, msg):
+        try:
+            ramp = int(msg.data)
+            if 0 <= ramp <= 100:
+                old_ramp = self.ramp_percent
+                self.ramp_percent = ramp
+                self.get_logger().info(f'Ramp changed from {old_ramp}% to {ramp}%')
+            else:
+                self.get_logger().warn(f'Ramp must be 0-100, got {ramp}')
+        except ValueError:
+            self.get_logger().warn(f'Invalid ramp value: {msg.data}')
+
+    def get_accel(self):
+        # 0% = 500, 100% = 10000
+        return max(500, int(500 + (self.ramp_percent / 100) * 9500))
+
     def move_forward(self):
         msg = SpeedCommand()
         actual_speed = int(self.default_speed * self.speed_percent / 100)
-        # Scale acceleration with speed (min 50 to avoid issues at very low speeds)
-        actual_accel = max(50, int(self.default_accel * self.speed_percent / 100))
+        actual_accel = self.get_accel()
         msg.m1_qpps = actual_speed
         msg.m2_qpps = actual_speed
         msg.accel = actual_accel
         msg.max_secs = 120
         self.speed_pub.publish(msg)
         self.get_logger().info(f'Moving forward at {self.speed_percent}% ({actual_speed} QPPS, accel={actual_accel})')
-    
+
     def move_backward(self):
         msg = SpeedCommand()
         actual_speed = int(self.default_speed * self.speed_percent / 100)
-        # Scale acceleration with speed (min 50 to avoid issues at very low speeds)
-        actual_accel = max(50, int(self.default_accel * self.speed_percent / 100))
+        actual_accel = self.get_accel()
         msg.m1_qpps = -actual_speed
         msg.m2_qpps = -actual_speed
         msg.accel = actual_accel

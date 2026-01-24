@@ -113,6 +113,59 @@
         }
         .icon-btn:hover { background: #f5f5f7; color: #1d1d1f; }
         .icon-btn:active { transform: scale(0.9); }
+        .settings-popup {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 16px;
+            min-width: 220px;
+            z-index: 100;
+            color: #1d1d1f;
+            text-align: left;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .settings-popup.show { display: block; }
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f7;
+        }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-label { color: #1d1d1f; font-weight: 500; font-size: 14px; }
+        .settings-input {
+            width: 70px;
+            padding: 8px 10px;
+            font-size: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            font-weight: 600;
+        }
+        .settings-input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+        }
+        .settings-input::-webkit-outer-spin-button,
+        .settings-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .settings-input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .settings-unit {
+            color: #86868b;
+            font-size: 13px;
+            margin-left: 4px;
+        }
         .modal-overlay {
             display: none;
             position: fixed;
@@ -253,8 +306,6 @@
         .pipe-calc-item { text-align: center; }
         .pipe-calc-label { font-size: 12px; color: #86868b; display: block; margin-bottom: 5px; }
         .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
-        .pipe-calc-input-row { display: flex; align-items: center; justify-content: center; gap: 5px; }
-        .pipe-calc-unit { font-size: 14px; color: #86868b; }
         .controls { display: grid; gap: 12px; margin-bottom: 20px; }
         .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         button.control-btn {
@@ -272,11 +323,6 @@
         button.control-btn:active { transform: scale(0.98); }
         button.control-btn.btn-stop { grid-column: 1 / -1; background: #ff3b30; }
         button.control-btn.btn-stop:hover { background: #d63027; }
-        .speed-control { background: #f5f5f7; padding: clamp(15px, 3vw, 20px); border-radius: 16px; }
-        .speed-label { display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: 600; font-size: 15px; color: #1d1d1f; }
-        .speed-value { color: #007aff; font-size: 17px; }
-        input[type="range"] { width: 100%; height: 6px; border-radius: 3px; background: #d1d1d6; -webkit-appearance: none; outline: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #ffffff; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); }
         .footer { text-align: center; color: #86868b; font-size: 12px; margin-top: 20px; }
         @media (max-width: 400px) { .control-row { grid-template-columns: 1fr; } }
     </style>
@@ -293,6 +339,12 @@
                     <span class="info-label">M1</span>
                     <span class="current" id="m1CurrentBar">--A</span>
                     <span class="rpm" id="m1RpmBar">0rpm</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="font-size: 10px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Pipe Diameter</span>
+                    <span id="pipeDiameterDisplay" style="font-weight: 600; color: #1d1d1f;">12"</span>
                 </span>
             </div>
             <div class="info-item">
@@ -316,10 +368,42 @@
                         <div class="stats-row-item"><span class="stats-label">M1 Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                         <div class="stats-row-item"><span class="stats-label">M2 Current</span><span class="stats-value-group"><span class="stats-value" id="m2Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m2')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                         <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.5.0</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.6.0</span></div>
                     </div>
                 </div>
-                <div class="stats-button" onclick="openSettings()" title="Settings">⚙️ Settings</div>
+                <div class="stats-button" id="settingsButton" onclick="toggleSettings(event)" style="position: relative;">
+                    ⚙️ Settings
+                    <div class="settings-popup" id="settingsPopup" onclick="event.stopPropagation()">
+                        <div class="settings-row">
+                            <span class="settings-label">Pipe Diameter</span>
+                            <div>
+                                <input type="number" class="settings-input" id="pipeDiameterSetting" min="1" max="100" value="12" onchange="updatePipeDiameter(this.value)">
+                                <span class="settings-unit">in</span>
+                            </div>
+                        </div>
+                        <div class="settings-row" style="padding-top: 0;">
+                            <span class="settings-label">Circumference</span>
+                            <div>
+                                <span id="circumferenceValue" class="settings-input" style="display: inline-block; background: none; border: none;">37.7</span>
+                                <span class="settings-unit">in</span>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Speed</span>
+                            <div>
+                                <input type="number" class="settings-input" id="speedInput" min="0" max="100" value="50" onchange="updateSpeed(this.value)">
+                                <span class="settings-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Ramp</span>
+                            <div>
+                                <input type="number" class="settings-input" id="rampInput" min="0" max="100" value="50" onchange="updateRamp(this.value)">
+                                <span class="settings-unit">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="pipe-section">
@@ -332,7 +416,6 @@
             </div>
             <div class="degree-input-row"><input type="number" class="degree-input" id="degreeInput" min="0" max="359" value="0" oninput="setDegree()"></div>
             <div class="pipe-calc-row">
-                <div class="pipe-calc-item"><span class="pipe-calc-label">Pipe Diameter</span><div class="pipe-calc-input-row"><input type="number" class="degree-input" id="pipeDiameter" min="1" value="12" style="width:60px;" oninput="updateDistance()"><span class="pipe-calc-unit">in</span></div></div>
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Distance Traveled</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
             </div>
         </div>
@@ -343,11 +426,7 @@
             </div>
             <button class="control-btn btn-stop" onclick="sendCommand('stop')">■ Stop</button>
         </div>
-        <div class="speed-control">
-            <div class="speed-label"><span>Speed</span><span class="speed-value" id="speedValue">50%</span></div>
-            <input type="range" id="speedSlider" min="0" max="100" value="50" oninput="updateSpeed(this.value)">
-        </div>
-        <div class="footer">Pipe Crawler Control System v<span id="footerVersion">1.5.0</span></div>
+        <div class="footer">Pipe Crawler Control System v<span id="footerVersion">1.6.0</span></div>
     </div>
     <div class="modal-overlay" id="graphModal" onclick="closeGraph(event)">
         <div class="modal" onclick="event.stopPropagation()">
@@ -358,9 +437,10 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '1.5.0';
+        var CURRENT_VERSION = '1.6.0';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var isUpdating = false;
+        var pipeDiameter = 12;
         document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
         document.getElementById('footerVersion').textContent = CURRENT_VERSION;
 
@@ -373,12 +453,50 @@
             m2: { title: 'M2 Current - Last 24 Hours', unit: 'A', minScale: 0, maxScale: 6, warningHigh: 5, color: '#af52de' }
         };
 
-        function toggleStats(event) { event.stopPropagation(); document.getElementById('statsPopup').classList.toggle('show'); }
-        document.addEventListener('click', function(e) { var popup = document.getElementById('statsPopup'); var button = document.querySelector('.stats-button'); if (!button.contains(e.target)) popup.classList.remove('show'); });
+        function toggleStats(event) {
+            event.stopPropagation();
+            document.getElementById('statsPopup').classList.toggle('show');
+            document.getElementById('settingsPopup').classList.remove('show');
+        }
+        function toggleSettings(event) {
+            event.stopPropagation();
+            document.getElementById('settingsPopup').classList.toggle('show');
+            document.getElementById('statsPopup').classList.remove('show');
+        }
+        document.addEventListener('click', function(e) {
+            var statsPopup = document.getElementById('statsPopup');
+            var settingsPopup = document.getElementById('settingsPopup');
+            var settingsButton = document.getElementById('settingsButton');
+            if (!e.target.closest('.stats-button:not(#settingsButton)')) {
+                statsPopup.classList.remove('show');
+            }
+            if (!settingsButton.contains(e.target)) {
+                settingsPopup.classList.remove('show');
+            }
+        });
         function showGraph(event, type) { event.stopPropagation(); currentGraphType = type; document.getElementById('graphModal').classList.add('show'); document.getElementById('graphTitle').textContent = graphConfig[type].title; drawGraph(type); }
         function closeGraph(event) { document.getElementById('graphModal').classList.remove('show'); }
         function resetStats(event) { event.stopPropagation(); stats[currentGraphType].min = 999; stats[currentGraphType].max = 0; var btn = event.currentTarget; btn.style.background = '#34c759'; btn.style.color = '#fff'; setTimeout(function() { btn.style.background = ''; btn.style.color = ''; }, 300); document.getElementById('graphMin').textContent = '--'; document.getElementById('graphMax').textContent = '--'; }
-        function openSettings() { alert('Settings - Coming soon'); }
+
+        function updatePipeDiameter(val) {
+            val = Math.max(1, Math.min(100, parseFloat(val) || 12));
+            pipeDiameter = val;
+            document.getElementById('pipeDiameterSetting').value = val;
+            var circumference = Math.PI * val;
+            document.getElementById('circumferenceValue').textContent = circumference.toFixed(1);
+            document.getElementById('pipeDiameterDisplay').textContent = val + '"';
+            updateDistance();
+        }
+        function updateSpeed(val) {
+            val = Math.max(0, Math.min(100, parseInt(val) || 0));
+            document.getElementById('speedInput').value = val;
+            speedPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+        }
+        function updateRamp(val) {
+            val = Math.max(0, Math.min(100, parseInt(val) || 50));
+            document.getElementById('rampInput').value = val;
+            rampPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+        }
 
         function drawGraph(type) {
             var svg = document.getElementById('graphSvg'), config = graphConfig[type];
@@ -421,12 +539,13 @@
         checkInternet(); setInterval(checkInternet, 30000);
 
         var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
-        ros.on('connection', function() { updateSpeed(50); });
+        ros.on('connection', function() { updateSpeed(50); updateRamp(50); });
         ros.on('error', function() { });
         ros.on('close', function() { });
 
         var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
         var speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
+        var rampPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_ramp', messageType: 'std_msgs/String' });
         var systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
         var statsSubscriber = new ROSLIB.Topic({ ros: ros, name: '/stats', messageType: 'roboclaw_interfaces/Stats' });
         var cpuTempSubscriber = new ROSLIB.Topic({ ros: ros, name: '/cpu_temp', messageType: 'std_msgs/Float32' });
@@ -474,10 +593,9 @@
         });
 
         function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }
-        function updateSpeed(val) { document.getElementById('speedValue').textContent = val + '%'; speedPublisher.publish(new ROSLIB.Message({ data: val.toString() })); }
         function setDegree() { var deg = parseInt(document.getElementById('degreeInput').value) || 0; updateBugPosition(((deg % 360) + 360) % 360); }
         function updateBugPosition(deg) { document.getElementById('degreeValue').textContent = deg; document.getElementById('degreeValueStats').textContent = deg; document.getElementById('degreeInput').value = deg; var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug'), rad = document.getElementById('radiation'); var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2; var a = (deg - 90) * Math.PI / 180; bug.style.left = (cx + r * Math.cos(a) - bug.offsetWidth / 2) + 'px'; bug.style.top = (cy + r * Math.sin(a) - bug.offsetHeight / 2) + 'px'; bug.style.transform = 'rotate(' + deg + 'deg) scaleX(-1)'; var ra = (deg + 90) * Math.PI / 180; rad.style.left = (cx + r * Math.cos(ra) - rad.offsetWidth / 2) + 'px'; rad.style.top = (cy + r * Math.sin(ra) - rad.offsetHeight / 2) + 'px'; updateDistance(); }
-        function updateDistance() { var deg = parseInt(document.getElementById('degreeInput').value) || 0; var dia = parseFloat(document.getElementById('pipeDiameter').value) || 12; var dist = (deg / 360) * Math.PI * dia; document.getElementById('distanceTraveled').textContent = dist.toFixed(2) + ' in'; document.getElementById('distanceInPipe').textContent = dist.toFixed(2) + ' in'; }
+        function updateDistance() { var deg = parseInt(document.getElementById('degreeInput').value) || 0; var dist = (deg / 360) * Math.PI * pipeDiameter; document.getElementById('distanceTraveled').textContent = dist.toFixed(2) + ' in'; document.getElementById('distanceInPipe').textContent = dist.toFixed(2) + ' in'; }
         window.onload = function() { setTimeout(function() { updateBugPosition(0); }, 100); };
         document.getElementById('degreeInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') this.blur(); });
     </script>
