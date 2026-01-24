@@ -576,8 +576,8 @@ def status():
 
 def main():
     """Run the configuration portal server."""
-    print("Starting XPressCan Configuration Portal on http://10.42.0.1:80")
-    app.run(host="0.0.0.0", port=80, debug=False)
+    print("Starting XPressCan Configuration Portal on http://10.42.0.1:8080")
+    app.run(host="0.0.0.0", port=8080, debug=False)
 
 
 if __name__ == "__main__":
