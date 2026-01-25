@@ -365,7 +365,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">Pipe Crawler Control System v<span id="footerVersion">1.7.0</span></div>
+        <div class="header">Pipe Crawler Control System v<span id="footerVersion">2.0.0</span></div>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">🔄 Update available! Click to install (v<span id="newVersion"></span>)</div>
         
         <div class="info-toolbar">
@@ -406,7 +406,7 @@
                         <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
                         <div class="stats-row-item"><span class="stats-label">WiFi IP</span><span class="stats-value" id="wifiIp">No Network</span></div>
                         <div class="stats-row-item"><span class="stats-label">Ethernet IP</span><span class="stats-value" id="ethIp">No Network</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.7.0</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.0</span></div>
                     </div>
                 </div>
                 <div class="stats-button" id="settingsButton" onclick="toggleSettings(event)" style="position: relative;">
@@ -502,7 +502,7 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '1.7.0';
+        var CURRENT_VERSION = '2.0.0';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var isUpdating = false;
         var pipeDiameter = 12;
