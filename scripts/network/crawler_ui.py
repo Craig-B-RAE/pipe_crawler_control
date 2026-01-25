@@ -14,12 +14,30 @@ Serves different HTML interfaces based on crawler type:
 import os
 import subprocess
 import json
-from flask import Flask, render_template_string, jsonify, send_from_directory
+from flask import Flask, render_template_string, jsonify, send_from_directory, request
 
 app = Flask(__name__)
 
 CONFIG_FILE = "/etc/xpresscan/network.conf"
 HTML_DIR = "/opt/xpresscan/html"
+UI_SETTINGS_FILE = "/etc/xpresscan/ui_settings.json"
+
+# Default UI settings
+# IMPORTANT: Update this dict when adding new settings to the HTML pages!
+# These defaults are used if the JSON config file is missing or corrupted.
+DEFAULT_UI_SETTINGS = {
+    "motorParams": {
+        "encoderRes": 1425.1,
+        "wheelDia": 1.77,
+        "gearRatio": 2,
+        "maxRpm": 179,
+        "numMotors": 1,
+        "motorTorque": 0.5
+    },
+    "pipeDiameter": 12,
+    "speed": 4.0,
+    "ramp": 50
+}
 
 # Crawler type to HTML file mapping
 CRAWLER_HTML = {
@@ -464,6 +482,68 @@ def api_reboot():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/settings", methods=["GET"])
+def api_get_settings():
+    """API endpoint to get UI settings."""
+    settings = DEFAULT_UI_SETTINGS.copy()
+
+    if os.path.exists(UI_SETTINGS_FILE):
+        try:
+            with open(UI_SETTINGS_FILE, "r") as f:
+                saved = json.load(f)
+                # Deep merge saved settings with defaults
+                for key, value in saved.items():
+                    if key in settings and isinstance(settings[key], dict) and isinstance(value, dict):
+                        settings[key].update(value)
+                    else:
+                        settings[key] = value
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"Error loading settings, using defaults: {e}")
+
+    return jsonify(settings)
+
+
+@app.route("/api/settings", methods=["POST"])
+def api_save_settings():
+    """API endpoint to save UI settings."""
+    try:
+        new_settings = request.get_json()
+        if not new_settings:
+            return jsonify({"success": False, "error": "No data provided"}), 400
+
+        # Load existing settings and merge
+        settings = DEFAULT_UI_SETTINGS.copy()
+        if os.path.exists(UI_SETTINGS_FILE):
+            try:
+                with open(UI_SETTINGS_FILE, "r") as f:
+                    saved = json.load(f)
+                    for key, value in saved.items():
+                        if key in settings and isinstance(settings[key], dict) and isinstance(value, dict):
+                            settings[key].update(value)
+                        else:
+                            settings[key] = value
+            except:
+                pass
+
+        # Update with new values
+        for key, value in new_settings.items():
+            if key in settings and isinstance(settings[key], dict) and isinstance(value, dict):
+                settings[key].update(value)
+            else:
+                settings[key] = value
+
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(UI_SETTINGS_FILE), exist_ok=True)
+
+        # Save to file
+        with open(UI_SETTINGS_FILE, "w") as f:
+            json.dump(settings, f, indent=2)
+
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # Captive portal detection routes - redirect to config portal
