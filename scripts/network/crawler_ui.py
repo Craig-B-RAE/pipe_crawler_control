@@ -602,9 +602,10 @@ def api_fan():
 
 @app.route("/api/system_stats")
 def api_system_stats():
-    """API endpoint to get CPU, RAM, and disk usage."""
+    """API endpoint to get CPU, RAM, disk usage, and Pi voltage."""
     stats = {"cpu_percent": None, "ram_percent": None, "ram_used_gb": None, "ram_total_gb": None,
-             "disk_percent": None, "disk_used_gb": None, "disk_total_gb": None}
+             "disk_percent": None, "disk_used_gb": None, "disk_total_gb": None,
+             "pi_voltage": None}
 
     try:
         # CPU usage - read /proc/stat twice with small delay
@@ -651,6 +652,19 @@ def api_system_stats():
             stats["disk_percent"] = round(100 * used_bytes / total_bytes)
             stats["disk_used_gb"] = round(used_bytes / 1024 / 1024 / 1024, 1)
             stats["disk_total_gb"] = round(total_bytes / 1024 / 1024 / 1024, 1)
+
+        # Pi voltage using vcgencmd
+        try:
+            result = subprocess.run(["vcgencmd", "measure_volts", "core"],
+                                    capture_output=True, text=True, timeout=2)
+            if result.returncode == 0:
+                # Output format: "volt=0.8563V"
+                voltage_str = result.stdout.strip()
+                if "volt=" in voltage_str:
+                    voltage = float(voltage_str.split("=")[1].rstrip("V"))
+                    stats["pi_voltage"] = round(voltage, 3)
+        except Exception:
+            pass
 
     except Exception as e:
         print(f"Error getting system stats: {e}")
