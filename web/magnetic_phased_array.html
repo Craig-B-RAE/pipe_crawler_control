@@ -37,11 +37,11 @@
             margin-bottom: 15px;
         }
         .system-badge span {
-            background: #e8e8ed;
-            color: #1d1d1f;
+            background: none;
+            color: #86868b;
             padding: 4px 12px;
             border-radius: 12px;
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -91,8 +91,8 @@
             background: #ffffff;
             border-radius: 14px;
             padding: 16px;
-            min-width: 200px;
-            z-index: 100;
+            min-width: 220px;
+            z-index: 200;
             color: #1d1d1f;
             text-align: left;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -136,7 +136,7 @@
             border-radius: 14px;
             padding: 16px;
             min-width: 220px;
-            z-index: 100;
+            z-index: 200;
             color: #1d1d1f;
             text-align: left;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -438,7 +438,19 @@
                         </div>
                     </div>
                 </div>
-                <button class="stats-button" onclick="openSystemModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>System</button>
+                <div class="stats-button" onclick="openSystemModal()" style="position: relative;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>System
+                    <div class="stats-popup" id="systemPopup" onclick="event.stopPropagation()">
+                        <div class="stats-row-item">
+                            <span class="stats-label">Connected WiFi</span>
+                            <span class="stats-value" id="wifiSsidDisplay">--</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+                            <button class="control-btn" style="background: #ff9500; padding: 10px;" onclick="forgetWifi()">Forget WiFi</button>
+                            <button class="control-btn btn-stop" style="padding: 10px;" onclick="rebootSystem()">Reboot</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -482,27 +494,6 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="systemModal" onclick="closeSystemModal(event)">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <span class="modal-title">System</span>
-                <button class="modal-close" onclick="closeSystemModal(event)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="settings-row">
-                <span class="settings-label">Connected WiFi</span>
-                <span id="wifiSsidDisplay" style="font-weight: 600; color: #1d1d1f;">--</span>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
-                <button class="control-btn" style="background: #ff9500;" onclick="forgetWifi()">Forget WiFi</button>
-                <button class="control-btn btn-stop" onclick="rebootSystem()">Reboot</button>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
     <script>
         var CURRENT_VERSION = '2.0.0';
@@ -525,11 +516,10 @@
             m1: { title: 'Motor Current', unit: 'A', minScale: 0, maxScale: 6, warningHigh: 5, color: '#5856d6' }
         };
 
-        function toggleStats(event) { event.stopPropagation(); document.getElementById('statsPopup').classList.toggle('show'); document.getElementById('settingsPopup').classList.remove('show'); }
-        function toggleSettings(event) { event.stopPropagation(); document.getElementById('settingsPopup').classList.toggle('show'); document.getElementById('statsPopup').classList.remove('show'); }
+        function toggleStats(event) { event.stopPropagation(); document.getElementById('statsPopup').classList.toggle('show'); document.getElementById('settingsPopup').classList.remove('show'); document.getElementById('systemPopup').classList.remove('show'); }
+        function toggleSettings(event) { event.stopPropagation(); document.getElementById('settingsPopup').classList.toggle('show'); document.getElementById('statsPopup').classList.remove('show'); document.getElementById('systemPopup').classList.remove('show'); }
         document.addEventListener('click', function(e) {
-            if (!e.target.closest('.stats-button:not(#settingsButton)')) document.getElementById('statsPopup').classList.remove('show');
-            if (!document.getElementById('settingsButton').contains(e.target)) document.getElementById('settingsPopup').classList.remove('show');
+            if (!e.target.closest('.stats-button')) { document.getElementById('statsPopup').classList.remove('show'); document.getElementById('settingsPopup').classList.remove('show'); document.getElementById('systemPopup').classList.remove('show'); }
         });
 
         function showGraph(event, type) { event.stopPropagation(); currentGraphType = type; document.getElementById('graphModal').classList.add('show'); document.getElementById('graphTitle').textContent = graphConfig[type].title; drawGraph(type); }
@@ -666,13 +656,13 @@
         });
 
         function openSystemModal() {
-            document.getElementById('systemModal').classList.add('show');
+            document.getElementById('systemPopup').classList.toggle('show');
             document.getElementById('statsPopup').classList.remove('show');
             document.getElementById('settingsPopup').classList.remove('show');
         }
 
         function closeSystemModal(event) {
-            document.getElementById('systemModal').classList.remove('show');
+            document.getElementById('systemPopup').classList.remove('show');
         }
 
         function forgetWifi() {
