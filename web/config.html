@@ -95,7 +95,7 @@
             cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             transition: all 0.2s;
         }
         .crawler-option:hover { border-color: #007aff; }
@@ -369,7 +369,7 @@
         <!-- Reboot Section -->
         <div class="section" style="margin-top: 20px; text-align: center;">
             <div class="section-title">System Control</div>
-            <div class="reboot-notice" style="text-align: left;">
+            <div class="reboot-notice" style="text-align: center;">
                 Changes will be saved and applied after reboot.
             </div>
             <button type="button" class="btn btn-danger" onclick="saveAndReboot()">Reboot and Save Changes</button>
@@ -447,7 +447,7 @@
 
         var CRAWLERS = {
             'magnetic': { name: 'Magnetic Pipe Crawler', hostname: 'magnetic' },
-            'xpresscan': { name: 'XPressCan', hostname: 'xpresscan' },
+            'xpresscan': { name: 'Xpress Scan', hostname: 'xpresscan' },
             'edgeflex': { name: 'EdgeFlex', hostname: 'edgeflex' }
         };
 
@@ -507,8 +507,7 @@
                 })(id, div);
 
                 div.innerHTML = '<input type="radio" name="crawler_id" value="' + id + '"' + (isSelected ? ' checked' : '') + '>' +
-                    '<span class="crawler-name">' + crawler.name + '</span>' +
-                    '<span class="crawler-id">' + id + '</span>';
+                    '<span class="crawler-name">' + crawler.name + '</span>';
 
                 container.appendChild(div);
             }
