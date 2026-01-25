@@ -1,0 +1,13 @@
+[Unit]
+Description=XPressCan Crawler UI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/xpresscan/crawler_ui.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

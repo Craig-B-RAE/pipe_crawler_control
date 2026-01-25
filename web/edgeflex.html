@@ -437,6 +437,7 @@
                         </div>
                     </div>
                 </div>
+                <button class="stats-button" onclick="openSystemModal()">System</button>
             </div>
         </div>
 
@@ -474,6 +475,27 @@
         </div>
 
         <div class="footer">Last updated: <span id="lastUpdated">--</span></div>
+    </div>
+
+    <div class="modal-overlay" id="systemModal" onclick="closeSystemModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span class="modal-title">System</span>
+                <button class="modal-close" onclick="closeSystemModal(event)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">Connected WiFi</span>
+                <span id="wifiSsidDisplay" style="font-weight: 600; color: #1d1d1f;">--</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+                <button class="control-btn" style="background: #ff9500;" onclick="forgetWifi()">Forget WiFi</button>
+                <button class="control-btn btn-stop" onclick="rebootSystem()">Reboot</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
@@ -579,8 +601,33 @@
                 var info = JSON.parse(msg.data);
                 document.getElementById('wifiIp').textContent = info.wifi === '--' ? '--' : info.wifi;
                 document.getElementById('ethIp').textContent = info.eth === '--' ? '--' : info.eth;
+                document.getElementById('wifiSsidDisplay').textContent = info.wifi_ssid || '--';
             } catch(e) { }
         });
+
+        function openSystemModal() {
+            document.getElementById('systemModal').classList.add('show');
+            document.getElementById('statsPopup').classList.remove('show');
+            document.getElementById('settingsPopup').classList.remove('show');
+        }
+
+        function closeSystemModal(event) {
+            document.getElementById('systemModal').classList.remove('show');
+        }
+
+        function forgetWifi() {
+            if (confirm('This will disconnect from WiFi and enable the hotspot. Continue?')) {
+                systemCmdPublisher.publish(new ROSLIB.Message({ data: 'forget_wifi' }));
+                alert('WiFi will be forgotten and hotspot enabled. You may need to reconnect to the crawler hotspot.');
+            }
+        }
+
+        function rebootSystem() {
+            if (confirm('Are you sure you want to reboot the system?')) {
+                systemCmdPublisher.publish(new ROSLIB.Message({ data: 'reboot' }));
+                alert('System is rebooting...');
+            }
+        }
 
         function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }
 

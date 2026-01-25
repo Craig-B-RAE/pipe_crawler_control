@@ -25,10 +25,26 @@ class NetworkInfoPublisher(Node):
             pass
         return None
 
+    def get_wifi_ssid(self):
+        try:
+            result = subprocess.run(
+                ['nmcli', '-t', '-f', 'GENERAL.CONNECTION', 'device', 'show', 'wlan0'],
+                capture_output=True, text=True, timeout=5
+            )
+            for line in result.stdout.split('\n'):
+                if 'GENERAL.CONNECTION:' in line:
+                    ssid = line.split(':', 1)[1].strip()
+                    if ssid and ssid != '--':
+                        return ssid
+        except:
+            pass
+        return None
+
     def publish_network_info(self):
         info = {
             'wifi': self.get_ip('wlan0') or '--',
-            'eth': self.get_ip('eth0') or '--'
+            'eth': self.get_ip('eth0') or '--',
+            'wifi_ssid': self.get_wifi_ssid() or '--'
         }
         msg = String()
         msg.data = json.dumps(info)

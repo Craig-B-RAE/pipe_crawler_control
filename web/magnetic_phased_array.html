@@ -37,8 +37,8 @@
             margin-bottom: 15px;
         }
         .system-badge span {
-            background: #5856d6;
-            color: white;
+            background: #e8e8ed;
+            color: #1d1d1f;
             padding: 4px 12px;
             border-radius: 12px;
             font-size: 11px;
@@ -394,7 +394,7 @@
             <span id="connectionStatus" style="font-size: 13px; font-weight: 500; color: #86868b;">Connecting...</span>
             <div style="display: flex; gap: 10px;">
                 <div class="stats-button" onclick="toggleStats(event)">
-                    Stats
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Stats
                     <div class="stats-popup" id="statsPopup">
                         <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value-group"><span class="stats-value" id="voltage">--.-V</span><button class="icon-btn" onclick="showGraph(event,'battery')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                         <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value-group"><span class="stats-value" id="cpuTemp">--°C</span><button class="icon-btn" onclick="showGraph(event,'temp')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
@@ -402,11 +402,11 @@
                         <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
                         <div class="stats-row-item"><span class="stats-label">WiFi IP</span><span class="stats-value" id="wifiIp">--</span></div>
                         <div class="stats-row-item"><span class="stats-label">Ethernet IP</span><span class="stats-value" id="ethIp">--</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.7.0</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">1.8.0</span></div>
                     </div>
                 </div>
                 <div class="stats-button" id="settingsButton" onclick="toggleSettings(event)" style="position: relative;">
-                    Settings
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings
                     <div class="settings-popup" id="settingsPopup" onclick="event.stopPropagation()">
                         <div class="settings-row">
                             <span class="settings-label">Pipe Diameter</span>
@@ -438,6 +438,7 @@
                         </div>
                     </div>
                 </div>
+                <button class="stats-button" onclick="openSystemModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>System</button>
             </div>
         </div>
 
@@ -455,25 +456,22 @@
 
         <div class="controls">
             <div class="control-row">
-                <button class="control-btn" onclick="sendCommand('forward')">Forward</button>
-                <button class="control-btn" onclick="sendCommand('backward')">Backward</button>
+                <button class="control-btn" onclick="sendCommand('forward')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Forward</button>
+                <button class="control-btn" onclick="sendCommand('backward')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>Backward</button>
             </div>
-            <button class="control-btn btn-stop" onclick="sendCommand('stop')">Stop</button>
+            <button class="control-btn btn-stop" onclick="sendCommand('stop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
         </div>
 
         <div class="camera-section">
             <div class="camera-frame" id="cameraFrame">
                 <div class="camera-placeholder">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                        <circle cx="12" cy="13" r="4"/>
-                    </svg>
+                    <img src="https://freepngimg.com/save/23298-wall-e/918x990" alt="Wall-E" style="max-height: 120px; opacity: 0.6; filter: grayscale(30%);">
                     <span>Camera Feed</span>
                 </div>
             </div>
         </div>
 
-        <div class="footer">v<span id="footerVersion">1.7.0</span> rev.1 | Last updated: <span id="lastUpdated">--</span></div>
+        <div class="footer">v<span id="footerVersion">1.8.0</span> rev.2 | Last updated: <span id="lastUpdated">--</span></div>
     </div>
 
     <div class="modal-overlay" id="graphModal" onclick="closeGraph(event)">
@@ -484,9 +482,30 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="systemModal" onclick="closeSystemModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span class="modal-title">System</span>
+                <button class="modal-close" onclick="closeSystemModal(event)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">Connected WiFi</span>
+                <span id="wifiSsidDisplay" style="font-weight: 600; color: #1d1d1f;">--</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+                <button class="control-btn" style="background: #ff9500;" onclick="forgetWifi()">Forget WiFi</button>
+                <button class="control-btn btn-stop" onclick="rebootSystem()">Reboot</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '1.7.0';
+        var CURRENT_VERSION = '1.8.0';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var SYSTEM_ID = 'magnetic_phased_array';
         var MOTOR_COUNT = 1;
@@ -638,8 +657,33 @@
                 var info = JSON.parse(msg.data);
                 document.getElementById('wifiIp').textContent = info.wifi === '--' ? '--' : info.wifi;
                 document.getElementById('ethIp').textContent = info.eth === '--' ? '--' : info.eth;
+                document.getElementById('wifiSsidDisplay').textContent = info.wifi_ssid || '--';
             } catch(e) { }
         });
+
+        function openSystemModal() {
+            document.getElementById('systemModal').classList.add('show');
+            document.getElementById('statsPopup').classList.remove('show');
+            document.getElementById('settingsPopup').classList.remove('show');
+        }
+
+        function closeSystemModal(event) {
+            document.getElementById('systemModal').classList.remove('show');
+        }
+
+        function forgetWifi() {
+            if (confirm('This will disconnect from WiFi and enable the hotspot. Continue?')) {
+                systemCmdPublisher.publish(new ROSLIB.Message({ data: 'forget_wifi' }));
+                alert('WiFi will be forgotten and hotspot enabled. You may need to reconnect to the crawler hotspot.');
+            }
+        }
+
+        function rebootSystem() {
+            if (confirm('Are you sure you want to reboot the system?')) {
+                systemCmdPublisher.publish(new ROSLIB.Message({ data: 'reboot' }));
+                alert('System is rebooting...');
+            }
+        }
 
         function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }
 

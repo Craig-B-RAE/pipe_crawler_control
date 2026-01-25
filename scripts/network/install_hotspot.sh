@@ -34,6 +34,11 @@ if ! python3 -c "import flask" &> /dev/null 2>&1; then
     apt-get install -y python3-flask || pip3 install flask
 fi
 
+if ! command -v nginx &> /dev/null; then
+    echo "Installing nginx..."
+    apt-get install -y nginx
+fi
+
 # Create install directory
 echo "Creating installation directory..."
 mkdir -p "$INSTALL_DIR"
@@ -44,8 +49,20 @@ echo "Installing scripts..."
 cp "$SCRIPT_DIR/setup_hotspot.sh" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/connect_to_field.sh" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/captive_portal.py" "$INSTALL_DIR/"
+cp "$SCRIPT_DIR/crawler_ui.py" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR"/*.sh
 chmod +x "$INSTALL_DIR"/*.py
+
+# Copy config files
+CONFIG_DIR="$(dirname "$SCRIPT_DIR")/config"
+if [ -d "$CONFIG_DIR" ]; then
+    mkdir -p "$INSTALL_DIR/config"
+    cp "$CONFIG_DIR"/* "$INSTALL_DIR/config/" 2>/dev/null || true
+fi
+
+# Set up captive portal (dnsmasq and iptables)
+echo "Setting up captive portal..."
+"$INSTALL_DIR/setup_captive_portal.sh"
 
 # Create symlinks for easy access
 ln -sf "$INSTALL_DIR/setup_hotspot.sh" /usr/local/bin/xpresscan-hotspot
@@ -55,6 +72,15 @@ ln -sf "$INSTALL_DIR/connect_to_field.sh" /usr/local/bin/xpresscan-connect
 echo "Installing systemd services..."
 cp "$SYSTEMD_DIR/xpresscan-hotspot.service" /etc/systemd/system/
 cp "$SYSTEMD_DIR/xpresscan-portal.service" /etc/systemd/system/
+cp "$SYSTEMD_DIR/xpresscan-crawler-ui.service" /etc/systemd/system/
+
+# Set up captive portal DNS redirect
+echo "Configuring captive portal DNS..."
+mkdir -p /etc/NetworkManager/dnsmasq-shared.d
+cat > /etc/NetworkManager/dnsmasq-shared.d/captive-portal.conf << EOF
+# XPressCan Captive Portal DNS Configuration
+address=/#/10.42.0.1
+EOF
 
 # Reload systemd
 systemctl daemon-reload
@@ -66,15 +92,17 @@ echo "Usage:"
 echo "  1. Enable services:"
 echo "     sudo systemctl enable xpresscan-hotspot"
 echo "     sudo systemctl enable xpresscan-portal"
+echo "     sudo systemctl enable xpresscan-crawler-ui"
 echo "     sudo systemctl start xpresscan-hotspot"
 echo "     sudo systemctl start xpresscan-portal"
+echo "     sudo systemctl start xpresscan-crawler-ui"
 echo
-echo "  2. Configuration Portal:"
-echo "     Connect to the 'Crawler' WiFi network"
-echo "     Open http://10.42.0.1 to configure settings"
-echo "     - Select crawler identity (autobug-1 or autobug-2)"
-echo "     - Change hotspot name and password"
-echo "     Changes apply immediately without reboot"
+echo "  2. Web Interfaces:"
+echo "     Crawler UI:      http://autobug.local (port 80)"
+echo "                      - System status, ROS2 nodes, controls"
+echo "     Config Portal:   http://10.42.0.1:8080 (via hotspot)"
+echo "                      - Network settings, crawler identity"
+echo "                      - Opens automatically via captive portal"
 echo
 echo "  3. Manual client connection:"
 echo "     sudo $INSTALL_DIR/connect_to_field.sh"
