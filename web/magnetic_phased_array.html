@@ -562,7 +562,10 @@
                         <span class="motor-status stopped" id="m1Status"></span>
                         <span class="info-label">Motor</span>
                     </span>
-                    <span class="current" id="m1CurrentBar">--A</span>
+                    <span style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px;">
+                        <span class="current" id="m1CurrentBar">--A</span>
+                        <span class="current" id="m1TorqueBar">--Nm</span>
+                    </span>
                 </span>
             </div>
             <div class="info-item">
@@ -767,15 +770,12 @@
         <div class="pipe-section">
             <div class="pipe-calc-row" style="margin-bottom: 15px;">
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Speed</span><span class="pipe-calc-value" id="pipeSpeedDisplay">0.0"/s</span></div>
-                <div class="pipe-calc-item"><span class="pipe-calc-label">Rel. Angle</span><span class="pipe-calc-value" id="pipeRelAngleDisplay">0.0°</span></div>
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Distance</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Angle</span><span class="pipe-calc-value" id="pipeRelAngleDisplay">0.0°</span></div>
             </div>
             <div class="pipe-container" id="pipeContainer">
                 <div class="pipe-circle"></div>
                 <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#5856d6"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
-            </div>
-            <div class="degree-input-row"><button class="reset-btn" onclick="resetPosition()">Reset Position</button></div>
-            <div class="pipe-calc-row">
-                <div class="pipe-calc-item"><span class="pipe-calc-label">Distance Traveled</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
             </div>
         </div>
 
@@ -1335,6 +1335,7 @@
             // Calculate motor torque from current: torque = 0.43 * (current - 0.3), min 0
             var m1Torque = m1 > 0.3 ? 0.43 * (m1 - 0.3) : 0;
             document.getElementById('m1Torque').textContent = m1Torque.toFixed(2) + ' Nm';
+            document.getElementById('m1TorqueBar').textContent = m1Torque.toFixed(1) + 'Nm';
             if (m1Torque > 0 && m1Torque < stats.torque.min) stats.torque.min = m1Torque;
             if (m1Torque > stats.torque.max) stats.torque.max = m1Torque;
             addDataPoint('torque', m1Torque);
