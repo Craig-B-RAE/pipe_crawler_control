@@ -595,12 +595,11 @@
                             <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value-group"><span class="stats-value" id="voltage">--.-V</span><button class="icon-btn" onclick="showGraph(event,'battery')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Motor Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Motor Torque</span><span class="stats-value-group"><span class="stats-value" id="m1Torque">-- Nm</span><button class="icon-btn" onclick="showGraph(event,'torque')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                            <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
                             <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value-group"><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span><button class="icon-btn" onclick="zeroIMU(event)" title="Zero IMU"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Pitch</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
                             <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: #86868b;">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label" style="color: #86868b;">Rel. Pitch</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label" style="color: #86868b;">Rel. Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.0</span></div>
                         </div>
                     </div>
@@ -769,7 +768,7 @@
         </div>
 
         <div class="pipe-section">
-            <div class="pipe-container">
+            <div class="pipe-container" id="pipeContainer">
                 <div class="pipe-circle"></div>
                 <div class="degree-display"><span id="degreeValue">0</span>°<span class="distance" id="distanceInPipe">0.0 in</span></div>
                 <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#5856d6"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
@@ -1395,8 +1394,10 @@
         });
         imuPitchSubscriber.subscribe(function(msg) {
             imuCurrentPitch = msg.data;
+            var relPitch = msg.data - imuPitchOffset;
             document.getElementById('imuPitch').textContent = msg.data.toFixed(1);
-            document.getElementById('imuRelPitch').textContent = (msg.data - imuPitchOffset).toFixed(1);
+            document.getElementById('imuRelPitch').textContent = relPitch.toFixed(1);
+            document.getElementById('pipeContainer').style.transform = 'rotate(' + relPitch + 'deg)';
         });
 
         // Check IMU connection status periodically
@@ -1473,7 +1474,6 @@
 
         function updateBugPosition(deg) {
             document.getElementById('degreeValue').textContent = Math.round(deg);
-            document.getElementById('degreeValueStats').textContent = Math.round(deg);
             var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug');
             var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2;
             var a = (deg - 90) * Math.PI / 180;
