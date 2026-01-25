@@ -953,16 +953,18 @@
             dragState.startY = touch.clientY;
             dragState.popupX = rect.left;
             dragState.popupY = rect.top;
+            event.preventDefault();
         }
 
         document.addEventListener('touchmove', function(event) {
             if (!dragState.active) return;
+            event.preventDefault();
             var touch = event.touches[0];
             var dx = touch.clientX - dragState.startX;
             var dy = touch.clientY - dragState.startY;
             dragState.popup.style.left = (dragState.popupX + dx) + 'px';
             dragState.popup.style.top = (dragState.popupY + dy) + 'px';
-        }, { passive: true });
+        }, { passive: false });
 
         document.addEventListener('touchend', function() {
             if (dragState.active) {
