@@ -770,7 +770,6 @@
         <div class="pipe-section">
             <div class="pipe-container" id="pipeContainer">
                 <div class="pipe-circle"></div>
-                <div class="degree-display"><span id="degreeValue">0</span>°<span class="distance" id="distanceInPipe">0.0 in</span></div>
                 <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#5856d6"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
             </div>
             <div class="degree-input-row"><button class="reset-btn" onclick="resetPosition()">Reset Position</button></div>
@@ -1462,18 +1461,15 @@
             deg = ((deg % 360) + 360) % 360;
             updateBugPosition(deg);
             document.getElementById('distanceTraveled').textContent = Math.abs(totalDistance).toFixed(1) + ' in';
-            document.getElementById('distanceInPipe').textContent = Math.abs(totalDistance).toFixed(1) + ' in';
         }
 
         function resetPosition() {
             totalDistance = 0;
             updateBugPosition(0);
             document.getElementById('distanceTraveled').textContent = '0.0 in';
-            document.getElementById('distanceInPipe').textContent = '0.0 in';
         }
 
         function updateBugPosition(deg) {
-            document.getElementById('degreeValue').textContent = Math.round(deg);
             var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug');
             var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2;
             var a = (deg - 90) * Math.PI / 180;
