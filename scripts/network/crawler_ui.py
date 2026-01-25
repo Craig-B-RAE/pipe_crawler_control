@@ -737,29 +737,271 @@ def api_save_settings():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-# Captive portal detection routes - redirect to config portal
-@app.route("/generate_204")
-@app.route("/gen_204")
-@app.route("/hotspot-detect.html")
-@app.route("/library/test/success.html")
-@app.route("/connecttest.txt")
-@app.route("/ncsi.txt")
-@app.route("/success.txt")
-@app.route("/canonical.html")
-def captive_portal_redirect():
-    """Redirect captive portal detection to config page."""
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta http-equiv="refresh" content="0;url=http://10.42.0.1:8080/">
-        <title>Redirecting...</title>
-    </head>
-    <body>
-        <p>Redirecting to <a href="http://10.42.0.1:8080/">configuration portal</a>...</p>
-    </body>
-    </html>
-    """, 302, {"Location": "http://10.42.0.1:8080/"}
+# Configuration page route
+@app.route("/config")
+@app.route("/config.html")
+def config_page():
+    """Serve the configuration page."""
+    config_file = os.path.join(HTML_DIR, "config.html")
+    if os.path.exists(config_file):
+        return send_from_directory(HTML_DIR, "config.html")
+    return "Configuration page not found", 404
+
+
+# Configuration API
+DEFAULT_CRAWLERS = {
+    "magnetic": {
+        "hostname": "magnetic",
+        "ip": "10.42.0.11/24",
+        "name": "Magnetic Pipe Crawler",
+        "yaml": "magnetic_phased_array.yaml",
+        "html": "magnetic_phased_array.html",
+        "motor_driver": "roboclaw"
+    },
+    "xpresscan": {
+        "hostname": "xpresscan",
+        "ip": "10.42.0.12/24",
+        "name": "XPressCan",
+        "yaml": "new_xpress_scan.yaml",
+        "html": "new_xpress_scan.html",
+        "motor_driver": "roboclaw"
+    },
+    "edgeflex": {
+        "hostname": "edgeflex",
+        "ip": "10.42.0.13/24",
+        "name": "EdgeFlex",
+        "yaml": "edgeflex.yaml",
+        "html": "edgeflex.html",
+        "motor_driver": "clearlink"
+    }
+}
+
+DEFAULT_SSID = "Crawler"
+DEFAULT_PASSWORD = "Crawler1"
+
+
+def get_network_info():
+    """Get current network interface information."""
+    info = {
+        "wifi": {"ip": None, "ssid": None},
+        "ethernet": {"ip": None},
+        "hostname": None
+    }
+
+    try:
+        # Get hostname
+        result = subprocess.run(["hostname"], capture_output=True, text=True, timeout=2)
+        info["hostname"] = result.stdout.strip()
+
+        # Get interface info
+        result = subprocess.run(["ip", "-j", "addr", "show"], capture_output=True, text=True, timeout=2)
+        interfaces = json.loads(result.stdout) if result.stdout else []
+
+        wifi_iface = None
+        for iface in interfaces:
+            name = iface.get("ifname", "")
+            addr_info = iface.get("addr_info", [])
+
+            ipv4 = None
+            for addr in addr_info:
+                if addr.get("family") == "inet":
+                    ipv4 = addr.get("local")
+                    break
+
+            if not ipv4 or ipv4.startswith("127."):
+                continue
+
+            if name.startswith("wlan"):
+                info["wifi"]["ip"] = ipv4
+                wifi_iface = name
+            elif name.startswith("eth") or name.startswith("enp"):
+                info["ethernet"]["ip"] = ipv4
+
+        # Get SSID
+        if wifi_iface:
+            try:
+                result = subprocess.run(["iwgetid", "-r"], capture_output=True, text=True, timeout=2)
+                ssid = result.stdout.strip()
+                if ssid:
+                    info["wifi"]["ssid"] = ssid
+            except Exception:
+                pass
+
+    except Exception as e:
+        print(f"Error getting network info: {e}")
+
+    return info
+
+
+def load_full_config():
+    """Load full configuration from file."""
+    config = {
+        "crawler_id": None,
+        "ssid": DEFAULT_SSID,
+        "password": DEFAULT_PASSWORD
+    }
+
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("CRAWLER_ID="):
+                        config["crawler_id"] = line.split("=", 1)[1]
+                    elif line.startswith("HOTSPOT_SSID="):
+                        config["ssid"] = line.split("=", 1)[1]
+                    elif line.startswith("HOTSPOT_PASSWORD="):
+                        config["password"] = line.split("=", 1)[1]
+        except Exception:
+            pass
+
+    return config
+
+
+def save_full_config(crawler_id, ssid, password):
+    """Save configuration to file."""
+    try:
+        os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+
+        crawler = DEFAULT_CRAWLERS.get(crawler_id, {})
+        hostname = crawler.get("hostname", "crawler")
+        ip = crawler.get("ip", "10.42.0.11/24")
+        yaml_file = crawler.get("yaml", "")
+        html_file = crawler.get("html", "")
+        motor_driver = crawler.get("motor_driver", "roboclaw")
+
+        with open(CONFIG_FILE, "w") as f:
+            f.write("# Crawler Configuration\n")
+            f.write(f"CRAWLER_ID={crawler_id}\n")
+            f.write(f"CRAWLER_NAME={crawler.get('name', crawler_id)}\n")
+            f.write(f"HOSTNAME={hostname}\n")
+            f.write(f"STATIC_IP={ip}\n")
+            f.write(f"HOTSPOT_SSID={ssid}\n")
+            f.write(f"HOTSPOT_PASSWORD={password}\n")
+            f.write(f"CONFIG_YAML={yaml_file}\n")
+            f.write(f"UI_HTML={html_file}\n")
+            f.write(f"MOTOR_DRIVER={motor_driver}\n")
+
+        return True
+    except Exception as e:
+        print(f"Error saving config: {e}")
+        return False
+
+
+@app.route("/api/config", methods=["GET"])
+def api_config_get():
+    """Get current configuration."""
+    config = load_full_config()
+    network_info = get_network_info()
+
+    return jsonify({
+        "crawler_id": config["crawler_id"],
+        "ssid": config["ssid"],
+        "password": config["password"],
+        "crawlers": DEFAULT_CRAWLERS,
+        "network": network_info
+    })
+
+
+@app.route("/api/config", methods=["POST"])
+def api_config_set():
+    """Save configuration."""
+    data = request.get_json()
+    crawler_id = data.get("crawler_id")
+    ssid = data.get("ssid", DEFAULT_SSID)
+    password = data.get("password", DEFAULT_PASSWORD)
+
+    if not crawler_id or crawler_id not in DEFAULT_CRAWLERS:
+        return jsonify({"success": False, "error": "Invalid crawler ID"})
+
+    if len(password) < 8:
+        return jsonify({"success": False, "error": "Password must be at least 8 characters"})
+
+    if len(ssid) < 1 or len(ssid) > 32:
+        return jsonify({"success": False, "error": "SSID must be 1-32 characters"})
+
+    if save_full_config(crawler_id, ssid, password):
+        return jsonify({"success": True})
+    else:
+        return jsonify({"success": False, "error": "Failed to save configuration"})
+
+
+def scan_wifi_networks():
+    """Scan for available WiFi networks."""
+    networks = []
+    try:
+        subprocess.run(["nmcli", "device", "wifi", "rescan"], capture_output=True, timeout=5)
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "device", "wifi", "list"],
+            capture_output=True, text=True, timeout=5
+        )
+
+        seen = set()
+        for line in result.stdout.strip().split("\n"):
+            if not line:
+                continue
+            parts = line.split(":")
+            if len(parts) >= 3:
+                ssid = parts[0].strip()
+                if not ssid or ssid in seen:
+                    continue
+                seen.add(ssid)
+
+                signal = parts[1].strip() if len(parts) > 1 else "0"
+                security = parts[2].strip() if len(parts) > 2 else ""
+                in_use = parts[3].strip() == "*" if len(parts) > 3 else False
+
+                networks.append({
+                    "ssid": ssid,
+                    "signal": int(signal) if signal.isdigit() else 0,
+                    "security": security,
+                    "connected": in_use
+                })
+
+        networks.sort(key=lambda x: x["signal"], reverse=True)
+    except Exception as e:
+        print(f"Error scanning WiFi: {e}")
+
+    return networks
+
+
+@app.route("/api/wifi/scan")
+def api_wifi_scan():
+    """Scan for WiFi networks."""
+    networks = scan_wifi_networks()
+    return jsonify({"networks": networks})
+
+
+@app.route("/api/wifi/connect", methods=["POST"])
+def api_wifi_connect():
+    """Connect to a WiFi network."""
+    data = request.get_json()
+    ssid = data.get("ssid", "")
+    password = data.get("password", "")
+
+    if not ssid:
+        return jsonify({"success": False, "message": "SSID required"})
+
+    try:
+        # Check if connection exists
+        result = subprocess.run(["nmcli", "connection", "show", ssid], capture_output=True, text=True)
+
+        if result.returncode == 0:
+            result = subprocess.run(["nmcli", "connection", "up", ssid], capture_output=True, text=True, timeout=30)
+        else:
+            cmd = ["nmcli", "device", "wifi", "connect", ssid]
+            if password:
+                cmd.extend(["password", password])
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+
+        if result.returncode == 0:
+            return jsonify({"success": True, "message": "Connected successfully"})
+        else:
+            return jsonify({"success": False, "message": result.stderr.strip() or "Connection failed"})
+    except subprocess.TimeoutExpired:
+        return jsonify({"success": False, "message": "Connection timed out"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 
 
 def main():
