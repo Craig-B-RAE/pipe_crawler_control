@@ -31,6 +31,7 @@ setup(
             'cpu_temp_publisher = pipe_crawler_control.cpu_temp_publisher:main',
             'update_manager = pipe_crawler_control.update_manager:main',
             'network_info_publisher = pipe_crawler_control.network_info_publisher:main',
+            'wt901_imu = pipe_crawler_control.wt901_imu_node:main',
         ],
     },
     scripts=[],

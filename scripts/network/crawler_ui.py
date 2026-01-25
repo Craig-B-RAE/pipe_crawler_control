@@ -20,7 +20,14 @@ app = Flask(__name__)
 
 CONFIG_FILE = "/etc/xpresscan/network.conf"
 HTML_DIR = "/opt/xpresscan/html"
-UI_SETTINGS_FILE = "/etc/xpresscan/ui_settings.json"
+UI_SETTINGS_DIR = "/etc/xpresscan"
+
+
+def get_settings_file():
+    """Get the settings file path for the current crawler config."""
+    config = load_crawler_config()
+    crawler_id = config.get("crawler_id", "default")
+    return os.path.join(UI_SETTINGS_DIR, f"ui_settings_{crawler_id}.json")
 
 # Default UI settings
 # IMPORTANT: Update this dict when adding new settings to the HTML pages!
@@ -29,6 +36,7 @@ DEFAULT_UI_SETTINGS = {
     "motorParams": {
         "encoderRes": 1425.1,
         "wheelDia": 1.77,
+        "gearboxRatio": 1,
         "gearRatio": 2,
         "maxRpm": 179,
         "numMotors": 1,
@@ -484,14 +492,181 @@ def api_reboot():
         return jsonify({"success": False, "error": str(e)})
 
 
+@app.route("/api/usb")
+def api_usb():
+    """API endpoint to get USB device info including storage devices."""
+    usb_devices = {"usb1": None, "usb2": None}
+
+    try:
+        found_devices = []
+        usb_base = "/sys/bus/usb/devices"
+
+        # First, find USB storage devices from /sys/block
+        storage_devices = {}  # Maps USB device path to (name, size)
+        for block_dev in os.listdir("/sys/block"):
+            if not block_dev.startswith("sd"):
+                continue
+            # Check if this is a USB device by following the device symlink
+            device_link = f"/sys/block/{block_dev}/device"
+            if not os.path.exists(device_link):
+                continue
+            real_path = os.path.realpath(device_link)
+            # Walk up to find the USB device (look for product file)
+            path_parts = real_path.split("/")
+            for i in range(len(path_parts), 0, -1):
+                test_path = "/".join(path_parts[:i])
+                product_file = os.path.join(test_path, "product")
+                if os.path.exists(product_file):
+                    with open(product_file, "r") as f:
+                        product_name = f.read().strip()
+                    # Get size
+                    size_file = f"/sys/block/{block_dev}/size"
+                    if os.path.exists(size_file):
+                        with open(size_file, "r") as f:
+                            sectors = int(f.read().strip())
+                            size_gb = (sectors * 512) / (1024**3)
+                            storage_devices[test_path] = (product_name, f"{size_gb:.1f}GB")
+                    break
+
+        # Add storage devices first (prioritized)
+        for path, (name, size) in storage_devices.items():
+            found_devices.append(f"{name} ({size})")
+
+        # Then scan for other USB devices
+        for entry in sorted(os.listdir(usb_base)):
+            if entry.startswith("usb") or ":" in entry:
+                continue
+
+            device_path = os.path.realpath(os.path.join(usb_base, entry))
+            # Skip if already found as storage
+            if device_path in storage_devices:
+                continue
+
+            product_file = os.path.join(usb_base, entry, "product")
+            if os.path.exists(product_file):
+                with open(product_file, "r") as f:
+                    product_name = f.read().strip()
+                # Skip internal hubs
+                if "hub" in product_name.lower():
+                    continue
+                found_devices.append(product_name)
+
+        # Assign to usb1 and usb2 slots
+        if len(found_devices) >= 1:
+            usb_devices["usb1"] = found_devices[0]
+        if len(found_devices) >= 2:
+            usb_devices["usb2"] = found_devices[1]
+
+    except Exception as e:
+        print(f"Error getting USB info: {e}")
+
+    return jsonify(usb_devices)
+
+
+@app.route("/api/fan")
+def api_fan():
+    """API endpoint to get fan speed as percentage."""
+    fan_info = {"speed_percent": None, "running": False}
+
+    try:
+        # Check if fan is actually spinning via RPM reading
+        rpm_file = "/sys/class/hwmon/hwmon2/fan1_input"
+        if os.path.exists(rpm_file):
+            with open(rpm_file, "r") as f:
+                rpm = int(f.read().strip())
+                fan_info["running"] = rpm > 0
+
+        # Get PWM percentage
+        pwm_file = "/sys/class/hwmon/hwmon2/pwm1"
+        if os.path.exists(pwm_file):
+            with open(pwm_file, "r") as f:
+                pwm_value = int(f.read().strip())
+                fan_info["speed_percent"] = round((pwm_value / 255) * 100)
+        else:
+            # Fallback to thermal cooling device (state 0-4)
+            state_file = "/sys/class/thermal/cooling_device0/cur_state"
+            max_file = "/sys/class/thermal/cooling_device0/max_state"
+            if os.path.exists(state_file) and os.path.exists(max_file):
+                with open(state_file, "r") as f:
+                    cur_state = int(f.read().strip())
+                with open(max_file, "r") as f:
+                    max_state = int(f.read().strip())
+                if max_state > 0:
+                    fan_info["speed_percent"] = round((cur_state / max_state) * 100)
+                fan_info["running"] = cur_state > 0
+    except Exception as e:
+        print(f"Error getting fan info: {e}")
+
+    return jsonify(fan_info)
+
+
+@app.route("/api/system_stats")
+def api_system_stats():
+    """API endpoint to get CPU, RAM, and disk usage."""
+    stats = {"cpu_percent": None, "ram_percent": None, "ram_used_gb": None, "ram_total_gb": None,
+             "disk_percent": None, "disk_used_gb": None, "disk_total_gb": None}
+
+    try:
+        # CPU usage - read /proc/stat twice with small delay
+        def read_cpu():
+            with open("/proc/stat", "r") as f:
+                line = f.readline()
+                parts = line.split()
+                idle = int(parts[4])
+                total = sum(int(p) for p in parts[1:])
+                return idle, total
+
+        idle1, total1 = read_cpu()
+        import time
+        time.sleep(0.1)
+        idle2, total2 = read_cpu()
+
+        idle_delta = idle2 - idle1
+        total_delta = total2 - total1
+        if total_delta > 0:
+            stats["cpu_percent"] = round(100 * (1 - idle_delta / total_delta))
+
+        # RAM usage from /proc/meminfo
+        meminfo = {}
+        with open("/proc/meminfo", "r") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 2:
+                    meminfo[parts[0].rstrip(":")] = int(parts[1])
+
+        total_kb = meminfo.get("MemTotal", 0)
+        avail_kb = meminfo.get("MemAvailable", 0)
+        used_kb = total_kb - avail_kb
+        if total_kb > 0:
+            stats["ram_percent"] = round(100 * used_kb / total_kb)
+            stats["ram_used_gb"] = round(used_kb / 1024 / 1024, 1)
+            stats["ram_total_gb"] = round(total_kb / 1024 / 1024, 1)
+
+        # Disk usage for root filesystem
+        statvfs = os.statvfs("/")
+        total_bytes = statvfs.f_frsize * statvfs.f_blocks
+        free_bytes = statvfs.f_frsize * statvfs.f_bavail
+        used_bytes = total_bytes - free_bytes
+        if total_bytes > 0:
+            stats["disk_percent"] = round(100 * used_bytes / total_bytes)
+            stats["disk_used_gb"] = round(used_bytes / 1024 / 1024 / 1024, 1)
+            stats["disk_total_gb"] = round(total_bytes / 1024 / 1024 / 1024, 1)
+
+    except Exception as e:
+        print(f"Error getting system stats: {e}")
+
+    return jsonify(stats)
+
+
 @app.route("/api/settings", methods=["GET"])
 def api_get_settings():
-    """API endpoint to get UI settings."""
+    """API endpoint to get UI settings for the current crawler config."""
     settings = DEFAULT_UI_SETTINGS.copy()
+    settings_file = get_settings_file()
 
-    if os.path.exists(UI_SETTINGS_FILE):
+    if os.path.exists(settings_file):
         try:
-            with open(UI_SETTINGS_FILE, "r") as f:
+            with open(settings_file, "r") as f:
                 saved = json.load(f)
                 # Deep merge saved settings with defaults
                 for key, value in saved.items():
@@ -500,24 +675,26 @@ def api_get_settings():
                     else:
                         settings[key] = value
         except (json.JSONDecodeError, IOError) as e:
-            print(f"Error loading settings, using defaults: {e}")
+            print(f"Error loading settings from {settings_file}, using defaults: {e}")
 
     return jsonify(settings)
 
 
 @app.route("/api/settings", methods=["POST"])
 def api_save_settings():
-    """API endpoint to save UI settings."""
+    """API endpoint to save UI settings for the current crawler config."""
     try:
         new_settings = request.get_json()
         if not new_settings:
             return jsonify({"success": False, "error": "No data provided"}), 400
 
+        settings_file = get_settings_file()
+
         # Load existing settings and merge
         settings = DEFAULT_UI_SETTINGS.copy()
-        if os.path.exists(UI_SETTINGS_FILE):
+        if os.path.exists(settings_file):
             try:
-                with open(UI_SETTINGS_FILE, "r") as f:
+                with open(settings_file, "r") as f:
                     saved = json.load(f)
                     for key, value in saved.items():
                         if key in settings and isinstance(settings[key], dict) and isinstance(value, dict):
@@ -535,10 +712,10 @@ def api_save_settings():
                 settings[key] = value
 
         # Ensure directory exists
-        os.makedirs(os.path.dirname(UI_SETTINGS_FILE), exist_ok=True)
+        os.makedirs(os.path.dirname(settings_file), exist_ok=True)
 
         # Save to file
-        with open(UI_SETTINGS_FILE, "w") as f:
+        with open(settings_file, "w") as f:
             json.dump(settings, f, indent=2)
 
         return jsonify({"success": True})

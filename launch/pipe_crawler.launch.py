@@ -139,4 +139,18 @@ def generate_launch_description():
         )
     )
 
+    # WT901 IMU sensor
+    nodes.append(
+        Node(
+            package='pipe_crawler_control',
+            executable='wt901_imu',
+            name='wt901_imu',
+            parameters=[{
+                'port': '/dev/ttyAMA0',
+                'baud_rate': 9600,
+                'frame_id': 'imu_link'
+            }]
+        )
+    )
+
     return LaunchDescription(nodes)
