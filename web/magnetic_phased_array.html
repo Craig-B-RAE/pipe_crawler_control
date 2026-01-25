@@ -754,7 +754,7 @@
                                 <span class="stats-value" id="usb2Device">--</span>
                             </div>
                             <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
-                                <a href="/config" class="secondary-btn" style="text-align: center; text-decoration: none;">Configuration</a>
+                                <button class="secondary-btn" onclick="openConfiguration()">Configuration</button>
                                 <button class="secondary-btn" onclick="forgetWifi()">Forget WiFi</button>
                                 <button class="secondary-btn" onclick="rebootSystem()">Reboot</button>
                             </div>
@@ -794,6 +794,25 @@
         </div>
 
         <div class="footer">v<span id="footerVersion">2.0.0</span> | Last updated: <span id="lastUpdated">--</span></div>
+    </div>
+
+    <!-- Configuration Password Modal -->
+    <div class="modal-overlay" id="configAuthModal" onclick="closeConfigAuth()" style="display: none;">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 320px;">
+            <div class="modal-header">
+                <span class="modal-title">Authentication Required</span>
+                <button class="modal-close" onclick="closeConfigAuth()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="padding: 20px;">
+                <p style="color: #86868b; font-size: 13px; margin-bottom: 15px;">Enter admin password to access configuration.</p>
+                <input type="password" id="configAuthPassword" class="settings-input" placeholder="Password" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px;">
+                <p id="configAuthError" style="color: #ff3b30; font-size: 12px; margin-bottom: 10px; display: none;">Incorrect password</p>
+                <div style="display: flex; gap: 10px;">
+                    <button class="secondary-btn" onclick="closeConfigAuth()" style="flex: 1;">Cancel</button>
+                    <button class="control-btn" onclick="checkConfigAuth()" style="flex: 1; padding: 10px;">Continue</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="modal-overlay" id="graphModal" onclick="closeGraph(event)">
@@ -1371,6 +1390,35 @@
                 document.getElementById('imuStatus').style.color = '#ff3b30';
             }
         }, 2000);
+
+        function openConfiguration() {
+            document.getElementById('configAuthPassword').value = '';
+            document.getElementById('configAuthError').style.display = 'none';
+            document.getElementById('configAuthModal').style.display = 'flex';
+            document.getElementById('configAuthPassword').focus();
+        }
+
+        function closeConfigAuth() {
+            document.getElementById('configAuthModal').style.display = 'none';
+        }
+
+        function checkConfigAuth() {
+            var password = document.getElementById('configAuthPassword').value;
+            if (password === 'Prime') {
+                closeConfigAuth();
+                window.location.href = '/config';
+            } else {
+                document.getElementById('configAuthError').style.display = 'block';
+                document.getElementById('configAuthPassword').value = '';
+                document.getElementById('configAuthPassword').focus();
+            }
+        }
+
+        document.addEventListener('keypress', function(e) {
+            if (document.getElementById('configAuthModal').style.display === 'flex' && e.key === 'Enter') {
+                checkConfigAuth();
+            }
+        });
 
         function forgetWifi() {
             if (confirm('This will disconnect from WiFi and enable the hotspot. Continue?')) {
