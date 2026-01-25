@@ -593,10 +593,13 @@
                             <div class="stats-row-item"><span class="stats-label">Motor Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Motor Torque</span><span class="stats-value-group"><span class="stats-value" id="m1Torque">-- Nm</span><button class="icon-btn" onclick="showGraph(event,'torque')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
-                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value-group"><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span><button class="icon-btn" onclick="zeroIMU(event)" title="Zero IMU"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label">Pitch</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label">Yaw</span><span class="stats-value"><span id="imuYaw">--</span>°</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: #86868b;">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label" style="color: #86868b;">Rel. Pitch</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label" style="color: #86868b;">Rel. Yaw</span><span class="stats-value"><span id="imuRelYaw">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.0</span></div>
                         </div>
                     </div>
@@ -1368,18 +1371,41 @@
 
         var imuDataReceived = false;
         var imuLastUpdate = 0;
+        var imuRollOffset = 0;
+        var imuPitchOffset = 0;
+        var imuYawOffset = 0;
+        var imuCurrentRoll = 0;
+        var imuCurrentPitch = 0;
+        var imuCurrentYaw = 0;
+
+        function zeroIMU(event) {
+            event.stopPropagation();
+            imuRollOffset = imuCurrentRoll;
+            imuPitchOffset = imuCurrentPitch;
+            imuYawOffset = imuCurrentYaw;
+            document.getElementById('imuRelRoll').textContent = '0.0';
+            document.getElementById('imuRelPitch').textContent = '0.0';
+            document.getElementById('imuRelYaw').textContent = '0.0';
+        }
+
         imuRollSubscriber.subscribe(function(msg) {
             imuDataReceived = true;
             imuLastUpdate = Date.now();
+            imuCurrentRoll = msg.data;
             document.getElementById('imuRoll').textContent = msg.data.toFixed(1);
+            document.getElementById('imuRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
             document.getElementById('imuStatus').textContent = 'Connected';
             document.getElementById('imuStatus').style.color = '#34c759';
         });
         imuPitchSubscriber.subscribe(function(msg) {
+            imuCurrentPitch = msg.data;
             document.getElementById('imuPitch').textContent = msg.data.toFixed(1);
+            document.getElementById('imuRelPitch').textContent = (msg.data - imuPitchOffset).toFixed(1);
         });
         imuYawSubscriber.subscribe(function(msg) {
+            imuCurrentYaw = msg.data;
             document.getElementById('imuYaw').textContent = msg.data.toFixed(1);
+            document.getElementById('imuRelYaw').textContent = (msg.data - imuYawOffset).toFixed(1);
         });
 
         // Check IMU connection status periodically
