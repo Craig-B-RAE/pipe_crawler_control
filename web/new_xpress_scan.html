@@ -566,9 +566,13 @@
         updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = 'Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = 'Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
         function installUpdate() { if (isUpdating) return; isUpdating = true; var banner = document.getElementById('updateBanner'); banner.innerHTML = 'Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
 
+        var lastUpdatedTimestamp = 0;
         function updateLastUpdated() {
-            var now = new Date();
-            document.getElementById('lastUpdated').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            var now = Date.now();
+            if (now - lastUpdatedTimestamp < 5000) return;
+            lastUpdatedTimestamp = now;
+            var date = new Date();
+            document.getElementById('lastUpdated').textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         }
 
         statsSubscriber.subscribe(function(msg) {
