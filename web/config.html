@@ -352,8 +352,6 @@
             </div>
         </div>
 
-        <button type="button" class="btn btn-primary" onclick="applyChanges()">Apply Changes</button>
-
         <!-- Hotspot Settings Section -->
         <div class="section" style="margin-top: 20px; text-align: center;">
             <div class="section-title">WiFi Hotspot</div>
@@ -372,9 +370,9 @@
         <div class="section" style="margin-top: 20px; text-align: center;">
             <div class="section-title">System Control</div>
             <div class="reboot-notice" style="text-align: left;">
-                Reboot required after changing crawler type or WiFi settings for changes to take effect.
+                Changes will be saved and applied after reboot.
             </div>
-            <button type="button" class="btn btn-danger" onclick="confirmReboot()">Reboot Crawler</button>
+            <button type="button" class="btn btn-danger" onclick="saveAndReboot()">Reboot and Save Changes</button>
         </div>
 
         <!-- WiFi Scanner -->
@@ -523,12 +521,17 @@
             selectedCrawler = id;
         }
 
-        function applyChanges() {
+        function saveAndReboot() {
             if (!selectedCrawler) {
                 showError('Please select a crawler type');
                 return;
             }
 
+            if (!confirm('Save changes and reboot the crawler now?')) {
+                return;
+            }
+
+            // First save the configuration
             fetch('/api/config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -541,8 +544,19 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    showSuccess('Configuration saved. Reboot required for changes to take effect.');
-                    loadConfig();
+                    // Now reboot
+                    fetch('/api/reboot', { method: 'POST' })
+                        .then(r => r.json())
+                        .then(rebootData => {
+                            if (rebootData.success) {
+                                document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><div style="text-align:center;"><h2>Rebooting...</h2><p>Configuration saved. The crawler is restarting.</p><p>Please wait and reconnect.</p></div></div>';
+                            } else {
+                                showError('Configuration saved but reboot failed: ' + (rebootData.error || 'Unknown error'));
+                            }
+                        })
+                        .catch(err => {
+                            showError('Configuration saved but reboot failed');
+                        });
                 } else {
                     showError(data.error || 'Failed to save configuration');
                 }
@@ -628,21 +642,6 @@
             });
         }
 
-        function confirmReboot() {
-            if (confirm('Reboot the crawler now?\n\nMake sure you have saved your changes first.')) {
-                fetch('/api/reboot', { method: 'POST' })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><div style="text-align:center;"><h2>Rebooting...</h2><p>The crawler is restarting. Please wait and reconnect.</p></div></div>';
-                        } else {
-                            showError('Reboot failed: ' + (data.error || 'Unknown error'));
-                        }
-                    })
-                    .catch(err => showError('Reboot failed'));
-            }
-        }
-
         function showHotspotAuth() {
             document.getElementById('hotspotAuthPassword').value = '';
             document.getElementById('authDenied').style.display = 'none';
@@ -695,7 +694,7 @@
             document.getElementById('currentSsidDisplay').textContent = ssid;
 
             closeHotspotSettings();
-            showSuccess('Hotspot settings updated. Click "Apply Changes" to save.');
+            showSuccess('Hotspot settings updated. Click "Reboot and Save Changes" to apply.');
         }
 
         function showError(msg) {
