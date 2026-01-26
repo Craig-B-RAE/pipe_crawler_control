@@ -465,8 +465,12 @@
             color: #86868b;
             display: block;
         }
-        .bug { position: absolute; display: flex; align-items: center; justify-content: center; width: clamp(45px, 12vw, 65px); height: clamp(18px, 5vw, 28px); top: 11%; left: 50%; transform: translateX(-50%); }
-        .bug svg { width: 100%; height: 100%; }
+        .walle { position: absolute; display: flex; align-items: center; justify-content: center; width: clamp(32px, 9vw, 45px); height: clamp(32px, 9vw, 45px); top: 6%; left: 50%; transform: translateX(-50%); }
+        .walle img { width: 100%; height: 100%; object-fit: contain; }
+        .xray-source { position: absolute; display: flex; align-items: center; justify-content: center; width: clamp(22px, 6vw, 30px); height: clamp(22px, 6vw, 30px); bottom: 6%; left: 50%; transform: translateX(-50%); }
+        .xray-source svg { width: 100%; height: 100%; }
+        .xray-beam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .xray-beam line { stroke: #1d1d1f; stroke-width: 0.5; stroke-dasharray: 0.5, 3; stroke-linecap: round; opacity: 0.4; }
         .degree-input-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; }
         .reset-btn {
             padding: 8px 16px;
@@ -557,9 +561,19 @@
 </head>
 <body>
     <div class="container">
-        <div id="connectionStatus" style="display: flex; justify-content: center; align-items: center; font-size: 12px; margin-bottom: 8px; color: #86868b; position: relative;">
-            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #c62828; margin-right: 6px;"></span>
-            <span id="connectionText">Disconnected</span>
+        <div id="connectionStatus" style="display: flex; justify-content: center; align-items: center; font-size: 12px; margin-bottom: 8px; color: #86868b; position: relative; gap: 16px;">
+            <span style="display: flex; align-items: center;">
+                <svg id="internetIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span id="internetText">Offline</span>
+            </span>
+            <span style="display: flex; align-items: center;">
+                <svg id="wifiIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                <span id="wifiText">No WiFi</span>
+            </span>
+            <span style="display: flex; align-items: center;">
+                <span id="clearlinkDot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #c62828; margin-right: 6px;"></span>
+                <span id="clearlinkText">ClearLink</span>
+            </span>
             <button onclick="location.reload()" style="position: absolute; right: 0; background: #f5f5f7; border: none; border-radius: 6px; padding: 6px; cursor: pointer;" title="Refresh page">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
@@ -567,17 +581,29 @@
         <div class="system-badge"><span>EdgeFlex ClearLink</span></div>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">Update available! Click to install (v<span id="newVersion"></span>)</div>
 
-        <!-- Single motor info toolbar -->
+        <!-- Motor info toolbar with Motor 1 and Motor 2 -->
         <div class="info-toolbar">
             <div class="info-item">
                 <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
                     <span style="display: flex; align-items: center; margin-bottom: 4px;">
                         <span class="motor-status stopped" id="m1Status"></span>
-                        <span class="info-label">Motor</span>
+                        <span class="info-label">Motor 1</span>
                     </span>
                     <span style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px;">
                         <span class="current" id="m1CurrentBar">--A</span>
                         <span class="current" id="m1TorqueBar">--Nm</span>
+                    </span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="display: flex; align-items: center; margin-bottom: 4px;">
+                        <span class="motor-status stopped" id="m2Status"></span>
+                        <span class="info-label">Motor 2</span>
+                    </span>
+                    <span style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px;">
+                        <span class="current" id="m2CurrentBar">--A</span>
+                        <span class="current" id="m2TorqueBar">--Nm</span>
                     </span>
                 </span>
             </div>
@@ -613,6 +639,8 @@
                             <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
                             <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: #86868b;">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label" style="color: #86868b;">Rel. Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">ClearLink</span><span class="stats-value" id="clearlinkConnStatus" style="font-size: 11px;">--</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor Fault</span><span class="stats-value-group"><span class="stats-value" id="motorFaultStatus">--</span><button class="icon-btn" id="resetFaultBtn" onclick="resetFaults(event)" title="Reset Faults" style="display: none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.1</span></div>
                         </div>
                     </div>
@@ -727,9 +755,9 @@
                             </div>
                         </div>
                         <div class="settings-row" style="padding-top: 4px;">
-                            <span class="settings-label" style="color: #86868b;">Crawler Torque</span>
+                            <span class="settings-label" style="color: #86868b;">Total Torque Nm</span>
                             <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">Nm</span>
+                                <span class="settings-unit" style="margin-left: 0; margin-right: 4px; visibility: hidden;">"/s</span>
                                 <span id="crawlerTorqueDisplay" style="font-weight: 600; color: #86868b; width: 85px; text-align: center;">1.0</span>
                             </div>
                         </div>
@@ -790,7 +818,18 @@
                 <div class="shots-column" id="shotsLeft"></div>
                 <div class="pipe-container" id="pipeContainer">
                     <div class="pipe-circle"></div>
-                    <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#5856d6"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
+                    <!-- X-ray beam with 40-degree spread (20 deg each side) -->
+                    <svg class="xray-beam" viewBox="0 0 100 100">
+                        <line x1="50" y1="88" x2="30" y2="16"/>
+                        <line x1="50" y1="88" x2="70" y2="16"/>
+                        <line x1="50" y1="88" x2="40" y2="16"/>
+                        <line x1="50" y1="88" x2="60" y2="16"/>
+                        <line x1="50" y1="88" x2="50" y2="16"/>
+                    </svg>
+                    <!-- Wall-E at top -->
+                    <div class="walle" id="walle"><img src="https://freepngimg.com/save/23298-wall-e/918x990" alt="Wall-E"></div>
+                    <!-- Radiation trefoil symbol at bottom (no fill, outline only) -->
+                    <div class="xray-source" id="xraySource"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="12" fill="none" stroke="#1d1d1f" stroke-width="3"/><path d="M50 38 L50 8 A42 42 0 0 1 86.4 71 L61 56 A12 12 0 0 0 50 38" fill="none" stroke="#1d1d1f" stroke-width="3"/><path d="M61 56 L86.4 71 A42 42 0 0 1 13.6 71 L39 56 A12 12 0 0 0 61 56" fill="none" stroke="#1d1d1f" stroke-width="3"/><path d="M39 56 L13.6 71 A42 42 0 0 1 50 8 L50 38 A12 12 0 0 0 39 56" fill="none" stroke="#1d1d1f" stroke-width="3"/></svg></div>
                 </div>
                 <div class="shots-column" id="shotsRight"></div>
             </div>
@@ -1018,13 +1057,13 @@
 
         // Motor parameters (protected settings)
         var motorParams = {
-            encoderRes: 1425.1,  // Encoder resolution (PPR × gear factor)
+            encoderRes: 1000,    // Encoder resolution (PPR × gear factor)
             wheelDia: 1.77,      // Output wheel diameter in inches
-            gearboxRatio: 1,     // Motor gearbox ratio (for speed calc)
-            gearRatio: 2,        // Final drive gear ratio
-            maxRpm: 179,         // Max motor RPM at 100% (before gearbox)
-            numMotors: 1,        // Number of motors
-            motorTorque: 0.5     // Motor torque in Nm (after gearbox, not multiplied again)
+            gearboxRatio: 20,    // Motor gearbox ratio (for speed calc)
+            gearRatio: 30,       // Final drive gear ratio
+            maxRpm: 4000,        // Max motor RPM at 100% (before gearbox)
+            numMotors: 2,        // Number of motors
+            motorTorque: 0.4     // Motor torque in Nm (before gearbox)
         };
         var protectedUnlocked = false;
         var lockTimeout = null;
@@ -1105,8 +1144,9 @@
         }
 
         // Calculate and display crawler torque
+        // Formula: Motor torque × gearbox ratio × gear ratio × number of motors
         function updateCrawlerTorque() {
-            var crawlerTorque = motorParams.motorTorque * motorParams.gearRatio * motorParams.numMotors;
+            var crawlerTorque = motorParams.motorTorque * motorParams.gearboxRatio * motorParams.gearRatio * motorParams.numMotors;
             document.getElementById('crawlerTorqueDisplay').textContent = crawlerTorque.toFixed(2);
         }
 
@@ -1345,13 +1385,43 @@
         setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
 
         var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
-        function updateConnectionStatus(text, color) {
-            document.getElementById('connectionText').textContent = text;
-            document.getElementById('connectionStatus').querySelector('span').style.background = color;
+        var rosbridgeConnected = false;
+        function updateClearlinkStatus(connected) {
+            var dot = document.getElementById('clearlinkDot');
+            var text = document.getElementById('clearlinkText');
+            if (!rosbridgeConnected) {
+                dot.style.background = '#c62828';
+                text.textContent = 'ClearLink';
+            } else if (connected) {
+                dot.style.background = '#2e7d32';
+                text.textContent = 'ClearLink';
+            } else {
+                dot.style.background = '#c62828';
+                text.textContent = 'ClearLink';
+            }
         }
-        ros.on('connection', function() { updateConnectionStatus('Connected', '#2e7d32'); updateSpeed(4.0); updateRamp(50); });
-        ros.on('error', function() { updateConnectionStatus('Error', '#c62828'); });
-        ros.on('close', function() { updateConnectionStatus('Disconnected', '#c62828'); });
+        function updateInternetStatus(online) {
+            var icon = document.getElementById('internetIcon');
+            var text = document.getElementById('internetText');
+            icon.style.stroke = online ? '#2e7d32' : '#c62828';
+            text.textContent = online ? 'Online' : 'Offline';
+        }
+        function updateWifiStatus(ssid) {
+            var icon = document.getElementById('wifiIcon');
+            var text = document.getElementById('wifiText');
+            var connected = ssid && ssid !== '--' && ssid !== '';
+            icon.style.stroke = connected ? '#2e7d32' : '#c62828';
+            text.textContent = connected ? ssid : 'No WiFi';
+        }
+        function checkInternet() {
+            fetch('https://www.google.com/favicon.ico?t=' + Date.now(), { mode: 'no-cors', cache: 'no-store' })
+                .then(function() { updateInternetStatus(true); })
+                .catch(function() { updateInternetStatus(navigator.onLine); });
+        }
+        checkInternet(); setInterval(checkInternet, 10000);
+        ros.on('connection', function() { rosbridgeConnected = true; updateClearlinkStatus(false); updateSpeed(4.0); updateRamp(50); });
+        ros.on('error', function() { rosbridgeConnected = false; updateClearlinkStatus(false); });
+        ros.on('close', function() { rosbridgeConnected = false; updateClearlinkStatus(false); });
 
         var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
         var speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
@@ -1363,7 +1433,38 @@
         var updateStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/update_status', messageType: 'std_msgs/String' });
         var imuRollSubscriber = new ROSLIB.Topic({ ros: ros, name: '/imu/roll', messageType: 'std_msgs/Float32' });
         var imuPitchSubscriber = new ROSLIB.Topic({ ros: ros, name: '/imu/pitch', messageType: 'std_msgs/Float32' });
+        var clearlinkStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/clearlink/status', messageType: 'clearlink_interfaces/MotorStatus' });
 
+        clearlinkStatusSubscriber.subscribe(function(msg) {
+            updateClearlinkStatus(msg.connected);
+            // Update connection status in stats
+            var connEl = document.getElementById('clearlinkConnStatus');
+            if (msg.connected) {
+                connEl.textContent = 'Connected';
+                connEl.style.color = '#34c759';
+            } else {
+                connEl.textContent = 'Not Connected';
+                connEl.style.color = '#ff3b30';
+            }
+            // Check for faults on any axis
+            var hasFault = msg.axis1_fault || msg.axis2_fault || msg.axis3_fault || msg.axis4_fault;
+            var faultEl = document.getElementById('motorFaultStatus');
+            var resetBtn = document.getElementById('resetFaultBtn');
+            if (hasFault) {
+                var faultedAxes = [];
+                if (msg.axis1_fault) faultedAxes.push('1');
+                if (msg.axis2_fault) faultedAxes.push('2');
+                if (msg.axis3_fault) faultedAxes.push('3');
+                if (msg.axis4_fault) faultedAxes.push('4');
+                faultEl.textContent = 'Yes (Axis ' + faultedAxes.join(', ') + ')';
+                faultEl.style.color = '#ff3b30';
+                resetBtn.style.display = 'flex';
+            } else {
+                faultEl.textContent = 'No';
+                faultEl.style.color = '#34c759';
+                resetBtn.style.display = 'none';
+            }
+        });
         updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = 'Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = 'Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
         function installUpdate() { if (isUpdating) return; isUpdating = true; var banner = document.getElementById('updateBanner'); banner.innerHTML = 'Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
 
@@ -1432,6 +1533,7 @@
                 el = document.getElementById('systemWifiIp'); if (el.textContent !== wifiIp) el.textContent = wifiIp;
                 el = document.getElementById('systemEthIp'); if (el.textContent !== ethIp) el.textContent = ethIp;
                 el = document.getElementById('wifiSsidDisplay'); if (el.textContent !== ssid) el.textContent = ssid;
+                updateWifiStatus(ssid);
             } catch(e) { }
         });
 
@@ -1448,6 +1550,39 @@
             imuPitchOffset = imuCurrentPitch;
             document.getElementById('imuRelRoll').textContent = '0.0';
             document.getElementById('imuRelPitch').textContent = '0.0';
+        }
+
+        // ClearLink fault reset service client
+        var clearFaultsClient = new ROSLIB.Service({
+            ros: ros,
+            name: '/clearlink/clear_faults',
+            serviceType: 'clearlink_interfaces/srv/ClearFaults'
+        });
+
+        function resetFaults(event) {
+            event.stopPropagation();
+            var request = new ROSLIB.ServiceRequest({
+                axis1: true,
+                axis2: true,
+                axis3: true,
+                axis4: true
+            });
+            var faultEl = document.getElementById('motorFaultStatus');
+            faultEl.textContent = 'Clearing...';
+            faultEl.style.color = '#ff9500';
+            clearFaultsClient.callService(request, function(result) {
+                if (result.success) {
+                    faultEl.textContent = 'Cleared';
+                    faultEl.style.color = '#34c759';
+                } else {
+                    faultEl.textContent = 'Failed: ' + result.message;
+                    faultEl.style.color = '#ff3b30';
+                }
+            }, function(error) {
+                faultEl.textContent = 'Error';
+                faultEl.style.color = '#ff3b30';
+                console.error('Clear faults service error:', error);
+            });
         }
 
         imuRollSubscriber.subscribe(function(msg) {
