@@ -15,6 +15,13 @@ import yaml
 # Import driver-specific messages
 from roboclaw_interfaces.msg import SpeedCommand
 
+# Try to import ClearLink messages (may not be built yet)
+try:
+    from clearlink_interfaces.msg import MotorCommand as ClearLinkCommand
+    CLEARLINK_AVAILABLE = True
+except ImportError:
+    CLEARLINK_AVAILABLE = False
+
 
 class MotorController(Node):
     def __init__(self):
@@ -121,10 +128,13 @@ class MotorController(Node):
             self.get_logger().info('Using RoboClaw driver')
 
         elif self.driver_type == 'clearlink':
-            # Stub for ClearLink - publish to a placeholder topic
-            # Will be replaced when clearlink_driver package is created
-            self.speed_pub = self.create_publisher(String, '/clearlink_command', 10)
-            self.get_logger().warn('ClearLink driver not yet implemented - using stub')
+            if CLEARLINK_AVAILABLE:
+                self.cmd_pub = self.create_publisher(ClearLinkCommand, '/clearlink/command', 10)
+                self.get_logger().info('Using ClearLink driver')
+            else:
+                # Fallback to stub if clearlink_interfaces not built yet
+                self.cmd_pub = self.create_publisher(String, '/clearlink_command', 10)
+                self.get_logger().warn('ClearLink interfaces not available - using stub')
 
         else:
             self.get_logger().error(f'Unknown driver type: {self.driver_type}')
@@ -236,31 +246,61 @@ class MotorController(Node):
         )
 
     def move_clearlink(self, direction):
-        """Send movement command to ClearLink driver (stub)."""
-        # Stub implementation - will be replaced when clearlink_driver exists
-        import json
+        """Send movement command to ClearLink driver."""
+        if CLEARLINK_AVAILABLE:
+            msg = ClearLinkCommand()
+            msg.header.stamp = self.get_clock().now().to_msg()
 
-        command = {
-            'action': 'move',
-            'direction': direction,
-            'motors': []
-        }
+            # Get motor speeds and map to axes
+            for i, motor in enumerate(self.motors):
+                speed = self.calculate_motor_speed(motor, direction)
+                accel = self.calculate_accel(motor)
+                axis = motor.get('axis', i + 1)  # Default to sequential axis
 
-        for motor in self.motors:
-            speed = self.calculate_motor_speed(motor, direction)
-            accel = self.calculate_accel(motor)
-            command['motors'].append({
-                'name': motor['name'],
-                'speed': speed,
-                'accel': accel
-            })
+                # Enable and set velocity for each axis
+                if axis == 1:
+                    msg.axis1_enable = True
+                    msg.axis1_steps_per_sec = speed
+                elif axis == 2:
+                    msg.axis2_enable = True
+                    msg.axis2_steps_per_sec = speed
+                elif axis == 3:
+                    msg.axis3_enable = True
+                    msg.axis3_steps_per_sec = speed
+                elif axis == 4:
+                    msg.axis4_enable = True
+                    msg.axis4_steps_per_sec = speed
 
-        msg = String()
-        msg.data = json.dumps(command)
-        self.speed_pub.publish(msg)
+                msg.acceleration = accel
 
-        direction_str = 'forward' if direction > 0 else 'backward'
-        self.get_logger().info(f'ClearLink stub: Moving {direction_str} at {self.speed_percent}%')
+            msg.max_secs = 120
+            self.cmd_pub.publish(msg)
+
+            direction_str = 'forward' if direction > 0 else 'backward'
+            self.get_logger().info(
+                f'Moving {direction_str} at {self.speed_percent}% via ClearLink'
+            )
+        else:
+            # Fallback to stub
+            import json
+            command = {
+                'action': 'move',
+                'direction': direction,
+                'motors': []
+            }
+            for motor in self.motors:
+                speed = self.calculate_motor_speed(motor, direction)
+                accel = self.calculate_accel(motor)
+                command['motors'].append({
+                    'name': motor['name'],
+                    'speed': speed,
+                    'accel': accel
+                })
+            msg = String()
+            msg.data = json.dumps(command)
+            self.cmd_pub.publish(msg)
+            direction_str = 'forward' if direction > 0 else 'backward'
+            self.get_logger().info(f'ClearLink stub: Moving {direction_str} at {self.speed_percent}%')
 
     def stop(self):
         """Stop all motors."""
@@ -280,18 +320,42 @@ class MotorController(Node):
         self.get_logger().info('Stopping')
 
     def stop_clearlink(self):
-        """Stop motors via ClearLink driver (stub)."""
-        import json
+        """Stop motors via ClearLink driver."""
+        if CLEARLINK_AVAILABLE:
+            msg = ClearLinkCommand()
+            msg.header.stamp = self.get_clock().now().to_msg()
 
-        command = {
-            'action': 'stop',
-            'motors': [motor['name'] for motor in self.motors]
-        }
+            # Set all velocities to 0 to stop
+            for motor in self.motors:
+                axis = motor.get('axis', 1)
+                if axis == 1:
+                    msg.axis1_enable = True
+                    msg.axis1_steps_per_sec = 0
+                elif axis == 2:
+                    msg.axis2_enable = True
+                    msg.axis2_steps_per_sec = 0
+                elif axis == 3:
+                    msg.axis3_enable = True
+                    msg.axis3_steps_per_sec = 0
+                elif axis == 4:
+                    msg.axis4_enable = True
+                    msg.axis4_steps_per_sec = 0
 
-        msg = String()
-        msg.data = json.dumps(command)
-        self.speed_pub.publish(msg)
-        self.get_logger().info('ClearLink stub: Stopping')
+            msg.acceleration = 50000  # Fast deceleration for stop
+            msg.max_secs = 1
+            self.cmd_pub.publish(msg)
+            self.get_logger().info('Stopping via ClearLink')
+        else:
+            # Fallback to stub
+            import json
+            command = {
+                'action': 'stop',
+                'motors': [motor['name'] for motor in self.motors]
+            }
+            msg = String()
+            msg.data = json.dumps(command)
+            self.cmd_pub.publish(msg)
+            self.get_logger().info('ClearLink stub: Stopping')
 
 
 def main(args=None):

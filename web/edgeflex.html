@@ -547,6 +547,11 @@
         .header { text-align: center; color: #86868b; font-size: 12px; margin-bottom: 15px; }
         .footer { text-align: center; color: #86868b; font-size: 11px; margin-top: 15px; }
         @media (max-width: 400px) { .control-row { grid-template-columns: 1fr; } }
+        .driver-toggle { display: flex; gap: 4px; background: #f5f5f7; border-radius: 8px; padding: 2px; }
+        .driver-btn { padding: 6px 12px; font-size: 12px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: #86868b; transition: all 0.2s; }
+        .driver-btn.active { background: #007aff; color: #ffffff; }
+        .driver-btn:hover:not(.active) { background: #e8e8ed; }
+        .restart-banner { background: #ff9500; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; text-align: center; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -658,6 +663,14 @@
                             <button class="popup-close" onclick="closePopup('motorParamsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                         </div>
                         <div class="popup-content">
+                        <div class="settings-row" style="padding-bottom: 12px; border-bottom: 1px solid #e0e0e0; margin-bottom: 12px;">
+                            <span class="settings-label">Motor Driver</span>
+                            <div class="driver-toggle">
+                                <button class="driver-btn active" id="driverClearLink" onclick="setDriver('clearlink')">ClearLink</button>
+                                <button class="driver-btn" id="driverRoboClaw" onclick="setDriver('roboclaw')">RoboClaw</button>
+                            </div>
+                        </div>
+                        <div id="driverRestartBanner" class="restart-banner" style="display: none; margin-bottom: 12px;">Restart service to apply driver change</div>
                         <div class="protected-header" style="margin-bottom: 12px;">
                             <span class="protected-title">Protected Settings</span>
                             <button class="lock-btn" id="lockBtn" onclick="toggleProtectedSettings(event)">
@@ -1034,6 +1047,36 @@
 
         var MAX_SPEED_IPS = calculateMaxSpeed();
 
+        // Motor driver toggle state
+        var currentDriver = 'clearlink';  // Default for EdgeFlex
+        var savedDriver = 'clearlink';
+
+        function updateDriverToggle() {
+            document.getElementById('driverClearLink').classList.toggle('active', currentDriver === 'clearlink');
+            document.getElementById('driverRoboClaw').classList.toggle('active', currentDriver === 'roboclaw');
+            var needsRestart = currentDriver !== savedDriver;
+            document.getElementById('driverRestartBanner').style.display = needsRestart ? 'block' : 'none';
+        }
+
+        function setDriver(driver) {
+            currentDriver = driver;
+            updateDriverToggle();
+            saveSettings({ motorDriver: driver });
+            // Update YAML config via API
+            fetch('/api/driver', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ driver: driver })
+            }).then(function(response) { return response.json(); })
+              .then(function(result) {
+                  if (result.success) {
+                      console.log('Driver config updated');
+                  } else {
+                      console.error('Failed to update driver config:', result.error);
+                  }
+              }).catch(function(e) { console.error('Failed to update driver:', e); });
+        }
+
         // Load saved settings from JSON config file on server
         function loadSettings() {
             fetch('/api/settings')
@@ -1057,6 +1100,12 @@
                     // Load pipe diameter
                     if (settings.pipeDiameter) {
                         updatePipeDiameter(settings.pipeDiameter, false);
+                    }
+                    // Load motor driver setting
+                    if (settings.motorDriver) {
+                        currentDriver = settings.motorDriver;
+                        savedDriver = settings.motorDriver;
+                        updateDriverToggle();
                     }
                 })
                 .catch(function(e) { console.error('Failed to load settings:', e); });

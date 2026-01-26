@@ -1,22 +1,30 @@
 system:
-  name: "EdgeFlex"
+  name: EdgeFlex
   id: edgeflex
-  web_interface: "edgeflex.html"
-
+  web_interface: edgeflex.html
 driver:
   type: clearlink
-  device: /dev/ttyUSB0
+  ip_address: 192.168.1.100
+  port: 44818
+  num_axes: 4
+  device: /dev/ttyACM0
+  baud_rate: 115200
+  address: 128
   loop_hz: 10
   deadman_secs: 3
-
 motors:
-  - name: left
-    max_speed: 10000
-    default_speed: 5000
-    max_accel: 8000
-    invert: false
-  - name: right
-    max_speed: 10000
-    default_speed: 5000
-    max_accel: 8000
-    invert: true
+- name: left
+  axis: 1
+  max_speed: 10000
+  default_speed: 5000
+  max_accel: 8000
+  invert: false
+- name: right
+  axis: 2
+  max_speed: 10000
+  default_speed: 5000
+  max_accel: 8000
+  invert: true
+clearlink:
+  steps_per_revolution: 6400
+  wheel_circumference_mm: 142.0

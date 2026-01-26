@@ -95,22 +95,24 @@ def generate_launch_description():
         )
 
     elif driver_type == 'clearlink':
-        # ClearLink driver - placeholder until clearlink_driver package exists
+        # ClearLink EtherNet/IP motor controller
         nodes.append(
-            LogInfo(msg='ClearLink driver not yet implemented - motor_controller will use stub')
+            LogInfo(msg=f"ClearLink driver connecting to {driver_config.get('ip_address', '192.168.1.100')}")
         )
-        # When clearlink_driver is created, uncomment and configure:
-        # nodes.append(
-        #     Node(
-        #         package='clearlink_driver',
-        #         executable='clearlink_node',
-        #         name='clearlink',
-        #         parameters=[{
-        #             'device': driver_config.get('device', '/dev/ttyUSB0'),
-        #             'loop_hz': driver_config.get('loop_hz', 10),
-        #         }]
-        #     )
-        # )
+        nodes.append(
+            Node(
+                package='clearlink_driver',
+                executable='clearlink_node',
+                name='clearlink',
+                parameters=[{
+                    'ip_address': driver_config.get('ip_address', '192.168.1.100'),
+                    'port': driver_config.get('port', 44818),
+                    'num_axes': driver_config.get('num_axes', 4),
+                    'loop_hz': driver_config.get('loop_hz', 10),
+                    'deadman_secs': driver_config.get('deadman_secs', 3),
+                }]
+            )
+        )
 
     # Motor controller (unified controller that reads config)
     nodes.append(
