@@ -498,11 +498,11 @@
         .pipe-calc-item { text-align: center; }
         .pipe-calc-label { font-size: 12px; color: #86868b; display: block; margin-bottom: 5px; }
         .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
-        .shots-table-container { overflow-x: auto; }
-        .shots-table { border-collapse: collapse; }
-        .shots-table td { padding: 6px 10px; text-align: center; white-space: nowrap; }
-        .shots-table tr:first-child td { color: #86868b; font-size: 12px; font-weight: 500; }
-        .shots-table tr:last-child td { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .pipe-with-shots { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .shots-column { display: flex; flex-direction: column; gap: 4px; min-width: 50px; }
+        .shot-item { font-size: 10px; color: #1d1d1f; text-align: center; }
+        .shot-item .shot-label { color: #86868b; font-weight: 500; }
+        .shot-item .shot-value { font-weight: 600; }
         .controls { display: grid; gap: 12px; margin-bottom: 20px; }
         .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .camera-section {
@@ -780,16 +780,15 @@
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Distance</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Angle</span><input type="number" class="pipe-calc-value" id="pipeRelAngleDisplay" value="0.0" step="0.1" style="width: 60px; border: 1px solid #e0e0e0; border-radius: 6px; text-align: center; background: white;" onchange="setTestAngle(this.value)">°</div>
             </div>
-            <div class="pipe-container" id="pipeContainer">
-                <div class="pipe-circle"></div>
-                <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#5856d6"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
+            <div class="pipe-with-shots">
+                <div class="shots-column" id="shotsLeft"></div>
+                <div class="pipe-container" id="pipeContainer">
+                    <div class="pipe-circle"></div>
+                    <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#5856d6"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
+                </div>
+                <div class="shots-column" id="shotsRight"></div>
             </div>
-            <div class="shots-table-container" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; overflow-x: auto;">
-                <table class="shots-table" id="shotsTable">
-                    <tr id="shotHeaderRow"></tr>
-                    <tr id="shotAngleRow"></tr>
-                </table>
-            </div>
+            <button class="secondary-btn" style="margin-top: 12px; font-size: 12px; padding: 6px 12px;" onclick="clearShots()">Clear Shots</button>
         </div>
 
         <div class="controls">
@@ -1476,15 +1475,19 @@
         function autoMove() {
             sendCommand('auto_move');
             shotCount++;
-            var relAngle = document.getElementById('imuRelPitch').textContent;
-            var headerRow = document.getElementById('shotHeaderRow');
-            var angleRow = document.getElementById('shotAngleRow');
-            var headerCell = document.createElement('td');
-            headerCell.textContent = 'Shot ' + shotCount;
-            headerRow.appendChild(headerCell);
-            var angleCell = document.createElement('td');
-            angleCell.textContent = relAngle + '°';
-            angleRow.appendChild(angleCell);
+            var relAngle = document.getElementById('pipeRelAngleDisplay').value;
+            var targetColumn = shotCount <= 6 ? 'shotsLeft' : 'shotsRight';
+            var column = document.getElementById(targetColumn);
+            var shotItem = document.createElement('div');
+            shotItem.className = 'shot-item';
+            shotItem.innerHTML = '<span class="shot-label">Shot ' + shotCount + '</span> <span class="shot-value">' + relAngle + '°</span>';
+            column.appendChild(shotItem);
+        }
+
+        function clearShots() {
+            shotCount = 0;
+            document.getElementById('shotsLeft').innerHTML = '';
+            document.getElementById('shotsRight').innerHTML = '';
         }
 
         function setTestAngle(value) {
