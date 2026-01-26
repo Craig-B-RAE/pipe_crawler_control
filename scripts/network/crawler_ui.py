@@ -52,7 +52,8 @@ DEFAULT_UI_SETTINGS = {
 CRAWLER_HTML = {
     "magnetic": "magnetic_phased_array.html",
     "xpresscan": "new_xpress_scan.html",
-    "edgeflex": "edgeflex.html"
+    "edgeflex": "edgeflex.html",
+    "edgeflex_clearlink": "edgeflex_clearlink.html"
 }
 
 
@@ -831,9 +832,17 @@ DEFAULT_CRAWLERS = {
     "edgeflex": {
         "hostname": "edgeflex",
         "ip": "10.42.0.13/24",
-        "name": "EdgeFlex",
+        "name": "EdgeFlex RoboClaw",
         "yaml": "edgeflex.yaml",
         "html": "edgeflex.html",
+        "motor_driver": "roboclaw"
+    },
+    "edgeflex_clearlink": {
+        "hostname": "edgeflex",
+        "ip": "10.42.0.14/24",
+        "name": "EdgeFlex ClearLink",
+        "yaml": "edgeflex_clearlink.yaml",
+        "html": "edgeflex_clearlink.html",
         "motor_driver": "clearlink"
     }
 }

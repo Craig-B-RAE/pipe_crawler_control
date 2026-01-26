@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EdgeFlex Controller</title>
+    <title>EdgeFlex RoboClaw Controller</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -564,7 +564,7 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
         </div>
-        <div class="system-badge"><span>EdgeFlex</span></div>
+        <div class="system-badge"><span>EdgeFlex RoboClaw</span></div>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">Update available! Click to install (v<span id="newVersion"></span>)</div>
 
         <!-- Single motor info toolbar -->
@@ -733,13 +733,6 @@
                                 <span id="crawlerTorqueDisplay" style="font-weight: 600; color: #86868b; width: 85px; text-align: center;">1.0</span>
                             </div>
                         </div>
-                        <div style="display: flex; justify-content: center; padding-top: 12px; border-top: 1px solid #e0e0e0; margin-top: 12px;">
-                            <div class="driver-toggle">
-                                <button class="driver-btn active" id="driverClearLink" onclick="setDriver('clearlink')" disabled>ClearLink</button>
-                                <button class="driver-btn" id="driverRoboClaw" onclick="setDriver('roboclaw')" disabled>RoboClaw</button>
-                            </div>
-                        </div>
-                        <div id="driverRestartBanner" class="restart-banner" style="display: none; margin-top: 8px;">Restart service to apply driver change</div>
                         </div>
                     </div>
                 </div>
@@ -1432,9 +1425,13 @@
         networkInfoSubscriber.subscribe(function(msg) {
             try {
                 var info = JSON.parse(msg.data);
-                document.getElementById('systemWifiIp').textContent = info.wifi === '--' ? '--' : info.wifi;
-                document.getElementById('systemEthIp').textContent = info.eth === '--' ? '--' : info.eth;
-                document.getElementById('wifiSsidDisplay').textContent = info.wifi_ssid || '--';
+                var wifiIp = info.wifi === '--' ? '--' : info.wifi;
+                var ethIp = info.eth === '--' ? '--' : info.eth;
+                var ssid = info.wifi_ssid || '--';
+                var el;
+                el = document.getElementById('systemWifiIp'); if (el.textContent !== wifiIp) el.textContent = wifiIp;
+                el = document.getElementById('systemEthIp'); if (el.textContent !== ethIp) el.textContent = ethIp;
+                el = document.getElementById('wifiSsidDisplay'); if (el.textContent !== ssid) el.textContent = ssid;
             } catch(e) { }
         });
 

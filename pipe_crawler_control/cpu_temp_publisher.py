@@ -27,6 +27,19 @@ class CpuTempPublisher(Node):
             pass
         return None
 
+    def get_wifi_ssid(self):
+        try:
+            result = subprocess.run(
+                ['iwgetid', '-r'],
+                capture_output=True, text=True, timeout=5
+            )
+            ssid = result.stdout.strip()
+            if ssid:
+                return ssid
+        except:
+            pass
+        return None
+
     def publish_temp(self):
         try:
             with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
@@ -40,7 +53,8 @@ class CpuTempPublisher(Node):
     def publish_network(self):
         info = {
             'wifi': self.get_ip('wlan0') or '--',
-            'eth': self.get_ip('eth0') or '--'
+            'eth': self.get_ip('eth0') or '--',
+            'wifi_ssid': self.get_wifi_ssid() or '--'
         }
         msg = String()
         msg.data = json.dumps(info)

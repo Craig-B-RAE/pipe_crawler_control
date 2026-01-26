@@ -1377,9 +1377,13 @@
         networkInfoSubscriber.subscribe(function(msg) {
             try {
                 var info = JSON.parse(msg.data);
-                document.getElementById('systemWifiIp').textContent = info.wifi === '--' ? '--' : info.wifi;
-                document.getElementById('systemEthIp').textContent = info.eth === '--' ? '--' : info.eth;
-                document.getElementById('wifiSsidDisplay').textContent = info.wifi_ssid || '--';
+                var wifiIp = info.wifi === '--' ? '--' : info.wifi;
+                var ethIp = info.eth === '--' ? '--' : info.eth;
+                var ssid = info.wifi_ssid || '--';
+                var el;
+                el = document.getElementById('systemWifiIp'); if (el.textContent !== wifiIp) el.textContent = wifiIp;
+                el = document.getElementById('systemEthIp'); if (el.textContent !== ethIp) el.textContent = ethIp;
+                el = document.getElementById('wifiSsidDisplay'); if (el.textContent !== ssid) el.textContent = ssid;
             } catch(e) { }
         });
 

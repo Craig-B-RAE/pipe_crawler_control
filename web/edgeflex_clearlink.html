@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magnetic Phased Array Crawler</title>
+    <title>EdgeFlex ClearLink Controller</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -547,6 +547,12 @@
         .header { text-align: center; color: #86868b; font-size: 12px; margin-bottom: 15px; }
         .footer { text-align: center; color: #86868b; font-size: 11px; margin-top: 15px; }
         @media (max-width: 400px) { .control-row { grid-template-columns: 1fr; } }
+        .driver-toggle { display: flex; gap: 4px; background: #f5f5f7; border-radius: 8px; padding: 2px; }
+        .driver-btn { padding: 6px 12px; font-size: 12px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: #86868b; transition: all 0.2s; }
+        .driver-btn.active { background: #007aff; color: #ffffff; }
+        .driver-btn:hover:not(.active):not(:disabled) { background: #e8e8ed; }
+        .driver-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .restart-banner { background: #ff9500; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; text-align: center; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -558,7 +564,7 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
         </div>
-        <div class="system-badge"><span>Magnetic Crawler System</span></div>
+        <div class="system-badge"><span>EdgeFlex ClearLink</span></div>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">Update available! Click to install (v<span id="newVersion"></span>)</div>
 
         <!-- Single motor info toolbar -->
@@ -720,7 +726,7 @@
                                 <span id="maxSpeedDisplay" style="font-weight: 600; color: #86868b; width: 85px; text-align: center;">8.3</span>
                             </div>
                         </div>
-                        <div class="settings-row" style="padding-top: 4px; border-bottom: none;">
+                        <div class="settings-row" style="padding-top: 4px;">
                             <span class="settings-label" style="color: #86868b;">Crawler Torque</span>
                             <div style="display: flex; align-items: center; justify-content: flex-end;">
                                 <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">Nm</span>
@@ -843,7 +849,7 @@
     <script>
         var CURRENT_VERSION = '2.0.1';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
-        var SYSTEM_ID = 'magnetic_phased_array';
+        var SYSTEM_ID = 'edgeflex';
         var MOTOR_COUNT = 1;
         var isUpdating = false;
         var pipeDiameter = 12;
@@ -1034,6 +1040,36 @@
 
         var MAX_SPEED_IPS = calculateMaxSpeed();
 
+        // Motor driver toggle state
+        var currentDriver = 'clearlink';  // Default for EdgeFlex
+        var savedDriver = 'clearlink';
+
+        function updateDriverToggle() {
+            document.getElementById('driverClearLink').classList.toggle('active', currentDriver === 'clearlink');
+            document.getElementById('driverRoboClaw').classList.toggle('active', currentDriver === 'roboclaw');
+            var needsRestart = currentDriver !== savedDriver;
+            document.getElementById('driverRestartBanner').style.display = needsRestart ? 'block' : 'none';
+        }
+
+        function setDriver(driver) {
+            currentDriver = driver;
+            updateDriverToggle();
+            saveSettings({ motorDriver: driver });
+            // Update YAML config via API
+            fetch('/api/driver', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ driver: driver })
+            }).then(function(response) { return response.json(); })
+              .then(function(result) {
+                  if (result.success) {
+                      console.log('Driver config updated');
+                  } else {
+                      console.error('Failed to update driver config:', result.error);
+                  }
+              }).catch(function(e) { console.error('Failed to update driver:', e); });
+        }
+
         // Load saved settings from JSON config file on server
         function loadSettings() {
             fetch('/api/settings')
@@ -1057,6 +1093,12 @@
                     // Load pipe diameter
                     if (settings.pipeDiameter) {
                         updatePipeDiameter(settings.pipeDiameter, false);
+                    }
+                    // Load motor driver setting
+                    if (settings.motorDriver) {
+                        currentDriver = settings.motorDriver;
+                        savedDriver = settings.motorDriver;
+                        updateDriverToggle();
                     }
                 })
                 .catch(function(e) { console.error('Failed to load settings:', e); });
@@ -1147,6 +1189,9 @@
             document.querySelectorAll('.protected-input').forEach(function(input) {
                 input.disabled = false;
             });
+            // Enable driver toggle buttons
+            document.getElementById('driverClearLink').disabled = false;
+            document.getElementById('driverRoboClaw').disabled = false;
             document.getElementById('lockBtn').classList.add('unlocked');
             document.getElementById('lockText').textContent = 'Lock';
             document.getElementById('lockIcon').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
@@ -1158,6 +1203,9 @@
             document.querySelectorAll('.protected-input').forEach(function(input) {
                 input.disabled = true;
             });
+            // Disable driver toggle buttons
+            document.getElementById('driverClearLink').disabled = true;
+            document.getElementById('driverRoboClaw').disabled = true;
             document.getElementById('lockBtn').classList.remove('unlocked');
             document.getElementById('lockText').textContent = 'Unlock';
             document.getElementById('lockIcon').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';

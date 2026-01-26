@@ -1,0 +1,27 @@
+system:
+  name: EdgeFlex ClearLink
+  id: edgeflex_clearlink
+  web_interface: edgeflex_clearlink.html
+driver:
+  type: clearlink
+  ip_address: 192.168.1.100
+  port: 44818
+  num_axes: 4
+  loop_hz: 10
+  deadman_secs: 3
+motors:
+- name: left
+  axis: 1
+  max_speed: 10000
+  default_speed: 5000
+  max_accel: 8000
+  invert: false
+- name: right
+  axis: 2
+  max_speed: 10000
+  default_speed: 5000
+  max_accel: 8000
+  invert: true
+clearlink:
+  steps_per_revolution: 6400
+  wheel_circumference_mm: 142.0
