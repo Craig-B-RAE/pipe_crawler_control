@@ -37,26 +37,14 @@
             margin-bottom: 15px;
         }
         .system-badge span {
-            background: #5856d6;
-            color: white;
+            background: none;
+            color: #86868b;
             padding: 4px 12px;
             border-radius: 12px;
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-        }
-        .driver-badge {
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        .driver-badge span {
-            background: #ff9500;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 8px;
-            font-size: 10px;
-            font-weight: 500;
         }
         .info-toolbar {
             display: flex;
@@ -71,7 +59,7 @@
         .info-label { color: #86868b; font-size: 11px; margin-right: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
         .info-value { font-weight: 600; color: #1d1d1f; font-size: 13px; }
         .info-value .current { color: #1d1d1f; }
-        .info-value .rpm { color: #34c759; font-size: 11px; }
+        .info-value .rpm { color: #007aff; font-size: 11px; }
         .motor-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
         .motor-status.running { background: #2e7d32; }
         .motor-status.stopped { background: #c62828; }
@@ -97,19 +85,61 @@
         .stats-button:hover { background: #e8e8ed; }
         .stats-popup {
             display: none;
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background: #ffffff;
             border-radius: 14px;
-            padding: 16px;
-            min-width: 200px;
-            z-index: 100;
+            padding: 0;
+            min-width: 240px;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow: hidden;
+            z-index: 200;
             color: #1d1d1f;
             text-align: left;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
         .stats-popup.show { display: block; }
+        .stats-popup.dragging { transition: none; }
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f5f5f7;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: grab;
+            user-select: none;
+        }
+        .popup-header:active { cursor: grabbing; }
+        .popup-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        .popup-close {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: #e0e0e0;
+            color: #86868b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .popup-close:hover { background: #ff3b30; color: #ffffff; }
+        .popup-close:active { transform: scale(0.9); }
+        .popup-content {
+            padding: 12px 16px 16px;
+            max-height: calc(80vh - 50px);
+            overflow-y: auto;
+        }
         .stats-row-item {
             display: flex;
             justify-content: space-between;
@@ -141,19 +171,24 @@
         .icon-btn:active { transform: scale(0.9); }
         .settings-popup {
             display: none;
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background: #ffffff;
             border-radius: 14px;
-            padding: 16px;
-            min-width: 220px;
-            z-index: 100;
+            padding: 0;
+            min-width: 240px;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow: hidden;
+            z-index: 200;
             color: #1d1d1f;
             text-align: left;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
         .settings-popup.show { display: block; }
+        .settings-popup.dragging { transition: none; }
         .settings-row {
             display: flex;
             justify-content: space-between;
@@ -176,16 +211,141 @@
         }
         .settings-input:focus {
             outline: none;
-            border-color: #34c759;
-            box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2);
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
         }
-        .settings-input::-webkit-outer-spin-button,
-        .settings-input::-webkit-inner-spin-button {
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-        .settings-input[type=number] { -moz-appearance: textfield; }
+        input[type=number] { -moz-appearance: textfield; }
         .settings-unit { color: #86868b; font-size: 13px; margin-left: 4px; }
+        .protected-section {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .protected-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .protected-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #86868b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .lock-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: #86868b;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+        }
+        .lock-btn:hover { color: #007aff; }
+        .lock-btn.unlocked { color: #34c759; }
+        .protected-input {
+            width: 85px;
+            padding: 8px 10px;
+            font-size: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            font-weight: 600;
+        }
+        .protected-input::-webkit-outer-spin-button,
+        .protected-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .protected-input[type=number] { -moz-appearance: textfield; }
+        .protected-input:disabled {
+            background: #e8e8ed;
+            color: #86868b;
+            cursor: not-allowed;
+        }
+        .protected-input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+        }
+        .password-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 300;
+            justify-content: center;
+            align-items: center;
+        }
+        .password-modal.show { display: flex; }
+        .password-dialog {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 20px;
+            width: 280px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        .password-dialog h3 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            color: #1d1d1f;
+        }
+        .password-dialog input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .password-dialog input:focus {
+            outline: none;
+            border-color: #007aff;
+        }
+        .password-dialog .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+        .password-dialog button {
+            flex: 1;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .password-dialog .btn-cancel {
+            background: #f5f5f7;
+            color: #1d1d1f;
+        }
+        .password-dialog .btn-unlock {
+            background: #007aff;
+            color: #ffffff;
+        }
+        .password-dialog .btn-cancel:hover { background: #e8e8ed; }
+        .password-dialog .btn-unlock:hover { background: #0056b3; }
+        .password-error {
+            color: #ff3b30;
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: none;
+        }
         .modal-overlay {
             display: none;
             position: fixed;
@@ -228,16 +388,31 @@
         }
         .modal-close:hover { background: #e8e8ed; color: #1d1d1f; }
         .graph-container { background: #f5f5f7; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
-        .graph-svg { width: 100%; height: 200px; }
+        .graph-svg { width: 100%; height: 220px; }
         .graph-stats { display: flex; justify-content: space-around; align-items: flex-end; padding-top: 16px; border-top: 1px solid #e0e0e0; }
         .graph-stat { text-align: center; }
         .graph-stat-label { font-size: 12px; color: #86868b; margin-bottom: 4px; }
         .graph-stat-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
         .graph-stat-value.low { color: #ff3b30; }
         .graph-stat-value.high { color: #34c759; }
+        .reset-btn-large {
+            background: #f5f5f7;
+            border: none;
+            cursor: pointer;
+            padding: 8px 12px;
+            color: #86868b;
+            font-size: 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .reset-btn-large:hover { background: #e8e8ed; color: #1d1d1f; }
+        .reset-btn-large:active { transform: scale(0.95); }
         .update-banner {
             display: none;
-            background: #34c759;
+            background: #007aff;
             color: white;
             padding: 12px 16px;
             border-radius: 12px;
@@ -248,7 +423,7 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-        .update-banner:hover { background: #2e7d32; }
+        .update-banner:hover { background: #0056b3; }
         .update-banner.show { display: block; }
         .update-banner.updating { background: #ff9500; cursor: wait; }
         .update-banner.success { background: #34c759; }
@@ -290,10 +465,8 @@
             color: #86868b;
             display: block;
         }
-        .bug, .weld { position: absolute; display: flex; align-items: center; justify-content: center; }
-        .bug { width: clamp(45px, 12vw, 65px); height: clamp(18px, 5vw, 28px); }
-        .weld { width: clamp(20px, 5vw, 30px); height: clamp(20px, 5vw, 30px); }
-        .bug svg, .weld svg { width: 100%; height: 100%; }
+        .bug { position: absolute; display: flex; align-items: center; justify-content: center; width: clamp(45px, 12vw, 65px); height: clamp(18px, 5vw, 28px); top: 11%; left: 50%; transform: translateX(-50%); }
+        .bug svg { width: 100%; height: 100%; }
         .degree-input-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; }
         .reset-btn {
             padding: 8px 16px;
@@ -325,6 +498,11 @@
         .pipe-calc-item { text-align: center; }
         .pipe-calc-label { font-size: 12px; color: #86868b; display: block; margin-bottom: 5px; }
         .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .pipe-with-shots { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .shots-column { display: flex; flex-direction: column; gap: 4px; min-width: 50px; }
+        .shot-item { font-size: 10px; color: #1d1d1f; text-align: center; }
+        .shot-item .shot-label { color: #86868b; font-weight: 500; }
+        .shot-item .shot-value { font-weight: 600; }
         .controls { display: grid; gap: 12px; margin-bottom: 20px; }
         .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .camera-section {
@@ -357,13 +535,15 @@
             border-radius: 14px;
             cursor: pointer;
             color: #ffffff;
-            background: #34c759;
+            background: #007aff;
             transition: all 0.2s;
         }
-        button.control-btn:hover { background: #2e7d32; transform: scale(1.02); }
+        button.control-btn:hover { background: #0056b3; transform: scale(1.02); }
         button.control-btn:active { transform: scale(0.98); }
         button.control-btn.btn-stop { grid-column: 1 / -1; background: #ff3b30; }
         button.control-btn.btn-stop:hover { background: #d63027; }
+        button.control-btn.btn-auto { grid-column: 1 / -1; background: #34c759; }
+        button.control-btn.btn-auto:hover { background: #2da44e; }
         .header { text-align: center; color: #86868b; font-size: 12px; margin-bottom: 15px; }
         .footer { text-align: center; color: #86868b; font-size: 11px; margin-top: 15px; }
         @media (max-width: 400px) { .control-row { grid-template-columns: 1fr; } }
@@ -371,19 +551,28 @@
 </head>
 <body>
     <div class="container">
+        <div id="connectionStatus" style="display: flex; justify-content: center; align-items: center; font-size: 12px; margin-bottom: 8px; color: #86868b; position: relative;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #c62828; margin-right: 6px;"></span>
+            <span id="connectionText">Disconnected</span>
+            <button onclick="location.reload()" style="position: absolute; right: 0; background: #f5f5f7; border: none; border-radius: 6px; padding: 6px; cursor: pointer;" title="Refresh page">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+        </div>
         <div class="system-badge"><span>EdgeFlex</span></div>
-        <div class="driver-badge"><span>ClearLink Driver</span></div>
-        <div class="header">Pipe Crawler Control System v<span id="footerVersion">2.0.0</span></div>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">Update available! Click to install (v<span id="newVersion"></span>)</div>
 
-        <!-- Dual motor info toolbar -->
+        <!-- Single motor info toolbar -->
         <div class="info-toolbar">
             <div class="info-item">
-                <span class="info-value">
-                    <span class="motor-status stopped" id="m1Status"></span>
-                    <span class="info-label">Left</span>
-                    <span class="current" id="m1CurrentBar">--</span>
-                    <span class="rpm" id="m1RpmBar">0"/s</span>
+                <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="display: flex; align-items: center; margin-bottom: 4px;">
+                        <span class="motor-status stopped" id="m1Status"></span>
+                        <span class="info-label">Motor</span>
+                    </span>
+                    <span style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px;">
+                        <span class="current" id="m1CurrentBar">--A</span>
+                        <span class="current" id="m1TorqueBar">--Nm</span>
+                    </span>
                 </span>
             </div>
             <div class="info-item">
@@ -393,136 +582,260 @@
                 </span>
             </div>
             <div class="info-item">
-                <span class="info-value">
-                    <span class="motor-status stopped" id="m2Status"></span>
-                    <span class="info-label">Right</span>
-                    <span class="current" id="m2CurrentBar">--</span>
-                    <span class="rpm" id="m2RpmBar">0"/s</span>
+                <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="font-size: 10px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Battery</span>
+                    <span id="batteryDisplay" style="font-weight: 600; color: #1d1d1f;">--V</span>
                 </span>
             </div>
         </div>
 
-        <div class="status-row">
-            <span id="connectionStatus" style="font-size: 13px; font-weight: 500; color: #86868b;">Connecting...</span>
-            <div style="display: flex; gap: 10px;">
-                <div class="stats-button" onclick="toggleStats(event)">
-                    Stats
-                    <div class="stats-popup" id="statsPopup">
-                        <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value" id="cpuTemp">--°C</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Left Motor</span><span class="stats-value" id="m1Current">--</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Right Motor</span><span class="stats-value" id="m2Current">--</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
-                        <div class="stats-row-item"><span class="stats-label">WiFi IP</span><span class="stats-value" id="wifiIp">--</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Ethernet IP</span><span class="stats-value" id="ethIp">--</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.0</span></div>
+        <div class="status-row" style="justify-content: center;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+                <div class="stats-button" onclick="togglePopup('statsPopup', event)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Stats
+                    <div class="stats-popup" id="statsPopup" onclick="event.stopPropagation()">
+                        <div class="popup-header" onmousedown="startDrag(event, 'statsPopup')" ontouchstart="startDragTouch(event, 'statsPopup')">
+                            <span class="popup-title">Stats</span>
+                            <button class="popup-close" onclick="closePopup('statsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                        </div>
+                        <div class="popup-content">
+                            <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value-group"><span class="stats-value" id="voltage">--.-V</span><button class="icon-btn" onclick="showGraph(event,'battery')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor Torque</span><span class="stats-value-group"><span class="stats-value" id="m1Torque">-- Nm</span><button class="icon-btn" onclick="showGraph(event,'torque')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value-group"><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span><button class="icon-btn" onclick="zeroIMU(event)" title="Zero IMU"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></button></span></div>
+                            <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: #86868b;">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label" style="color: #86868b;">Rel. Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.0</span></div>
+                        </div>
                     </div>
                 </div>
-                <div class="stats-button" id="settingsButton" onclick="toggleSettings(event)" style="position: relative;">
-                    Settings
+                <div class="stats-button" id="settingsButton" onclick="togglePopup('settingsPopup', event)" style="position: relative;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings
                     <div class="settings-popup" id="settingsPopup" onclick="event.stopPropagation()">
-                        <div class="settings-row">
-                            <span class="settings-label">Pipe Diameter</span>
-                            <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                <span class="settings-unit" style="margin-right: 6px;">in</span>
-                                <input type="number" class="settings-input" id="pipeDiameterSetting" min="1" max="100" value="12" onchange="updatePipeDiameter(this.value)">
-                            </div>
+                        <div class="popup-header" onmousedown="startDrag(event, 'settingsPopup')" ontouchstart="startDragTouch(event, 'settingsPopup')">
+                            <span class="popup-title">Settings</span>
+                            <button class="popup-close" onclick="closePopup('settingsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                         </div>
-                        <div class="settings-row" style="padding-top: 0;">
-                            <span class="settings-label">Circumference</span>
-                            <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                <span class="settings-unit" style="margin-right: 6px;">in</span>
-                                <span id="circumferenceValue" class="settings-input" style="display: inline-block; width: 70px; background: none; border: none; text-align: center;">37.7</span>
+                        <div class="popup-content">
+                            <div class="settings-row">
+                                <span class="settings-label">Pipe Diameter</span>
+                                <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                    <span class="settings-unit" style="margin-right: 6px;">in</span>
+                                    <input type="number" class="settings-input" id="pipeDiameterSetting" min="1" max="100" value="12" onchange="updatePipeDiameter(this.value)">
+                                </div>
                             </div>
-                        </div>
-                        <div class="settings-row">
-                            <span class="settings-label">Speed</span>
-                            <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                <span class="settings-unit" style="margin-right: 6px;">%</span>
-                                <input type="number" class="settings-input" id="speedInput" min="0" max="100" value="50" onchange="updateSpeed(this.value)">
+                            <div class="settings-row" style="padding-top: 0;">
+                                <span class="settings-label">Circumference</span>
+                                <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                    <span class="settings-unit" style="margin-right: 6px;">in</span>
+                                    <span id="circumferenceValue" class="settings-input" style="display: inline-block; width: 70px; background: none; border: none; text-align: center;">37.7</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="settings-row">
-                            <span class="settings-label">Ramp</span>
-                            <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                <span class="settings-unit" style="margin-right: 6px;">%</span>
-                                <input type="number" class="settings-input" id="rampInput" min="0" max="100" value="50" onchange="updateRamp(this.value)">
+                            <div class="settings-row">
+                                <span class="settings-label">Speed</span>
+                                <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                    <span class="settings-unit" style="margin-right: 6px;">"/s</span>
+                                    <input type="number" class="settings-input" id="speedInput" min="0" max="8.3" step="0.1" value="4.0" onchange="updateSpeed(this.value)">
+                                </div>
+                            </div>
+                            <div class="settings-row">
+                                <span class="settings-label">Ramp</span>
+                                <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                    <span class="settings-unit" style="margin-right: 6px;">%</span>
+                                    <input type="number" class="settings-input" id="rampInput" min="0" max="100" value="50" onchange="updateRamp(this.value)">
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <button class="stats-button" onclick="openSystemModal()">System</button>
+                <div class="stats-button" onclick="togglePopup('motorParamsPopup', event)" style="position: relative;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Motors
+                    <div class="settings-popup" id="motorParamsPopup" onclick="event.stopPropagation()">
+                        <div class="popup-header" onmousedown="startDrag(event, 'motorParamsPopup')" ontouchstart="startDragTouch(event, 'motorParamsPopup')">
+                            <span class="popup-title">Motor Parameters</span>
+                            <button class="popup-close" onclick="closePopup('motorParamsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                        </div>
+                        <div class="popup-content">
+                        <div class="protected-header" style="margin-bottom: 12px;">
+                            <span class="protected-title">Protected Settings</span>
+                            <button class="lock-btn" id="lockBtn" onclick="toggleProtectedSettings(event)">
+                                <svg id="lockIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                <span id="lockText">Unlock</span>
+                            </button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Encoder Res</span>
+                            <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">ppr</span>
+                                <input type="number" class="protected-input" id="encoderResInput" step="0.1" value="1425.1" onchange="updateMotorParams()" disabled>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Wheel Dia</span>
+                            <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">in</span>
+                                <input type="number" class="protected-input" id="wheelDiaInput" step="0.01" value="1.77" onchange="updateMotorParams()" disabled>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Gearbox Ratio</span>
+                            <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">:1</span>
+                                <input type="number" class="protected-input" id="gearboxRatioInput" step="0.1" value="1" onchange="updateMotorParams()" disabled>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Gear Ratio</span>
+                            <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">:1</span>
+                                <input type="number" class="protected-input" id="gearRatioInput" step="0.1" value="2" onchange="updateMotorParams()" disabled>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Max Motor</span>
+                            <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">rpm</span>
+                                <input type="number" class="protected-input" id="maxRpmInput" step="1" value="179" onchange="updateMotorParams()" disabled>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label"># Motors</span>
+                            <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                <input type="number" class="protected-input" id="numMotorsInput" step="1" min="1" max="10" value="1" onchange="updateMotorParams()" disabled>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Motor Torque</span>
+                            <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">Nm</span>
+                                <input type="number" class="protected-input" id="motorTorqueInput" step="0.01" value="0.5" onchange="updateMotorParams()" disabled>
+                            </div>
+                        </div>
+                        <div class="settings-row" style="padding-top: 4px;">
+                            <span class="settings-label" style="color: #86868b;">Max Speed</span>
+                            <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">"/s</span>
+                                <span id="maxSpeedDisplay" style="font-weight: 600; color: #86868b; width: 85px; text-align: center;">8.3</span>
+                            </div>
+                        </div>
+                        <div class="settings-row" style="padding-top: 4px; border-bottom: none;">
+                            <span class="settings-label" style="color: #86868b;">Crawler Torque</span>
+                            <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">Nm</span>
+                                <span id="crawlerTorqueDisplay" style="font-weight: 600; color: #86868b; width: 85px; text-align: center;">1.0</span>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-button" onclick="togglePopup('systemPopup', event)" style="position: relative;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>System
+                    <div class="stats-popup" id="systemPopup" onclick="event.stopPropagation()">
+                        <div class="popup-header" onmousedown="startDrag(event, 'systemPopup')" ontouchstart="startDragTouch(event, 'systemPopup')">
+                            <span class="popup-title">System</span>
+                            <button class="popup-close" onclick="closePopup('systemPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                        </div>
+                        <div class="popup-content">
+                            <div class="stats-row-item"><span class="stats-label">CPU Usage</span><span class="stats-value" id="cpuUsage">--%</span></div>
+                            <div class="stats-row-item"><span class="stats-label">RAM</span><span class="stats-value" id="ramUsage">--</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Storage</span><span class="stats-value" id="diskUsage">--</span></div>
+                            <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value-group"><span class="stats-value" id="cpuTemp">--°C</span><button class="icon-btn" onclick="showGraph(event,'temp')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                            <div class="stats-row-item"><span class="stats-label">Fan</span><span class="stats-value-group"><span class="stats-value" id="fanSpeed">--</span><button class="icon-btn" onclick="showGraph(event,'fan')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                            <div class="stats-row-item">
+                                <span class="stats-label">Connected WiFi</span>
+                                <span class="stats-value" id="wifiSsidDisplay">--</span>
+                            </div>
+                            <div class="stats-row-item">
+                                <span class="stats-label">WiFi IP</span>
+                                <span class="stats-value" id="systemWifiIp">--</span>
+                            </div>
+                            <div class="stats-row-item">
+                                <span class="stats-label">Wired IP</span>
+                                <span class="stats-value" id="systemEthIp">--</span>
+                            </div>
+                            <div class="stats-row-item">
+                                <span class="stats-label">USB 1</span>
+                                <span class="stats-value" id="usb1Device">--</span>
+                            </div>
+                            <div class="stats-row-item">
+                                <span class="stats-label">USB 2</span>
+                                <span class="stats-value" id="usb2Device">--</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+                                <button class="secondary-btn" onclick="openConfiguration()">Configuration</button>
+                                <button class="secondary-btn" onclick="forgetWifi()">Forget WiFi</button>
+                                <button class="secondary-btn" onclick="rebootSystem()">Reboot</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="pipe-section">
-            <div class="pipe-container">
-                <div class="pipe-circle"></div>
-                <div class="degree-display"><span id="degreeValue">0</span>°<span class="distance" id="distanceInPipe">0.0 in</span></div>
-                <div class="weld" id="weld"><svg viewBox="0 0 100 100"><rect x="10" y="40" width="80" height="20" fill="#666" rx="2"/><rect x="5" y="35" width="90" height="30" fill="none" stroke="#444" stroke-width="3" rx="3"/></svg></div>
-                <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#34c759"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
+            <div class="pipe-calc-row" style="margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0;">
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Speed</span><span class="pipe-calc-value" id="pipeSpeedDisplay">0.0"/s</span></div>
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Distance</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Angle</span><input type="number" class="pipe-calc-value" id="pipeRelAngleDisplay" value="0.0" step="0.1" style="width: 60px; border: 1px solid #e0e0e0; border-radius: 6px; text-align: center; background: white;" onchange="setTestAngle(this.value)">°</div>
             </div>
-            <div class="degree-input-row"><button class="reset-btn" onclick="resetPosition()">Reset Position</button></div>
-            <div class="pipe-calc-row">
-                <div class="pipe-calc-item"><span class="pipe-calc-label">Distance Traveled</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
+            <div class="pipe-with-shots">
+                <div class="shots-column" id="shotsLeft"></div>
+                <div class="pipe-container" id="pipeContainer">
+                    <div class="pipe-circle"></div>
+                    <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#5856d6"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
+                </div>
+                <div class="shots-column" id="shotsRight"></div>
             </div>
+            <button class="secondary-btn" style="margin-top: 12px; font-size: 12px; padding: 6px 12px;" onclick="clearShots()">Clear Shots</button>
         </div>
 
         <div class="controls">
             <div class="control-row">
-                <button class="control-btn" onclick="sendCommand('forward')">Forward</button>
-                <button class="control-btn" onclick="sendCommand('backward')">Backward</button>
+                <button class="control-btn" style="font-size: 13px;" onclick="sendCommand('forward')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Jog Forward</button>
+                <button class="control-btn" style="font-size: 13px;" onclick="sendCommand('backward')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>Jog Backward</button>
             </div>
-            <button class="control-btn btn-stop" onclick="sendCommand('stop')">Stop</button>
+            <button class="control-btn btn-auto" onclick="autoMove()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>Auto Move</button>
+            <button class="control-btn btn-stop" onclick="sendCommand('stop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
         </div>
 
         <div class="camera-section">
             <div class="camera-frame" id="cameraFrame">
                 <div class="camera-placeholder">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                        <circle cx="12" cy="13" r="4"/>
-                    </svg>
+                    <img src="https://freepngimg.com/save/23298-wall-e/918x990" alt="Wall-E" style="max-height: 120px; opacity: 0.6; filter: grayscale(30%);">
                     <span>Camera Feed</span>
                 </div>
             </div>
         </div>
 
-        <div class="footer">Last updated: <span id="lastUpdated">--</span></div>
+        <div class="footer">v<span id="footerVersion">2.0.0</span> | Last updated: <span id="lastUpdated">--</span></div>
     </div>
 
-    <div class="modal-overlay" id="systemModal" onclick="closeSystemModal(event)">
-        <div class="modal" onclick="event.stopPropagation()">
+    <!-- Configuration Password Modal -->
+    <div class="modal-overlay" id="configAuthModal" onclick="closeConfigAuth()" style="display: none;">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 320px;">
             <div class="modal-header">
-                <span class="modal-title">System</span>
-                <button class="modal-close" onclick="closeSystemModal(event)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
+                <span class="modal-title">Authentication Required</span>
+                <button class="modal-close" onclick="closeConfigAuth()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
-            <div class="settings-row">
-                <span class="settings-label">Connected WiFi</span>
-                <span id="wifiSsidDisplay" style="font-weight: 600; color: #1d1d1f;">--</span>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
-                <button class="secondary-btn" onclick="openConfiguration()">Configuration</button>
-                <button class="secondary-btn" onclick="forgetWifi()">Forget WiFi</button>
-                <button class="secondary-btn" onclick="rebootSystem()">Reboot</button>
+            <div style="padding: 20px;">
+                <p style="color: #86868b; font-size: 13px; margin-bottom: 15px;">Enter admin password to access configuration.</p>
+                <input type="password" id="configAuthPassword" class="settings-input" placeholder="Password" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px;">
+                <p id="configAuthError" style="color: #ff3b30; font-size: 12px; margin-bottom: 10px; display: none;">Incorrect password</p>
+                <div style="display: flex; gap: 10px;">
+                    <button class="secondary-btn" onclick="closeConfigAuth()" style="flex: 1;">Cancel</button>
+                    <button class="control-btn" onclick="checkConfigAuth()" style="flex: 1; padding: 10px;">Continue</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Configuration Password Modal -->
-    <div id="configAuthModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
-        <div style="background: #ffffff; border-radius: 14px; padding: 20px; max-width: 320px; width: 90%;" onclick="event.stopPropagation()">
-            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1d1d1f;">Authentication Required</h3>
-            <p style="color: #86868b; font-size: 13px; margin-bottom: 15px;">Enter admin password to access configuration.</p>
-            <input type="password" id="configAuthPassword" placeholder="Password" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px;">
-            <p id="configAuthError" style="color: #ff3b30; font-size: 12px; margin-bottom: 10px; display: none;">Incorrect password</p>
-            <div style="display: flex; gap: 10px;">
-                <button class="secondary-btn" onclick="closeConfigAuth()" style="flex: 1;">Cancel</button>
-                <button class="primary-btn" onclick="checkConfigAuth()" style="flex: 1;">Continue</button>
-            </div>
+    <div class="modal-overlay" id="graphModal" onclick="closeGraph(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header"><span class="modal-title" id="graphTitle">Graph</span><button class="modal-close" onclick="closeGraph(event)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="graph-container"><svg class="graph-svg" id="graphSvg" viewBox="0 0 450 220"></svg></div>
+            <div class="graph-stats" id="graphStats"></div>
         </div>
     </div>
 
@@ -531,8 +844,7 @@
         var CURRENT_VERSION = '2.0.0';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var SYSTEM_ID = 'edgeflex';
-        var MOTOR_COUNT = 2;
-        var DRIVER_TYPE = 'clearlink';
+        var MOTOR_COUNT = 1;
         var isUpdating = false;
         var pipeDiameter = 12;
         var totalDistance = 0;
@@ -541,26 +853,330 @@
         document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
         document.getElementById('footerVersion').textContent = CURRENT_VERSION;
 
-        function toggleStats(event) { event.stopPropagation(); document.getElementById('statsPopup').classList.toggle('show'); document.getElementById('settingsPopup').classList.remove('show'); }
-        function toggleSettings(event) { event.stopPropagation(); document.getElementById('settingsPopup').classList.toggle('show'); document.getElementById('statsPopup').classList.remove('show'); }
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.stats-button:not(#settingsButton)')) document.getElementById('statsPopup').classList.remove('show');
-            if (!document.getElementById('settingsButton').contains(e.target)) document.getElementById('settingsPopup').classList.remove('show');
+        var stats = { battery: { min: 999, max: 0, data: [] }, temp: { data: [], data2: [] }, m1: { min: 999, max: 0, data: [] }, torque: { min: 999, max: 0, data: [] }, fan: { min: 999, max: 0, data: [] } };
+        var currentGraphType = 'battery';
+        var MAX_DATA_POINTS = 60;
+        var DATA_INTERVAL_MS = 2000; // Add data point every 2 seconds
+        var lastDataTime = { battery: 0, temp: 0, m1: 0, torque: 0 };
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+
+        function addDataPoint(type, value, isSecondary) {
+            var now = Date.now();
+            if (now - lastDataTime[type] < DATA_INTERVAL_MS) return; // Throttle
+            lastDataTime[type] = now;
+            var dataArray = isSecondary ? stats[type].data2 : stats[type].data;
+            dataArray.push({ time: new Date(), value: value });
+            if (dataArray.length > MAX_DATA_POINTS) dataArray.shift();
+        }
+
+        var graphConfig = {
+            battery: { title: 'Battery Voltage', unit: 'V', minScale: 16, maxScale: 20, warningLow: 17, color: '#007aff' },
+            temp: { title: 'Temperature', unit: '°C', minScale: 30, maxScale: 90, warningHigh: 80, color: '#ff9500', color2: '#34c759', dual: true, label1: 'CPU', label2: 'Motor Board' },
+            m1: { title: 'Motor Current', unit: 'A', minScale: 0, maxScale: 6, warningHigh: 5, color: '#5856d6' },
+            torque: { title: 'Motor Torque', unit: 'Nm', minScale: 0, maxScale: 3, warningHigh: 2, color: '#34c759' },
+            fan: { title: 'Fan Speed', unit: '%', minScale: 0, maxScale: 100, color: '#5856d6' }
+        };
+
+        // Popup management
+        var allPopups = ['statsPopup', 'settingsPopup', 'motorParamsPopup', 'systemPopup'];
+
+        function togglePopup(popupId, event) {
+            event.stopPropagation();
+            var popup = document.getElementById(popupId);
+            var isOpen = popup.classList.contains('show');
+            // Close all popups first
+            allPopups.forEach(function(id) {
+                var p = document.getElementById(id);
+                p.classList.remove('show');
+                resetPopupPosition(p);
+            });
+            // Toggle the clicked one
+            if (!isOpen) {
+                popup.classList.add('show');
+            }
+        }
+
+        function closePopup(popupId) {
+            var popup = document.getElementById(popupId);
+            popup.classList.remove('show');
+            resetPopupPosition(popup);
+        }
+
+        function resetPopupPosition(popup) {
+            popup.style.left = '50%';
+            popup.style.top = '50%';
+            popup.style.transform = 'translate(-50%, -50%)';
+            popup.classList.remove('dragging');
+        }
+
+        // Dragging functionality
+        var dragState = { active: false, popup: null, startX: 0, startY: 0, popupX: 0, popupY: 0 };
+
+        function startDrag(event, popupId) {
+            if (event.target.closest('.popup-close')) return;
+            var popup = document.getElementById(popupId);
+            var rect = popup.getBoundingClientRect();
+
+            // Convert from centered position to absolute position
+            popup.style.transform = 'none';
+            popup.style.left = rect.left + 'px';
+            popup.style.top = rect.top + 'px';
+            popup.classList.add('dragging');
+
+            dragState.active = true;
+            dragState.popup = popup;
+            dragState.startX = event.clientX;
+            dragState.startY = event.clientY;
+            dragState.popupX = rect.left;
+            dragState.popupY = rect.top;
+
+            event.preventDefault();
+        }
+
+        document.addEventListener('mousemove', function(event) {
+            if (!dragState.active) return;
+            var dx = event.clientX - dragState.startX;
+            var dy = event.clientY - dragState.startY;
+            dragState.popup.style.left = (dragState.popupX + dx) + 'px';
+            dragState.popup.style.top = (dragState.popupY + dy) + 'px';
         });
 
-        function updatePipeDiameter(val) {
+        document.addEventListener('mouseup', function() {
+            if (dragState.active) {
+                dragState.active = false;
+                if (dragState.popup) dragState.popup.classList.remove('dragging');
+            }
+        });
+
+        // Touch support for dragging
+        function startDragTouch(event, popupId) {
+            if (event.target.closest('.popup-close')) return;
+            var touch = event.touches[0];
+            var popup = document.getElementById(popupId);
+            var rect = popup.getBoundingClientRect();
+
+            popup.style.transform = 'none';
+            popup.style.left = rect.left + 'px';
+            popup.style.top = rect.top + 'px';
+            popup.classList.add('dragging');
+
+            dragState.active = true;
+            dragState.popup = popup;
+            dragState.startX = touch.clientX;
+            dragState.startY = touch.clientY;
+            dragState.popupX = rect.left;
+            dragState.popupY = rect.top;
+            event.preventDefault();
+        }
+
+        document.addEventListener('touchmove', function(event) {
+            if (!dragState.active) return;
+            event.preventDefault();
+            var touch = event.touches[0];
+            var dx = touch.clientX - dragState.startX;
+            var dy = touch.clientY - dragState.startY;
+            dragState.popup.style.left = (dragState.popupX + dx) + 'px';
+            dragState.popup.style.top = (dragState.popupY + dy) + 'px';
+        }, { passive: false });
+
+        document.addEventListener('touchend', function() {
+            if (dragState.active) {
+                dragState.active = false;
+                if (dragState.popup) dragState.popup.classList.remove('dragging');
+            }
+        });
+
+        function showGraph(event, type) { event.stopPropagation(); currentGraphType = type; document.getElementById('graphModal').classList.add('show'); document.getElementById('graphTitle').textContent = graphConfig[type].title; drawGraph(type); }
+        function closeGraph(event) { document.getElementById('graphModal').classList.remove('show'); }
+        function resetGraphData(event) {
+            event.stopPropagation();
+            stats[currentGraphType].data = [];
+            if (stats[currentGraphType].data2) stats[currentGraphType].data2 = [];
+            if (stats[currentGraphType].min !== undefined) stats[currentGraphType].min = 999;
+            if (stats[currentGraphType].max !== undefined) stats[currentGraphType].max = 0;
+            drawGraph(currentGraphType);
+        }
+
+        function updatePipeDiameter(val, save) {
             val = Math.max(1, Math.min(100, parseFloat(val) || 12));
             pipeDiameter = val;
             document.getElementById('pipeDiameterSetting').value = val;
             document.getElementById('circumferenceValue').textContent = (Math.PI * val).toFixed(1);
             document.getElementById('pipeDiameterDisplay').textContent = val + '"';
             updatePositionFromDistance();
+            if (save !== false) savePipeDiameter(val);
+        }
+
+        // Motor parameters (protected settings)
+        var motorParams = {
+            encoderRes: 1425.1,  // Encoder resolution (PPR × gear factor)
+            wheelDia: 1.77,      // Output wheel diameter in inches
+            gearboxRatio: 1,     // Motor gearbox ratio (for speed calc)
+            gearRatio: 2,        // Final drive gear ratio
+            maxRpm: 179,         // Max motor RPM at 100% (before gearbox)
+            numMotors: 1,        // Number of motors
+            motorTorque: 0.5     // Motor torque in Nm (after gearbox, not multiplied again)
+        };
+        var protectedUnlocked = false;
+        var lockTimeout = null;
+        var LOCK_TIMEOUT_MS = 120000;  // Auto-lock after 2 minutes
+        var SETTINGS_PASSWORD = 'Prime';
+
+        // Calculate max speed in inches per second from motor parameters
+        // Formula: Speed = (RPM / (gearboxRatio * gearRatio)) * π * wheelDia / 60
+        function calculateMaxSpeed() {
+            var totalRatio = motorParams.gearboxRatio * motorParams.gearRatio;
+            return (motorParams.maxRpm / totalRatio) * Math.PI * motorParams.wheelDia / 60;
+        }
+
+        var MAX_SPEED_IPS = calculateMaxSpeed();
+
+        // Load saved settings from JSON config file on server
+        function loadSettings() {
+            fetch('/api/settings')
+                .then(function(response) { return response.json(); })
+                .then(function(settings) {
+                    // Load motor parameters
+                    if (settings.motorParams) {
+                        motorParams = Object.assign(motorParams, settings.motorParams);
+                        document.getElementById('encoderResInput').value = motorParams.encoderRes;
+                        document.getElementById('wheelDiaInput').value = motorParams.wheelDia;
+                        document.getElementById('gearboxRatioInput').value = motorParams.gearboxRatio;
+                        document.getElementById('gearRatioInput').value = motorParams.gearRatio;
+                        document.getElementById('maxRpmInput').value = motorParams.maxRpm;
+                        document.getElementById('numMotorsInput').value = motorParams.numMotors;
+                        document.getElementById('motorTorqueInput').value = motorParams.motorTorque;
+                        MAX_SPEED_IPS = calculateMaxSpeed();
+                        document.getElementById('maxSpeedDisplay').textContent = MAX_SPEED_IPS.toFixed(1);
+                        document.getElementById('speedInput').max = MAX_SPEED_IPS.toFixed(1);
+                        updateCrawlerTorque();
+                    }
+                    // Load pipe diameter
+                    if (settings.pipeDiameter) {
+                        updatePipeDiameter(settings.pipeDiameter, false);
+                    }
+                })
+                .catch(function(e) { console.error('Failed to load settings:', e); });
+        }
+
+        // Calculate and display crawler torque
+        function updateCrawlerTorque() {
+            var crawlerTorque = motorParams.motorTorque * motorParams.gearRatio * motorParams.numMotors;
+            document.getElementById('crawlerTorqueDisplay').textContent = crawlerTorque.toFixed(2);
+        }
+
+        // Save settings to JSON config file on server
+        function saveSettings(data) {
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).catch(function(e) { console.error('Failed to save settings:', e); });
+        }
+
+        // Save motor parameters
+        function saveMotorParams() {
+            saveSettings({ motorParams: motorParams });
+        }
+
+        // Save pipe diameter
+        function savePipeDiameter(val) {
+            saveSettings({ pipeDiameter: val });
+        }
+
+        // Update motor parameters when inputs change
+        function updateMotorParams() {
+            motorParams.encoderRes = parseFloat(document.getElementById('encoderResInput').value) || 1425.1;
+            motorParams.wheelDia = parseFloat(document.getElementById('wheelDiaInput').value) || 1.77;
+            motorParams.gearboxRatio = parseFloat(document.getElementById('gearboxRatioInput').value) || 1;
+            motorParams.gearRatio = parseFloat(document.getElementById('gearRatioInput').value) || 2;
+            motorParams.maxRpm = parseInt(document.getElementById('maxRpmInput').value) || 179;
+            motorParams.numMotors = parseInt(document.getElementById('numMotorsInput').value) || 1;
+            motorParams.motorTorque = parseFloat(document.getElementById('motorTorqueInput').value) || 0.5;
+            MAX_SPEED_IPS = calculateMaxSpeed();
+            document.getElementById('maxSpeedDisplay').textContent = MAX_SPEED_IPS.toFixed(1);
+            document.getElementById('speedInput').max = MAX_SPEED_IPS.toFixed(1);
+            updateCrawlerTorque();
+            // Clamp current speed to new max
+            var currentSpeed = parseFloat(document.getElementById('speedInput').value) || 0;
+            if (currentSpeed > MAX_SPEED_IPS) {
+                document.getElementById('speedInput').value = MAX_SPEED_IPS.toFixed(1);
+            }
+            saveMotorParams();
+            resetLockTimeout();
+        }
+
+        // Password protection functions
+        function toggleProtectedSettings(event) {
+            event.stopPropagation();
+            if (protectedUnlocked) {
+                lockProtectedSettings();
+            } else {
+                showPasswordModal();
+            }
+        }
+
+        function showPasswordModal() {
+            document.getElementById('passwordModal').classList.add('show');
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordError').style.display = 'none';
+            setTimeout(function() { document.getElementById('passwordInput').focus(); }, 100);
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.remove('show');
+        }
+
+        function checkPassword() {
+            var input = document.getElementById('passwordInput').value;
+            if (input === SETTINGS_PASSWORD) {
+                closePasswordModal();
+                unlockProtectedSettings();
+            } else {
+                document.getElementById('passwordError').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+            }
+        }
+
+        function unlockProtectedSettings() {
+            protectedUnlocked = true;
+            document.querySelectorAll('.protected-input').forEach(function(input) {
+                input.disabled = false;
+            });
+            document.getElementById('lockBtn').classList.add('unlocked');
+            document.getElementById('lockText').textContent = 'Lock';
+            document.getElementById('lockIcon').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
+            resetLockTimeout();
+        }
+
+        function lockProtectedSettings() {
+            protectedUnlocked = false;
+            document.querySelectorAll('.protected-input').forEach(function(input) {
+                input.disabled = true;
+            });
+            document.getElementById('lockBtn').classList.remove('unlocked');
+            document.getElementById('lockText').textContent = 'Unlock';
+            document.getElementById('lockIcon').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+            if (lockTimeout) { clearTimeout(lockTimeout); lockTimeout = null; }
+        }
+
+        function resetLockTimeout() {
+            if (lockTimeout) clearTimeout(lockTimeout);
+            if (protectedUnlocked) {
+                lockTimeout = setTimeout(lockProtectedSettings, LOCK_TIMEOUT_MS);
+            }
         }
 
         function updateSpeed(val) {
-            val = Math.max(0, Math.min(100, parseInt(val) || 0));
-            document.getElementById('speedInput').value = val;
-            speedPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+            // Accept inches per second, convert to percentage for motor
+            val = Math.max(0, Math.min(MAX_SPEED_IPS, parseFloat(val) || 0));
+            document.getElementById('speedInput').value = val.toFixed(1);
+            var percentage = Math.round((val / MAX_SPEED_IPS) * 100);
+            speedPublisher.publish(new ROSLIB.Message({ data: percentage.toString() }));
         }
 
         function updateRamp(val) {
@@ -569,46 +1185,135 @@
             rampPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
         }
 
+        // Helper function to create smooth bezier curve path
+        function createSmoothPath(points, xScale, yScale) {
+            if (points.length < 2) return '';
+            var path = 'M ' + xScale(0) + ' ' + yScale(points[0].value);
+            for (var i = 0; i < points.length - 1; i++) {
+                var x0 = xScale(i), y0 = yScale(points[i].value);
+                var x1 = xScale(i + 1), y1 = yScale(points[i + 1].value);
+                var cpx = (x0 + x1) / 2;
+                path += ' C ' + cpx + ' ' + y0 + ', ' + cpx + ' ' + y1 + ', ' + x1 + ' ' + y1;
+            }
+            return path;
+        }
+
+        function drawGraph(type) {
+            var svg = document.getElementById('graphSvg'), config = graphConfig[type];
+            var data = stats[type].data.length >= 5 ? stats[type].data : generateDemoData(type);
+            var data2 = config.dual ? (stats[type].data2.length >= 5 ? stats[type].data2 : generateDemoData(type, true)) : null;
+            var width = 450, height = 220, padding = { top: 20, right: 20, bottom: 50, left: 45 };
+            var graphWidth = width - padding.left - padding.right, graphHeight = height - padding.top - padding.bottom;
+            var values = data.map(function(d) { return d.value; });
+            var hasRealData = stats[type].data.length >= 5;
+
+            // Use all-time min/max from tracking, avg from displayed data
+            var allTimeMin = stats[type].min;
+            var allTimeMax = stats[type].max;
+            var avg = values.reduce(function(a, b) { return a + b; }, 0) / values.length;
+
+            var statsRow = document.getElementById('graphStats');
+            if (config.dual) {
+                statsRow.innerHTML = '<div style="display:flex;gap:20px;align-items:center;width:100%;justify-content:center;"><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:' + config.color + '"></div><span style="font-size:14px;color:#1d1d1f;">' + config.label1 + '</span></div><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:' + config.color2 + '"></div><span style="font-size:14px;color:#1d1d1f;">' + config.label2 + '</span></div></div>';
+            } else {
+                var minDisplay = (allTimeMin && allTimeMin < 900) ? allTimeMin.toFixed(1) + config.unit : '--';
+                var avgDisplay = hasRealData ? avg.toFixed(1) + config.unit : '--';
+                var maxDisplay = (allTimeMax && allTimeMax > 0) ? allTimeMax.toFixed(1) + config.unit : '--';
+                statsRow.innerHTML = '<div class="graph-stat"><div class="graph-stat-label">Min</div><div class="graph-stat-value low">' + minDisplay + '</div></div><div class="graph-stat"><div class="graph-stat-label">Avg</div><div class="graph-stat-value">' + avgDisplay + '</div></div><div class="graph-stat"><div class="graph-stat-label">Max</div><div class="graph-stat-value high">' + maxDisplay + '</div></div><button class="reset-btn-large" onclick="resetGraphData(event)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Reset</button>';
+            }
+
+            var xScale = function(idx) { return padding.left + (idx / (data.length - 1)) * graphWidth; };
+            var yScale = function(v) { return padding.top + (1 - (v - config.minScale) / (config.maxScale - config.minScale)) * graphHeight; };
+
+            var svgContent = '<defs><linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="' + config.color + '"/><stop offset="100%" stop-color="' + config.color + '" stop-opacity="0"/></linearGradient>';
+            if (config.dual) svgContent += '<linearGradient id="areaGradient2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="' + config.color2 + '"/><stop offset="100%" stop-color="' + config.color2 + '" stop-opacity="0"/></linearGradient>';
+            svgContent += '</defs>';
+
+            // Draw grid lines and Y-axis labels
+            var steps = 5, stepValue = (config.maxScale - config.minScale) / steps;
+            for (var i = 0; i <= steps; i++) {
+                var v = config.minScale + i * stepValue, y = yScale(v);
+                svgContent += '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (width - padding.right) + '" y2="' + y + '" stroke="#e0e0e0" stroke-width="1"/>';
+                svgContent += '<text x="' + (padding.left - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#86868b">' + v.toFixed(0) + '</text>';
+            }
+
+            // Draw warning zones
+            if (config.warningLow) {
+                var wy = yScale(config.warningLow);
+                svgContent += '<rect x="' + padding.left + '" y="' + wy + '" width="' + graphWidth + '" height="' + (height - padding.bottom - wy) + '" fill="rgba(255,59,48,0.1)"/>';
+            }
+            if (config.warningHigh) {
+                var wy = yScale(config.warningHigh);
+                svgContent += '<rect x="' + padding.left + '" y="' + padding.top + '" width="' + graphWidth + '" height="' + (wy - padding.top) + '" fill="rgba(255,59,48,0.1)"/>';
+            }
+
+            // Draw smooth curves (no dots)
+            var smoothPath = createSmoothPath(data, xScale, yScale);
+
+            // Draw area fill for non-dual graphs
+            if (!config.dual && data.length > 1) {
+                var areaPath = smoothPath + ' L' + xScale(data.length - 1) + ' ' + (height - padding.bottom) + ' L' + padding.left + ' ' + (height - padding.bottom) + ' Z';
+                svgContent += '<path d="' + areaPath + '" fill="url(#areaGradient)" opacity="0.3"/>';
+            }
+
+            // Draw main line (smooth)
+            svgContent += '<path d="' + smoothPath + '" fill="none" stroke="' + config.color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+
+            // Draw second line for dual graphs
+            if (config.dual && data2) {
+                var smoothPath2 = createSmoothPath(data2, xScale, yScale);
+                svgContent += '<path d="' + smoothPath2 + '" fill="none" stroke="' + config.color2 + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>';
+            }
+
+            // Draw X-axis time labels
+            if (data.length > 0 && data[0].time) {
+                var labelIndices = [0, Math.floor(data.length / 2), data.length - 1];
+                labelIndices.forEach(function(idx) {
+                    if (data[idx] && data[idx].time) {
+                        var timeLabel = formatTime(data[idx].time);
+                        svgContent += '<text x="' + xScale(idx) + '" y="' + (height - padding.bottom + 25) + '" text-anchor="middle" font-size="11" font-weight="500" fill="#1d1d1f">' + timeLabel + '</text>';
+                    }
+                });
+            }
+
+            svg.innerHTML = svgContent;
+        }
+
+        function generateDemoData(type, isSecondary) {
+            var config = graphConfig[type], data = [], range = config.maxScale - config.minScale, mid = (config.maxScale + config.minScale) / 2;
+            if (isSecondary && type === 'temp') mid = mid - 15;
+            var now = new Date();
+            for (var i = 0; i < 24; i++) {
+                var variation = Math.sin(i / 4) * (range * 0.15) + (Math.random() - 0.5) * (range * 0.1);
+                var value = Math.max(config.minScale + range * 0.05, Math.min(config.maxScale - range * 0.1, mid + variation));
+                var pointTime = new Date(now.getTime() - (23 - i) * 5000); // 5 seconds apart
+                data.push({ time: pointTime, value: value });
+            }
+            return data;
+        }
+
         function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (v !== CURRENT_VERSION) { document.getElementById('updateBanner').classList.add('show'); document.getElementById('newVersion').textContent = v; } }).catch(function(e) { }); }
         setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
 
         var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
-        ros.on('connection', function() { document.getElementById('connectionStatus').textContent = 'Connected'; document.getElementById('connectionStatus').style.color = '#2e7d32'; updateSpeed(50); updateRamp(50); });
-        ros.on('error', function() { document.getElementById('connectionStatus').textContent = 'Error'; document.getElementById('connectionStatus').style.color = '#c62828'; });
-        ros.on('close', function() { document.getElementById('connectionStatus').textContent = 'Disconnected'; document.getElementById('connectionStatus').style.color = '#c62828'; });
+        function updateConnectionStatus(text, color) {
+            document.getElementById('connectionText').textContent = text;
+            document.getElementById('connectionStatus').querySelector('span').style.background = color;
+        }
+        ros.on('connection', function() { updateConnectionStatus('Connected', '#2e7d32'); updateSpeed(4.0); updateRamp(50); });
+        ros.on('error', function() { updateConnectionStatus('Error', '#c62828'); });
+        ros.on('close', function() { updateConnectionStatus('Disconnected', '#c62828'); });
 
         var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
         var speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
         var rampPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_ramp', messageType: 'std_msgs/String' });
         var systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
+        var statsSubscriber = new ROSLIB.Topic({ ros: ros, name: '/stats', messageType: 'roboclaw_interfaces/Stats' });
         var cpuTempSubscriber = new ROSLIB.Topic({ ros: ros, name: '/cpu_temp', messageType: 'std_msgs/Float32' });
         var networkInfoSubscriber = new ROSLIB.Topic({ ros: ros, name: '/network_info', messageType: 'std_msgs/String' });
         var updateStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/update_status', messageType: 'std_msgs/String' });
-
-        // ClearLink status subscriber (stub - will be updated when driver is implemented)
-        var clearlinkStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/clearlink_status', messageType: 'std_msgs/String' });
-        clearlinkStatusSubscriber.subscribe(function(msg) {
-            try {
-                var status = JSON.parse(msg.data);
-                updateLastUpdated();
-                if (status.left) {
-                    document.getElementById('m1Current').textContent = status.left.status || '--';
-                    document.getElementById('m1CurrentBar').textContent = status.left.status || '--';
-                    document.getElementById('m1Status').className = 'motor-status ' + (status.left.moving ? 'running' : 'stopped');
-                    document.getElementById('m1RpmBar').textContent = (status.left.speed || 0).toFixed(1) + '"/s';
-                }
-                if (status.right) {
-                    document.getElementById('m2Current').textContent = status.right.status || '--';
-                    document.getElementById('m2CurrentBar').textContent = status.right.status || '--';
-                    document.getElementById('m2Status').className = 'motor-status ' + (status.right.moving ? 'running' : 'stopped');
-                    document.getElementById('m2RpmBar').textContent = (status.right.speed || 0).toFixed(1) + '"/s';
-                }
-                if (status.distance !== undefined) {
-                    totalDistance = status.distance;
-                    updatePositionFromDistance();
-                }
-            } catch(e) { }
-        });
+        var imuRollSubscriber = new ROSLIB.Topic({ ros: ros, name: '/imu/roll', messageType: 'std_msgs/Float32' });
+        var imuPitchSubscriber = new ROSLIB.Topic({ ros: ros, name: '/imu/pitch', messageType: 'std_msgs/Float32' });
 
         updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = 'Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = 'Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
         function installUpdate() { if (isUpdating) return; isUpdating = true; var banner = document.getElementById('updateBanner'); banner.innerHTML = 'Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
@@ -622,30 +1327,104 @@
             document.getElementById('lastUpdated').textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         }
 
+        statsSubscriber.subscribe(function(msg) {
+            updateLastUpdated();
+            var v = msg.battery_voltage;
+            document.getElementById('voltage').textContent = v.toFixed(1) + 'V';
+            document.getElementById('voltage').className = 'stats-value' + (v < 15 ? ' alarm' : v < 17 ? ' warning' : '');
+            document.getElementById('batteryDisplay').textContent = v.toFixed(1) + 'V';
+            if (v > 0 && v < stats.battery.min) stats.battery.min = v;
+            if (v > stats.battery.max) stats.battery.max = v;
+            addDataPoint('battery', v);
+
+            var m1 = msg.m1_current;
+            document.getElementById('m1Current').textContent = m1.toFixed(1) + 'A';
+            document.getElementById('m1Current').className = 'stats-value' + (m1 > 5 ? ' alarm' : m1 > 3 ? ' warning' : '');
+            document.getElementById('m1CurrentBar').textContent = m1.toFixed(1) + 'A';
+            if (m1 > 0 && m1 < stats.m1.min) stats.m1.min = m1;
+            if (m1 > stats.m1.max) stats.m1.max = m1;
+            addDataPoint('m1', m1);
+
+            // Calculate motor torque from current: torque = 0.43 * (current - 0.3), min 0
+            var m1Torque = m1 > 0.3 ? 0.43 * (m1 - 0.3) : 0;
+            document.getElementById('m1Torque').textContent = m1Torque.toFixed(2) + ' Nm';
+            document.getElementById('m1TorqueBar').textContent = m1Torque.toFixed(1) + 'Nm';
+            if (m1Torque > 0 && m1Torque < stats.torque.min) stats.torque.min = m1Torque;
+            if (m1Torque > stats.torque.max) stats.torque.max = m1Torque;
+            addDataPoint('torque', m1Torque);
+
+            var m1Rpm = Math.abs(msg.m1_enc_qpps) * 60 / 1425.1;
+            var m1Speed = ((m1Rpm / 2) * Math.PI * 1.77 / 60).toFixed(1);
+            document.getElementById('pipeSpeedDisplay').textContent = m1Speed + '"/s';
+            document.getElementById('m1Status').className = 'motor-status ' + (m1Rpm > 1 ? 'running' : 'stopped');
+
+            var now = Date.now();
+            var dt = (now - lastUpdateTime) / 60000;
+            lastUpdateTime = now;
+            var m1SpeedSigned = (msg.m1_enc_qpps / 1425.1) * 60 / 2 * Math.PI * 1.77;
+            totalDistance += m1SpeedSigned * dt;
+            updatePositionFromDistance();
+        });
+
         cpuTempSubscriber.subscribe(function(msg) {
             var t = msg.data;
             document.getElementById('cpuTemp').textContent = t.toFixed(1) + '°C';
             document.getElementById('cpuTemp').className = 'stats-value' + (t > 80 ? ' alarm' : t > 70 ? ' warning' : '');
+            addDataPoint('temp', t);
         });
 
         networkInfoSubscriber.subscribe(function(msg) {
             try {
                 var info = JSON.parse(msg.data);
-                document.getElementById('wifiIp').textContent = info.wifi === '--' ? '--' : info.wifi;
-                document.getElementById('ethIp').textContent = info.eth === '--' ? '--' : info.eth;
+                document.getElementById('systemWifiIp').textContent = info.wifi === '--' ? '--' : info.wifi;
+                document.getElementById('systemEthIp').textContent = info.eth === '--' ? '--' : info.eth;
                 document.getElementById('wifiSsidDisplay').textContent = info.wifi_ssid || '--';
             } catch(e) { }
         });
 
-        function openSystemModal() {
-            document.getElementById('systemModal').classList.add('show');
-            document.getElementById('statsPopup').classList.remove('show');
-            document.getElementById('settingsPopup').classList.remove('show');
+        var imuDataReceived = false;
+        var imuLastUpdate = 0;
+        var imuRollOffset = 0;
+        var imuPitchOffset = 0;
+        var imuCurrentRoll = 0;
+        var imuCurrentPitch = 0;
+
+        function zeroIMU(event) {
+            event.stopPropagation();
+            imuRollOffset = imuCurrentRoll;
+            imuPitchOffset = imuCurrentPitch;
+            document.getElementById('imuRelRoll').textContent = '0.0';
+            document.getElementById('imuRelPitch').textContent = '0.0';
         }
 
-        function closeSystemModal(event) {
-            document.getElementById('systemModal').classList.remove('show');
-        }
+        imuRollSubscriber.subscribe(function(msg) {
+            imuDataReceived = true;
+            imuLastUpdate = Date.now();
+            imuCurrentRoll = msg.data;
+            document.getElementById('imuRoll').textContent = msg.data.toFixed(1);
+            document.getElementById('imuRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
+            document.getElementById('imuStatus').textContent = 'Connected';
+            document.getElementById('imuStatus').style.color = '#34c759';
+        });
+        imuPitchSubscriber.subscribe(function(msg) {
+            imuCurrentPitch = msg.data;
+            var relPitch = msg.data - imuPitchOffset;
+            document.getElementById('imuPitch').textContent = msg.data.toFixed(1);
+            document.getElementById('imuRelPitch').textContent = relPitch.toFixed(1);
+            document.getElementById('pipeRelAngleDisplay').textContent = relPitch.toFixed(1) + '°';
+            document.getElementById('pipeContainer').style.transform = 'rotate(' + relPitch + 'deg)';
+        });
+
+        // Check IMU connection status periodically
+        setInterval(function() {
+            if (imuDataReceived && Date.now() - imuLastUpdate > 3000) {
+                document.getElementById('imuStatus').textContent = 'No Data';
+                document.getElementById('imuStatus').style.color = '#ff9500';
+            } else if (!imuDataReceived) {
+                document.getElementById('imuStatus').textContent = 'Not Connected';
+                document.getElementById('imuStatus').style.color = '#ff3b30';
+            }
+        }, 2000);
 
         function openConfiguration() {
             document.getElementById('configAuthPassword').value = '';
@@ -670,8 +1449,10 @@
             }
         }
 
-        document.getElementById('configAuthPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') checkConfigAuth();
+        document.addEventListener('keypress', function(e) {
+            if (document.getElementById('configAuthModal').style.display === 'flex' && e.key === 'Enter') {
+                checkConfigAuth();
+            }
         });
 
         function forgetWifi() {
@@ -690,38 +1471,126 @@
 
         function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }
 
+        var shots = [];
+        function autoMove() {
+            sendCommand('auto_move');
+            var relAngle = document.getElementById('pipeRelAngleDisplay').value;
+            shots.push({ num: shots.length + 1, angle: relAngle });
+            renderShots();
+        }
+
+        function renderShots() {
+            var leftCol = document.getElementById('shotsLeft');
+            var rightCol = document.getElementById('shotsRight');
+            leftCol.innerHTML = '';
+            rightCol.innerHTML = '';
+            var half = Math.ceil(shots.length / 2);
+            for (var i = 0; i < shots.length; i++) {
+                var shotItem = document.createElement('div');
+                shotItem.className = 'shot-item';
+                shotItem.innerHTML = '<span class="shot-label">Shot ' + shots[i].num + '</span> <span class="shot-value">' + shots[i].angle + '°</span>';
+                if (i < half) {
+                    leftCol.appendChild(shotItem);
+                } else {
+                    rightCol.appendChild(shotItem);
+                }
+            }
+        }
+
+        function clearShots() {
+            shots = [];
+            document.getElementById('shotsLeft').innerHTML = '';
+            document.getElementById('shotsRight').innerHTML = '';
+        }
+
+        function setTestAngle(value) {
+            var angle = parseFloat(value) || 0;
+            document.getElementById('pipeContainer').style.transform = 'rotate(' + angle + 'deg)';
+            document.getElementById('imuRelPitch').textContent = angle.toFixed(1);
+        }
+
         function updatePositionFromDistance() {
-            var circumference = Math.PI * pipeDiameter;
-            var deg = (totalDistance / circumference) * 360;
-            deg = ((deg % 360) + 360) % 360;
-            updateBugPosition(deg);
             document.getElementById('distanceTraveled').textContent = Math.abs(totalDistance).toFixed(1) + ' in';
-            document.getElementById('distanceInPipe').textContent = Math.abs(totalDistance).toFixed(1) + ' in';
         }
 
         function resetPosition() {
             totalDistance = 0;
-            updateBugPosition(0);
             document.getElementById('distanceTraveled').textContent = '0.0 in';
-            document.getElementById('distanceInPipe').textContent = '0.0 in';
         }
 
-        function updateBugPosition(deg) {
-            document.getElementById('degreeValue').textContent = Math.round(deg);
-            document.getElementById('degreeValueStats').textContent = Math.round(deg);
-            var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug'), weld = document.getElementById('weld');
-            var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2;
-            var a = (deg - 90) * Math.PI / 180;
-            bug.style.left = (cx + r * Math.cos(a) - bug.offsetWidth / 2) + 'px';
-            bug.style.top = (cy + r * Math.sin(a) - bug.offsetHeight / 2) + 'px';
-            bug.style.transform = 'rotate(' + deg + 'deg) scaleX(-1)';
-            // Weld marker stays at top (0 degrees)
-            var wa = -90 * Math.PI / 180;
-            weld.style.left = (cx + r * Math.cos(wa) - weld.offsetWidth / 2) + 'px';
-            weld.style.top = (cy + r * Math.sin(wa) - weld.offsetHeight / 2) + 'px';
+        function loadUsbDevices() {
+            fetch('/api/usb')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    document.getElementById('usb1Device').textContent = data.usb1 || '--';
+                    document.getElementById('usb2Device').textContent = data.usb2 || '--';
+                })
+                .catch(function(e) { console.error('Failed to load USB info:', e); });
         }
 
-        window.onload = function() { setTimeout(function() { resetPosition(); }, 100); };
+        function loadFanSpeed() {
+            fetch('/api/fan')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    var percent = data.speed_percent !== null ? data.speed_percent : 0;
+                    if (!data.running) {
+                        document.getElementById('fanSpeed').textContent = 'Off';
+                        addDataPoint('fan', 0);
+                    } else if (data.speed_percent !== null) {
+                        document.getElementById('fanSpeed').textContent = data.speed_percent + '%';
+                        addDataPoint('fan', percent);
+                        if (percent < stats.fan.min) stats.fan.min = percent;
+                        if (percent > stats.fan.max) stats.fan.max = percent;
+                    } else {
+                        document.getElementById('fanSpeed').textContent = '--';
+                    }
+                })
+                .catch(function(e) { console.error('Failed to load fan info:', e); });
+        }
+
+        function loadSystemStats() {
+            fetch('/api/system_stats')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    // CPU Usage
+                    if (data.cpu_percent !== null) {
+                        var cpuEl = document.getElementById('cpuUsage');
+                        cpuEl.textContent = data.cpu_percent + '%';
+                        cpuEl.className = 'stats-value' + (data.cpu_percent > 90 ? ' alarm' : data.cpu_percent > 75 ? ' warning' : '');
+                    }
+                    // RAM Usage
+                    if (data.ram_percent !== null) {
+                        var ramEl = document.getElementById('ramUsage');
+                        ramEl.textContent = data.ram_used_gb + '/' + data.ram_total_gb + 'GB (' + data.ram_percent + '%)';
+                        ramEl.className = 'stats-value' + (data.ram_percent > 90 ? ' alarm' : data.ram_percent > 75 ? ' warning' : '');
+                    }
+                    // Disk Usage
+                    if (data.disk_percent !== null) {
+                        var diskEl = document.getElementById('diskUsage');
+                        diskEl.textContent = data.disk_used_gb + '/' + data.disk_total_gb + 'GB (' + data.disk_percent + '%)';
+                        diskEl.className = 'stats-value' + (data.disk_percent > 90 ? ' alarm' : data.disk_percent > 80 ? ' warning' : '');
+                    }
+                })
+                .catch(function(e) { console.error('Failed to load system stats:', e); });
+        }
+
+        window.onload = function() { loadSettings(); loadUsbDevices(); loadFanSpeed(); loadSystemStats(); setTimeout(function() { resetPosition(); }, 100); };
+        setInterval(loadUsbDevices, 10000); // Refresh USB info every 10 seconds
+        setInterval(loadFanSpeed, 5000); // Refresh fan speed every 5 seconds
+        setInterval(loadSystemStats, 3000); // Refresh system stats every 3 seconds
     </script>
+
+    <!-- Password Modal -->
+    <div class="password-modal" id="passwordModal">
+        <div class="password-dialog">
+            <h3>Enter Password</h3>
+            <div class="password-error" id="passwordError">Incorrect password</div>
+            <input type="password" id="passwordInput" placeholder="Password" onkeypress="if(event.key==='Enter')checkPassword()">
+            <div class="btn-row">
+                <button class="btn-cancel" onclick="closePasswordModal()">Cancel</button>
+                <button class="btn-unlock" onclick="checkPassword()">Unlock</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
