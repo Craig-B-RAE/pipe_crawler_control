@@ -325,6 +325,79 @@
         <div id="errorMsg" class="error"></div>
         <div id="successMsg" class="success"></div>
 
+        <!-- Device Security Lock (v2 - Multi-Device) -->
+        <div class="section" id="securitySection">
+            <div class="section-title">Device Security</div>
+
+            <!-- No Master Password Warning -->
+            <div id="noMasterPassword" style="display: none; text-align: center; margin-bottom: 15px;">
+                <p style="color: #86868b; font-size: 13px;">
+                    Master password not set. Run setup script first:
+                </p>
+                <p style="font-family: monospace; font-size: 12px; color: #1d1d1f; margin-top: 8px;">
+                    sudo /opt/crawler/set_master_password.sh
+                </p>
+            </div>
+
+            <!-- Device Bindings Table -->
+            <div id="deviceBindingsSection">
+                <div style="font-size: 12px; color: #86868b; margin-bottom: 8px;">Device Bindings:</div>
+                <table id="deviceBindingsTable" style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 15px;">
+                    <thead>
+                        <tr style="background: #f5f5f7;">
+                            <th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #86868b;">Device</th>
+                            <th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #86868b;">Connected</th>
+                            <th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #86868b;">Locked To</th>
+                            <th style="padding: 8px 10px; text-align: center; font-weight: 600; color: #86868b;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deviceBindingsBody">
+                        <tr><td colspan="4" style="padding: 15px; text-align: center; color: #86868b;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Lock Device Controls -->
+            <div id="lockDeviceSection" style="display: none; border-top: 1px solid #f0f0f0; padding-top: 15px; margin-top: 10px;">
+                <div style="font-size: 12px; color: #86868b; margin-bottom: 8px;">Lock Device:</div>
+                <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 100px;">
+                        <select id="lockDeviceSelect" class="form-input" style="padding: 8px 10px; font-size: 13px;">
+                            <option value="cm5">CM5 CPU</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <input type="text" id="lockConfirmInput" class="form-input" placeholder="Type LOCK"
+                               style="text-transform: uppercase; text-align: center; padding: 8px 10px; font-size: 13px;">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="lockSelectedDevice()"
+                            style="background: #ff9500; padding: 8px 16px; font-size: 13px;">
+                        Lock
+                    </button>
+                </div>
+            </div>
+
+            <!-- Unlock Device Controls -->
+            <div id="unlockDeviceSection" style="display: none; border-top: 1px solid #f0f0f0; padding-top: 15px; margin-top: 10px;">
+                <div style="font-size: 12px; color: #86868b; margin-bottom: 8px;">Unlock Device:</div>
+                <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 100px;">
+                        <select id="unlockDeviceSelect" class="form-input" style="padding: 8px 10px; font-size: 13px;">
+                            <option value="cm5">CM5 CPU</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1.5; min-width: 120px;">
+                        <input type="password" id="unlockPasswordInput" class="form-input" placeholder="Master password"
+                               style="padding: 8px 10px; font-size: 13px;">
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="unlockSelectedDevice()"
+                            style="padding: 8px 16px; font-size: 13px;">
+                        Unlock
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Network Status -->
         <div class="section">
             <div class="section-title">Network Status</div>
@@ -720,9 +793,268 @@
         document.getElementById('wifiPassword').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') connectWifi();
         });
+        document.getElementById('lockConfirmInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') lockDevice();
+        });
+        document.getElementById('unlockPasswordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') unlockDevice();
+        });
+        document.getElementById('lockConfirmInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') lockSelectedDevice();
+        });
+        document.getElementById('unlockPasswordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') unlockSelectedDevice();
+        });
 
-        // Load config on page load
-        document.addEventListener('DOMContentLoaded', loadConfig);
+        // =====================================================================
+        // Device Security Lock Functions (v2 - Multi-Device)
+        // =====================================================================
+
+        var securityData = null;
+
+        function loadSecurityStatus() {
+            fetch('/api/security/status')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    securityData = data;
+
+                    // Check if security module is not installed
+                    if (data.error && data.error.indexOf('not installed') !== -1) {
+                        document.getElementById('securitySection').style.display = 'none';
+                        return;
+                    }
+
+                    var noMasterPw = document.getElementById('noMasterPassword');
+                    var lockSection = document.getElementById('lockDeviceSection');
+                    var unlockSection = document.getElementById('unlockDeviceSection');
+
+                    // Check if master password is set
+                    if (!data.master_password_set) {
+                        noMasterPw.style.display = 'block';
+                        lockSection.style.display = 'none';
+                        unlockSection.style.display = 'none';
+                        document.getElementById('deviceBindingsBody').innerHTML =
+                            '<tr><td colspan="4" style="padding: 15px; text-align: center; color: #86868b;">Master password not configured</td></tr>';
+                        return;
+                    }
+
+                    noMasterPw.style.display = 'none';
+                    lockSection.style.display = 'block';
+                    unlockSection.style.display = 'block';
+
+                    // Update device bindings table
+                    updateDeviceBindingsTable(data);
+
+                    // Update device selectors
+                    updateDeviceSelectors(data);
+                })
+                .catch(function(err) {
+                    console.error('Error loading security status:', err);
+                    document.getElementById('securitySection').style.display = 'none';
+                });
+        }
+
+        function updateDeviceBindingsTable(data) {
+            var tbody = document.getElementById('deviceBindingsBody');
+            var html = '';
+            var relevant = data.relevant_devices || ['cm5'];
+
+            var deviceNames = {
+                'cm5': 'CM5 CPU',
+                'roboclaw': 'RoboClaw',
+                'clearlink': 'ClearLink'
+            };
+
+            relevant.forEach(function(device) {
+                var info = data[device] || {};
+                var locked = info.locked || false;
+                var detected = info.detected !== false;
+                var match = info.match !== false;
+
+                var connectedVal = '';
+                var lockedVal = '';
+                var statusHtml = '';
+
+                if (device === 'cm5') {
+                    connectedVal = info.current_serial ? info.current_serial.slice(-8) : 'Not detected';
+                    lockedVal = locked ? info.locked_serial.slice(-8) : 'Not locked';
+                } else if (device === 'roboclaw') {
+                    connectedVal = info.current_serial || 'Not detected';
+                    if (connectedVal.length > 20) connectedVal = connectedVal.slice(0, 20) + '...';
+                    lockedVal = locked ? (info.locked_serial.length > 20 ? info.locked_serial.slice(0, 20) + '...' : info.locked_serial) : 'Not locked';
+                } else if (device === 'clearlink') {
+                    connectedVal = info.current_mac || 'Not detected';
+                    lockedVal = locked ? info.locked_mac : 'Not locked';
+                }
+
+                if (locked) {
+                    if (!detected) {
+                        statusHtml = '<span style="color: #ff9500;">&#8212; Not detected</span>';
+                    } else if (match) {
+                        statusHtml = '<span style="color: #34c759;">&#128274; Locked</span>';
+                    } else {
+                        statusHtml = '<span style="color: #ff3b30;">&#10007; MISMATCH</span>';
+                    }
+                } else {
+                    statusHtml = '<span style="color: #86868b;">&#128275; Unlocked</span>';
+                }
+
+                html += '<tr style="border-bottom: 1px solid #f0f0f0;">';
+                html += '<td style="padding: 8px 10px; font-weight: 500;">' + deviceNames[device] + '</td>';
+                html += '<td style="padding: 8px 10px; font-family: monospace; font-size: 11px; color: ' + (detected ? '#1d1d1f' : '#c0c0c0') + ';">' + connectedVal + '</td>';
+                html += '<td style="padding: 8px 10px; font-family: monospace; font-size: 11px; color: ' + (locked ? '#1d1d1f' : '#c0c0c0') + ';">' + lockedVal + '</td>';
+                html += '<td style="padding: 8px 10px; text-align: center;">' + statusHtml + '</td>';
+                html += '</tr>';
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function updateDeviceSelectors(data) {
+            var relevant = data.relevant_devices || ['cm5'];
+            var deviceNames = {
+                'cm5': 'CM5 CPU',
+                'roboclaw': 'RoboClaw',
+                'clearlink': 'ClearLink'
+            };
+
+            var lockSelect = document.getElementById('lockDeviceSelect');
+            var unlockSelect = document.getElementById('unlockDeviceSelect');
+
+            // Update lock selector (show unlocked devices that are detected)
+            var lockOptions = '';
+            relevant.forEach(function(device) {
+                var info = data[device] || {};
+                if (!info.locked && info.detected) {
+                    lockOptions += '<option value="' + device + '">' + deviceNames[device] + '</option>';
+                }
+            });
+            lockSelect.innerHTML = lockOptions || '<option value="">No devices to lock</option>';
+
+            // Update unlock selector (show locked devices)
+            var unlockOptions = '';
+            relevant.forEach(function(device) {
+                var info = data[device] || {};
+                if (info.locked) {
+                    unlockOptions += '<option value="' + device + '">' + deviceNames[device] + '</option>';
+                }
+            });
+            unlockSelect.innerHTML = unlockOptions || '<option value="">No devices locked</option>';
+        }
+
+        function lockSelectedDevice() {
+            var device = document.getElementById('lockDeviceSelect').value;
+            var confirmation = document.getElementById('lockConfirmInput').value.toUpperCase();
+
+            if (!device) {
+                showError('No device selected');
+                return;
+            }
+
+            if (confirmation !== 'LOCK') {
+                showError('Type "LOCK" to confirm device locking.');
+                return;
+            }
+
+            var deviceNames = {'cm5': 'CM5 CPU', 'roboclaw': 'RoboClaw', 'clearlink': 'ClearLink'};
+            var message = 'Lock ' + deviceNames[device] + ' to current hardware?';
+            if (device === 'cm5') {
+                message += '\n\nThis will also encrypt the source code.';
+            }
+            message += '\n\nYou will need the master password to unlock later.';
+
+            if (!confirm(message)) {
+                return;
+            }
+
+            document.getElementById('lockConfirmInput').disabled = true;
+
+            fetch('/api/security/lock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ device: device, confirmation: 'LOCK' })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    if (device === 'cm5') {
+                        document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;background:#f5f5f7;"><div style="text-align:center;background:white;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><h2 style="color:#1d1d1f;margin-bottom:12px;">Locking Device...</h2><p style="color:#86868b;">' + data.message + '</p></div></div>';
+                    } else {
+                        showSuccess(data.message);
+                        document.getElementById('lockConfirmInput').value = '';
+                        document.getElementById('lockConfirmInput').disabled = false;
+                        loadSecurityStatus();
+                    }
+                } else {
+                    showError(data.error || 'Lock failed');
+                    document.getElementById('lockConfirmInput').disabled = false;
+                }
+            })
+            .catch(function(err) {
+                showError('Lock request failed');
+                document.getElementById('lockConfirmInput').disabled = false;
+            });
+        }
+
+        function unlockSelectedDevice() {
+            var device = document.getElementById('unlockDeviceSelect').value;
+            var password = document.getElementById('unlockPasswordInput').value;
+
+            if (!device) {
+                showError('No device selected');
+                return;
+            }
+
+            if (!password) {
+                showError('Enter the master password');
+                return;
+            }
+
+            var deviceNames = {'cm5': 'CM5 CPU', 'roboclaw': 'RoboClaw', 'clearlink': 'ClearLink'};
+            var message = 'Unlock ' + deviceNames[device] + '?';
+            if (device === 'cm5') {
+                message += '\n\nThis will decrypt the source code so it can be cloned.';
+            }
+
+            if (!confirm(message)) {
+                return;
+            }
+
+            document.getElementById('unlockPasswordInput').disabled = true;
+
+            fetch('/api/security/unlock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ device: device, master_password: password })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    if (device === 'cm5') {
+                        document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;background:#f5f5f7;"><div style="text-align:center;background:white;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><h2 style="color:#1d1d1f;margin-bottom:12px;">Unlocking Device...</h2><p style="color:#86868b;">' + data.message + '</p></div></div>';
+                    } else {
+                        showSuccess(data.message);
+                        document.getElementById('unlockPasswordInput').value = '';
+                        document.getElementById('unlockPasswordInput').disabled = false;
+                        loadSecurityStatus();
+                    }
+                } else {
+                    showError(data.error || 'Unlock failed');
+                    document.getElementById('unlockPasswordInput').value = '';
+                    document.getElementById('unlockPasswordInput').disabled = false;
+                }
+            })
+            .catch(function(err) {
+                showError('Unlock request failed');
+                document.getElementById('unlockPasswordInput').disabled = false;
+            });
+        }
+
+        // Load config and security status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+            loadSecurityStatus();
+        });
     </script>
 </body>
 </html>

@@ -1155,35 +1155,133 @@ def api_wifi_connect():
 
 
 # =============================================================================
-# Device Security Lock API
+# Device Security Lock API (v2 - Multi-Device Support)
 # =============================================================================
+
+DEVICE_MISMATCH_FILE = "/tmp/device_mismatch.json"
+
+
+def check_device_mismatch():
+    """Check if device mismatch file exists and has mismatch."""
+    try:
+        if os.path.exists(DEVICE_MISMATCH_FILE):
+            with open(DEVICE_MISMATCH_FILE, 'r') as f:
+                data = json.load(f)
+                return data
+    except Exception:
+        pass
+    return None
+
+
+@app.before_request
+def check_for_device_mismatch():
+    """Redirect to mismatch page if device binding failed."""
+    # Skip check for mismatch-related endpoints and static files
+    skip_paths = [
+        '/device_mismatch.html',
+        '/api/device_mismatch',
+        '/static/',
+        '/favicon.ico'
+    ]
+    for path in skip_paths:
+        if request.path.startswith(path) or request.path == path:
+            return None
+
+    mismatch = check_device_mismatch()
+    if mismatch and mismatch.get("devices"):
+        # Check if any device actually has a mismatch
+        for device_key, device_data in mismatch.get("devices", {}).items():
+            if device_data.get("locked") and not device_data.get("match") and device_data.get("detected"):
+                # Real mismatch - redirect to error page
+                from flask import redirect
+                return redirect('/device_mismatch.html')
+    return None
+
+
+@app.route("/device_mismatch.html")
+def device_mismatch_page():
+    """Serve the device mismatch error page."""
+    return send_from_directory(HTML_DIR, "device_mismatch.html")
+
+
+@app.route("/api/device_mismatch")
+def api_device_mismatch():
+    """Get current device mismatch data."""
+    mismatch = check_device_mismatch()
+    if mismatch:
+        return jsonify(mismatch)
+    return jsonify(None)
+
 
 @app.route("/api/security/status")
 def api_security_status():
-    """Get current security/lock status."""
+    """Get current security/lock status for all devices."""
     try:
         import sys
         sys.path.insert(0, "/opt/crawler")
-        from security_utils import load_security_config, get_device_id
+        from security_utils import (
+            load_security_config_v2,
+            check_all_device_locks,
+            get_cpu_serial,
+            get_device_id,
+            get_roboclaw_serial,
+            get_clearlink_mac,
+            get_crawler_type,
+            get_relevant_devices
+        )
 
-        config = load_security_config()
-        current_device = get_device_id()
-        locked_to = config.get("locked_to_device", "")
+        config = load_security_config_v2()
+        device_status = check_all_device_locks()
+        relevant = get_relevant_devices()
 
-        return jsonify({
-            "lock_state": config.get("lock_state", "unlocked"),
-            "locked_to_device": locked_to,
-            "current_device": current_device,
-            "is_same_device": (locked_to == current_device) if locked_to else True,
-            "master_password_set": bool(config.get("master_password_hash"))
-        })
+        result = {
+            "cm5": {
+                "locked": config["cm5"]["lock_state"] == "locked",
+                "locked_serial": config["cm5"]["serial"],
+                "current_serial": get_cpu_serial(),
+                "match": device_status["cm5"]["match"],
+                "detected": device_status["cm5"]["detected"]
+            },
+            "roboclaw": {
+                "locked": config["roboclaw"]["lock_state"] == "locked",
+                "locked_serial": config["roboclaw"]["serial"],
+                "current_serial": device_status["roboclaw"]["found"],
+                "match": device_status["roboclaw"]["match"],
+                "detected": device_status["roboclaw"]["detected"]
+            },
+            "clearlink": {
+                "locked": config["clearlink"]["lock_state"] == "locked",
+                "locked_mac": config["clearlink"]["mac"],
+                "current_mac": device_status["clearlink"]["found"],
+                "match": device_status["clearlink"]["match"],
+                "detected": device_status["clearlink"]["detected"]
+            },
+            "any_mismatch": device_status["any_mismatch"],
+            "master_password_set": bool(config.get("master_password_hash")),
+            "crawler_type": get_crawler_type(),
+            "relevant_devices": relevant,
+            # Legacy fields for backwards compatibility
+            "lock_state": config["cm5"]["lock_state"],
+            "locked_to_device": get_device_id() if config["cm5"]["lock_state"] == "locked" else "",
+            "current_device": get_device_id(),
+            "is_same_device": device_status["cm5"]["match"]
+        }
+
+        return jsonify(result)
+
     except ImportError:
         return jsonify({
+            "cm5": {"locked": False, "locked_serial": "", "current_serial": "", "match": True, "detected": False},
+            "roboclaw": {"locked": False, "locked_serial": "", "current_serial": "", "match": True, "detected": False},
+            "clearlink": {"locked": False, "locked_mac": "", "current_mac": "", "match": True, "detected": False},
+            "any_mismatch": False,
+            "master_password_set": False,
+            "crawler_type": "unknown",
+            "relevant_devices": ["cm5"],
             "lock_state": "unlocked",
             "locked_to_device": "",
             "current_device": "",
             "is_same_device": True,
-            "master_password_set": False,
             "error": "Security module not installed"
         })
     except Exception as e:
@@ -1192,13 +1290,14 @@ def api_security_status():
 
 @app.route("/api/security/lock", methods=["POST"])
 def api_security_lock():
-    """Lock the device to this hardware."""
+    """Lock a device to current hardware."""
     try:
         import sys
         sys.path.insert(0, "/opt/crawler")
-        from security_utils import lock_device, get_device_id
+        from security_utils import lock_single_device, lock_device, get_device_id
 
         data = request.get_json() or {}
+        device = data.get("device", "cm5")
         confirmation = data.get("confirmation", "")
 
         if confirmation != "LOCK":
@@ -1207,18 +1306,27 @@ def api_security_lock():
                 "error": "Type 'LOCK' to confirm device locking."
             })
 
-        success, message = lock_device()
-
-        if success:
-            # Schedule reboot
-            subprocess.Popen(["sudo", "reboot"], start_new_session=True)
-            return jsonify({
-                "success": True,
-                "message": message + " System will reboot.",
-                "locked_to": f"CM5-{get_device_id()}"
-            })
+        # Use new lock_single_device for specific device, or legacy for cm5+encryption
+        if device == "cm5":
+            # Legacy behavior - locks CM5 AND encrypts source code
+            success, message = lock_device()
+            if success:
+                subprocess.Popen(["sudo", "reboot"], start_new_session=True)
+                return jsonify({
+                    "success": True,
+                    "message": message + " System will reboot.",
+                    "locked_to": f"CM5-{get_device_id()}"
+                })
         else:
-            return jsonify({"success": False, "error": message})
+            # New behavior - just lock the specific device binding
+            success, message = lock_single_device(device)
+            if success:
+                return jsonify({
+                    "success": True,
+                    "message": message
+                })
+
+        return jsonify({"success": False, "error": message})
 
     except ImportError:
         return jsonify({"success": False, "error": "Security module not installed"})
@@ -1228,13 +1336,14 @@ def api_security_lock():
 
 @app.route("/api/security/unlock", methods=["POST"])
 def api_security_unlock():
-    """Unlock the device for cloning."""
+    """Unlock a device binding."""
     try:
         import sys
         sys.path.insert(0, "/opt/crawler")
-        from security_utils import unlock_device
+        from security_utils import unlock_single_device, unlock_device, clear_device_mismatch
 
         data = request.get_json() or {}
+        device = data.get("device", "cm5")
         master_password = data.get("master_password", "")
 
         if not master_password:
@@ -1243,17 +1352,27 @@ def api_security_unlock():
                 "error": "Master password required."
             })
 
-        success, message = unlock_device(master_password)
-
-        if success:
-            # Schedule reboot
-            subprocess.Popen(["sudo", "reboot"], start_new_session=True)
-            return jsonify({
-                "success": True,
-                "message": message + " System will reboot."
-            })
+        if device == "cm5":
+            # Legacy behavior - unlocks CM5 AND decrypts source code
+            success, message = unlock_device(master_password)
+            if success:
+                clear_device_mismatch()
+                subprocess.Popen(["sudo", "reboot"], start_new_session=True)
+                return jsonify({
+                    "success": True,
+                    "message": message + " System will reboot."
+                })
         else:
-            return jsonify({"success": False, "error": message})
+            # New behavior - just unlock the specific device binding
+            success, message = unlock_single_device(device, master_password)
+            if success:
+                clear_device_mismatch()
+                return jsonify({
+                    "success": True,
+                    "message": message
+                })
+
+        return jsonify({"success": False, "error": message})
 
     except ImportError:
         return jsonify({"success": False, "error": "Security module not installed"})
