@@ -498,12 +498,11 @@
         .pipe-calc-item { text-align: center; }
         .pipe-calc-label { font-size: 12px; color: #86868b; display: block; margin-bottom: 5px; }
         .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
-        .shots-section { background: #f5f5f7; border-radius: 12px; padding: 12px; margin-bottom: 20px; }
         .shots-table-container { overflow-x: auto; }
-        .shots-table { border-collapse: collapse; min-width: 100%; }
-        .shots-table td { padding: 8px 12px; text-align: center; border: 1px solid #e0e0e0; white-space: nowrap; }
-        .shots-table tr:first-child td { background: #007aff; color: white; font-weight: 600; font-size: 13px; }
-        .shots-table tr:last-child td { background: white; font-weight: 600; font-size: 14px; color: #1d1d1f; }
+        .shots-table { border-collapse: collapse; }
+        .shots-table td { padding: 6px 10px; text-align: center; white-space: nowrap; }
+        .shots-table tr:first-child td { color: #86868b; font-size: 12px; font-weight: 500; }
+        .shots-table tr:last-child td { font-size: 18px; font-weight: 600; color: #1d1d1f; }
         .controls { display: grid; gap: 12px; margin-bottom: 20px; }
         .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .camera-section {
@@ -779,16 +778,13 @@
             <div class="pipe-calc-row" style="margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0;">
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Speed</span><span class="pipe-calc-value" id="pipeSpeedDisplay">0.0"/s</span></div>
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Distance</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
-                <div class="pipe-calc-item"><span class="pipe-calc-label">Angle</span><span class="pipe-calc-value" id="pipeRelAngleDisplay">0.0°</span></div>
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Angle</span><input type="number" class="pipe-calc-value" id="pipeRelAngleDisplay" value="0.0" step="0.1" style="width: 60px; border: 1px solid #e0e0e0; border-radius: 6px; text-align: center; background: white;" onchange="setTestAngle(this.value)">°</div>
             </div>
             <div class="pipe-container" id="pipeContainer">
                 <div class="pipe-circle"></div>
                 <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#5856d6"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
             </div>
-        </div>
-
-        <div class="shots-section">
-            <div class="shots-table-container">
+            <div class="shots-table-container" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; overflow-x: auto;">
                 <table class="shots-table" id="shotsTable">
                     <tr id="shotHeaderRow"></tr>
                     <tr id="shotAngleRow"></tr>
@@ -1489,6 +1485,12 @@
             var angleCell = document.createElement('td');
             angleCell.textContent = relAngle + '°';
             angleRow.appendChild(angleCell);
+        }
+
+        function setTestAngle(value) {
+            var angle = parseFloat(value) || 0;
+            document.getElementById('pipeContainer').style.transform = 'rotate(' + angle + 'deg)';
+            document.getElementById('imuRelPitch').textContent = angle.toFixed(1);
         }
 
         function updatePositionFromDistance() {
