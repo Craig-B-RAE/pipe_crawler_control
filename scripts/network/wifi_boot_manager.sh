@@ -51,8 +51,9 @@ try_connect() {
 wait_and_scan() {
     local max_wait=10
     local waited=0
+    local scan_attempts=3
 
-    # Wait for wlan0 to be ready
+    # Wait for wlan0 interface to exist
     while [ $waited -lt $max_wait ]; do
         if ip link show "$INTERFACE" 2>/dev/null | grep -q "state UP\|state DOWN"; then
             break
@@ -61,12 +62,25 @@ wait_and_scan() {
         waited=$((waited + 1))
     done
 
-    # Trigger a WiFi scan
-    nmcli device wifi rescan 2>/dev/null || true
-    sleep 2
+    # Give the radio time to initialize after interface is up
+    log "Waiting for WiFi radio to initialize..."
+    sleep 5
 
-    # Get list of visible networks
-    nmcli -t -f SSID device wifi list 2>/dev/null | sort -u | grep -v "^$"
+    # Try multiple scans to ensure we find networks
+    local visible=""
+    for attempt in $(seq 1 $scan_attempts); do
+        log "WiFi scan attempt $attempt of $scan_attempts..."
+        nmcli device wifi rescan 2>/dev/null || true
+        sleep 3
+
+        visible=$(nmcli -t -f SSID device wifi list 2>/dev/null | sort -u | grep -v "^$")
+        if [ -n "$visible" ]; then
+            log "Found networks on attempt $attempt"
+            break
+        fi
+    done
+
+    echo "$visible"
 }
 
 # Update hotspot connection if settings changed
