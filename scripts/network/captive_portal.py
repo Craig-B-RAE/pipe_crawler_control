@@ -224,8 +224,42 @@ def load_current_config():
     return config
 
 
+HOTSPOT_CONNECTION = "XPressCan-Hotspot"
+
+
+def update_hotspot_connection(ssid, password):
+    """Update the NetworkManager hotspot connection with new SSID/password."""
+    try:
+        # Check if hotspot connection exists
+        result = subprocess.run(
+            ["nmcli", "connection", "show", HOTSPOT_CONNECTION],
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            print(f"Hotspot connection '{HOTSPOT_CONNECTION}' not found")
+            return False
+
+        # Update the connection
+        result = subprocess.run(
+            ["sudo", "nmcli", "connection", "modify", HOTSPOT_CONNECTION,
+             "802-11-wireless.ssid", ssid,
+             "wifi-sec.psk", password],
+            capture_output=True, text=True, timeout=10
+        )
+
+        if result.returncode == 0:
+            print(f"Updated hotspot connection: SSID={ssid}")
+            return True
+        else:
+            print(f"Failed to update hotspot: {result.stderr}")
+            return False
+    except Exception as e:
+        print(f"Error updating hotspot connection: {e}")
+        return False
+
+
 def save_config(crawler_id, ssid, password):
-    """Save configuration to file."""
+    """Save configuration to file and update NetworkManager hotspot."""
     try:
         os.makedirs(CONFIG_DIR, exist_ok=True)
 
@@ -247,6 +281,9 @@ def save_config(crawler_id, ssid, password):
             f.write(f"CONFIG_YAML={yaml_file}\n")
             f.write(f"UI_HTML={html_file}\n")
             f.write(f"MOTOR_DRIVER={motor_driver}\n")
+
+        # Also update the actual NetworkManager hotspot connection
+        update_hotspot_connection(ssid, password)
 
         return True
     except Exception as e:

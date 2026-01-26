@@ -44,7 +44,8 @@ DEFAULT_UI_SETTINGS = {
     },
     "pipeDiameter": 12,
     "speed": 4.0,
-    "ramp": 50
+    "ramp": 50,
+    "motorDriver": "clearlink"  # Default for EdgeFlex; magnetic/xpresscan use "roboclaw"
 }
 
 # Crawler type to HTML file mapping
@@ -737,6 +738,67 @@ def api_save_settings():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/api/driver", methods=["GET"])
+def api_get_driver():
+    """API endpoint to get current motor driver setting from YAML config."""
+    try:
+        config = load_crawler_config()
+        system_id = config.get("crawler_id", "edgeflex")
+
+        # Try installed config first, then source
+        yaml_paths = [
+            f"/home/craig/ros2_ws/install/pipe_crawler_control/share/pipe_crawler_control/config/{system_id}.yaml",
+            f"/home/craig/ros2_ws/src/pipe_crawler_control/config/{system_id}.yaml"
+        ]
+
+        for yaml_path in yaml_paths:
+            if os.path.exists(yaml_path):
+                with open(yaml_path, 'r') as f:
+                    import yaml
+                    yaml_config = yaml.safe_load(f)
+                driver = yaml_config.get('driver', {}).get('type', 'clearlink')
+                return jsonify({"driver": driver})
+
+        return jsonify({"driver": "clearlink"})  # Default
+    except Exception as e:
+        return jsonify({"driver": "clearlink", "error": str(e)})
+
+
+@app.route("/api/driver", methods=["POST"])
+def api_set_driver():
+    """API endpoint to change motor driver in YAML config."""
+    try:
+        data = request.get_json()
+        driver = data.get("driver")
+
+        if driver not in ["clearlink", "roboclaw"]:
+            return jsonify({"success": False, "error": "Invalid driver type"})
+
+        # Get current crawler config
+        config = load_crawler_config()
+        system_id = config.get("crawler_id", "edgeflex")
+
+        # Update source YAML config file (will be used after rebuild/restart)
+        yaml_path = f"/home/craig/ros2_ws/src/pipe_crawler_control/config/{system_id}.yaml"
+        if os.path.exists(yaml_path):
+            import yaml
+            with open(yaml_path, 'r') as f:
+                yaml_config = yaml.safe_load(f)
+
+            if 'driver' not in yaml_config:
+                yaml_config['driver'] = {}
+            yaml_config['driver']['type'] = driver
+
+            with open(yaml_path, 'w') as f:
+                yaml.dump(yaml_config, f, default_flow_style=False, sort_keys=False)
+
+            return jsonify({"success": True, "restart_required": True})
+
+        return jsonify({"success": False, "error": "Config file not found"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 # Configuration page route
 @app.route("/config")
 @app.route("/config.html")
@@ -858,8 +920,42 @@ def load_full_config():
     return config
 
 
+HOTSPOT_CONNECTION = "XPressCan-Hotspot"
+
+
+def update_hotspot_connection(ssid, password):
+    """Update the NetworkManager hotspot connection with new SSID/password."""
+    try:
+        # Check if hotspot connection exists
+        result = subprocess.run(
+            ["nmcli", "connection", "show", HOTSPOT_CONNECTION],
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            print(f"Hotspot connection '{HOTSPOT_CONNECTION}' not found")
+            return False
+
+        # Update the connection
+        result = subprocess.run(
+            ["sudo", "nmcli", "connection", "modify", HOTSPOT_CONNECTION,
+             "802-11-wireless.ssid", ssid,
+             "wifi-sec.psk", password],
+            capture_output=True, text=True, timeout=10
+        )
+
+        if result.returncode == 0:
+            print(f"Updated hotspot connection: SSID={ssid}")
+            return True
+        else:
+            print(f"Failed to update hotspot: {result.stderr}")
+            return False
+    except Exception as e:
+        print(f"Error updating hotspot connection: {e}")
+        return False
+
+
 def save_full_config(crawler_id, ssid, password):
-    """Save configuration to file."""
+    """Save configuration to file and update NetworkManager hotspot."""
     try:
         os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
 
@@ -881,6 +977,9 @@ def save_full_config(crawler_id, ssid, password):
             f.write(f"CONFIG_YAML={yaml_file}\n")
             f.write(f"UI_HTML={html_file}\n")
             f.write(f"MOTOR_DRIVER={motor_driver}\n")
+
+        # Also update the actual NetworkManager hotspot connection
+        update_hotspot_connection(ssid, password)
 
         return True
     except Exception as e:

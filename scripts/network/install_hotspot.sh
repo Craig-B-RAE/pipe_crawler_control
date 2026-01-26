@@ -48,6 +48,7 @@ mkdir -p /etc/xpresscan
 echo "Installing scripts..."
 cp "$SCRIPT_DIR/setup_hotspot.sh" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/connect_to_field.sh" "$INSTALL_DIR/"
+cp "$SCRIPT_DIR/wifi_boot_manager.sh" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/captive_portal.py" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/crawler_ui.py" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR"/*.sh

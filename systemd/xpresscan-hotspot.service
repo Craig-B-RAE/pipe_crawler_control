@@ -1,13 +1,13 @@
 [Unit]
-Description=XPressCan Field WiFi Hotspot
+Description=XPressCan WiFi Boot Manager
 After=NetworkManager.service
 Wants=NetworkManager.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/nmcli connection up XPressCan-Hotspot
-ExecStop=/usr/bin/nmcli connection down XPressCan-Hotspot
+ExecStart=/opt/xpresscan/wifi_boot_manager.sh start
+ExecStop=/opt/xpresscan/wifi_boot_manager.sh stop
 
 [Install]
 WantedBy=multi-user.target
