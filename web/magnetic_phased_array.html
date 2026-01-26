@@ -500,7 +500,7 @@
         .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
         .pipe-with-shots { display: flex; align-items: center; justify-content: center; gap: 8px; }
         .shots-column { display: flex; flex-direction: column; gap: 4px; min-width: 50px; }
-        .shot-item { font-size: 10px; color: #1d1d1f; text-align: center; }
+        .shot-item { font-size: 12px; color: #1d1d1f; text-align: center; }
         .shot-item .shot-label { color: #86868b; font-weight: 500; }
         .shot-item .shot-value { font-weight: 600; }
         .controls { display: grid; gap: 12px; margin-bottom: 20px; }
@@ -1471,21 +1471,34 @@
 
         function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }
 
-        var shotCount = 0;
+        var shots = [];
         function autoMove() {
             sendCommand('auto_move');
-            shotCount++;
             var relAngle = document.getElementById('pipeRelAngleDisplay').value;
-            var targetColumn = shotCount <= 6 ? 'shotsLeft' : 'shotsRight';
-            var column = document.getElementById(targetColumn);
-            var shotItem = document.createElement('div');
-            shotItem.className = 'shot-item';
-            shotItem.innerHTML = '<span class="shot-label">Shot ' + shotCount + '</span> <span class="shot-value">' + relAngle + '°</span>';
-            column.appendChild(shotItem);
+            shots.push({ num: shots.length + 1, angle: relAngle });
+            renderShots();
+        }
+
+        function renderShots() {
+            var leftCol = document.getElementById('shotsLeft');
+            var rightCol = document.getElementById('shotsRight');
+            leftCol.innerHTML = '';
+            rightCol.innerHTML = '';
+            var half = Math.ceil(shots.length / 2);
+            for (var i = 0; i < shots.length; i++) {
+                var shotItem = document.createElement('div');
+                shotItem.className = 'shot-item';
+                shotItem.innerHTML = '<span class="shot-label">Shot ' + shots[i].num + '</span> <span class="shot-value">' + shots[i].angle + '°</span>';
+                if (i < half) {
+                    leftCol.appendChild(shotItem);
+                } else {
+                    rightCol.appendChild(shotItem);
+                }
+            }
         }
 
         function clearShots() {
-            shotCount = 0;
+            shots = [];
             document.getElementById('shotsLeft').innerHTML = '';
             document.getElementById('shotsRight').innerHTML = '';
         }
