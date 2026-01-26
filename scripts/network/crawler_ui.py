@@ -1082,7 +1082,11 @@ def api_wifi_scan():
 
 @app.route("/api/wifi/connect", methods=["POST"])
 def api_wifi_connect():
-    """Connect to a WiFi network."""
+    """Connect to a WiFi network.
+
+    Creates a PERSISTENT connection using 'nmcli connection add' so credentials
+    survive reboots (including gocryptfs unlock/reboot cycles).
+    """
     data = request.get_json()
     ssid = data.get("ssid", "")
     password = data.get("password", "")
@@ -1095,12 +1099,50 @@ def api_wifi_connect():
         result = subprocess.run(["nmcli", "connection", "show", ssid], capture_output=True, text=True)
 
         if result.returncode == 0:
+            # Connection exists - update password if provided, then activate
+            if password:
+                subprocess.run(
+                    ["nmcli", "connection", "modify", ssid,
+                     "wifi-sec.key-mgmt", "wpa-psk",
+                     "wifi-sec.psk", password],
+                    capture_output=True, text=True
+                )
             result = subprocess.run(["nmcli", "connection", "up", ssid], capture_output=True, text=True, timeout=30)
         else:
-            cmd = ["nmcli", "device", "wifi", "connect", ssid]
+            # Create new PERSISTENT connection (not volatile 'device wifi connect')
+            # This stores credentials in /etc/NetworkManager/system-connections/
+            # which gets converted to netplan files on Ubuntu
             if password:
-                cmd.extend(["password", password])
+                cmd = [
+                    "nmcli", "connection", "add",
+                    "type", "wifi",
+                    "con-name", ssid,
+                    "ifname", "wlan0",
+                    "ssid", ssid,
+                    "wifi-sec.key-mgmt", "wpa-psk",
+                    "wifi-sec.psk", password,
+                    "connection.autoconnect", "yes",
+                    "connection.autoconnect-priority", "100"
+                ]
+            else:
+                # Open network (no password)
+                cmd = [
+                    "nmcli", "connection", "add",
+                    "type", "wifi",
+                    "con-name", ssid,
+                    "ifname", "wlan0",
+                    "ssid", ssid,
+                    "connection.autoconnect", "yes",
+                    "connection.autoconnect-priority", "100"
+                ]
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+
+            if result.returncode == 0:
+                # Now activate the connection
+                result = subprocess.run(
+                    ["nmcli", "connection", "up", ssid],
+                    capture_output=True, text=True, timeout=30
+                )
 
         if result.returncode == 0:
             return jsonify({"success": True, "message": "Connected successfully"})
@@ -1110,6 +1152,113 @@ def api_wifi_connect():
         return jsonify({"success": False, "message": "Connection timed out"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+
+
+# =============================================================================
+# Device Security Lock API
+# =============================================================================
+
+@app.route("/api/security/status")
+def api_security_status():
+    """Get current security/lock status."""
+    try:
+        import sys
+        sys.path.insert(0, "/opt/crawler")
+        from security_utils import load_security_config, get_device_id
+
+        config = load_security_config()
+        current_device = get_device_id()
+        locked_to = config.get("locked_to_device", "")
+
+        return jsonify({
+            "lock_state": config.get("lock_state", "unlocked"),
+            "locked_to_device": locked_to,
+            "current_device": current_device,
+            "is_same_device": (locked_to == current_device) if locked_to else True,
+            "master_password_set": bool(config.get("master_password_hash"))
+        })
+    except ImportError:
+        return jsonify({
+            "lock_state": "unlocked",
+            "locked_to_device": "",
+            "current_device": "",
+            "is_same_device": True,
+            "master_password_set": False,
+            "error": "Security module not installed"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/security/lock", methods=["POST"])
+def api_security_lock():
+    """Lock the device to this hardware."""
+    try:
+        import sys
+        sys.path.insert(0, "/opt/crawler")
+        from security_utils import lock_device, get_device_id
+
+        data = request.get_json() or {}
+        confirmation = data.get("confirmation", "")
+
+        if confirmation != "LOCK":
+            return jsonify({
+                "success": False,
+                "error": "Type 'LOCK' to confirm device locking."
+            })
+
+        success, message = lock_device()
+
+        if success:
+            # Schedule reboot
+            subprocess.Popen(["sudo", "reboot"], start_new_session=True)
+            return jsonify({
+                "success": True,
+                "message": message + " System will reboot.",
+                "locked_to": f"CM5-{get_device_id()}"
+            })
+        else:
+            return jsonify({"success": False, "error": message})
+
+    except ImportError:
+        return jsonify({"success": False, "error": "Security module not installed"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/security/unlock", methods=["POST"])
+def api_security_unlock():
+    """Unlock the device for cloning."""
+    try:
+        import sys
+        sys.path.insert(0, "/opt/crawler")
+        from security_utils import unlock_device
+
+        data = request.get_json() or {}
+        master_password = data.get("master_password", "")
+
+        if not master_password:
+            return jsonify({
+                "success": False,
+                "error": "Master password required."
+            })
+
+        success, message = unlock_device(master_password)
+
+        if success:
+            # Schedule reboot
+            subprocess.Popen(["sudo", "reboot"], start_new_session=True)
+            return jsonify({
+                "success": True,
+                "message": message + " System will reboot."
+            })
+        else:
+            return jsonify({"success": False, "error": message})
+
+    except ImportError:
+        return jsonify({"success": False, "error": "Security module not installed"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 def main():

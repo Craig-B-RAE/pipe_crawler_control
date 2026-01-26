@@ -167,7 +167,11 @@ def scan_wifi_networks():
 
 
 def connect_to_wifi(ssid, password=None):
-    """Connect to a WiFi network."""
+    """Connect to a WiFi network.
+
+    Creates a PERSISTENT connection using 'nmcli connection add' so credentials
+    survive reboots (including gocryptfs unlock/reboot cycles).
+    """
     try:
         # Check if connection already exists
         result = subprocess.run(
@@ -176,17 +180,53 @@ def connect_to_wifi(ssid, password=None):
         )
 
         if result.returncode == 0:
-            # Connection exists, just activate it
+            # Connection exists - update password if provided, then activate
+            if password:
+                subprocess.run(
+                    ["nmcli", "connection", "modify", ssid,
+                     "wifi-sec.key-mgmt", "wpa-psk",
+                     "wifi-sec.psk", password],
+                    capture_output=True, text=True
+                )
             result = subprocess.run(
                 ["nmcli", "connection", "up", ssid],
                 capture_output=True, text=True, timeout=30
             )
         else:
-            # Create new connection
-            cmd = ["nmcli", "device", "wifi", "connect", ssid]
+            # Create new PERSISTENT connection (not volatile 'device wifi connect')
+            # This stores credentials in /etc/NetworkManager/system-connections/
+            # which gets converted to netplan files on Ubuntu
             if password:
-                cmd.extend(["password", password])
+                cmd = [
+                    "nmcli", "connection", "add",
+                    "type", "wifi",
+                    "con-name", ssid,
+                    "ifname", "wlan0",
+                    "ssid", ssid,
+                    "wifi-sec.key-mgmt", "wpa-psk",
+                    "wifi-sec.psk", password,
+                    "connection.autoconnect", "yes",
+                    "connection.autoconnect-priority", "100"
+                ]
+            else:
+                # Open network (no password)
+                cmd = [
+                    "nmcli", "connection", "add",
+                    "type", "wifi",
+                    "con-name", ssid,
+                    "ifname", "wlan0",
+                    "ssid", ssid,
+                    "connection.autoconnect", "yes",
+                    "connection.autoconnect-priority", "100"
+                ]
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+
+            if result.returncode == 0:
+                # Now activate the connection
+                result = subprocess.run(
+                    ["nmcli", "connection", "up", ssid],
+                    capture_output=True, text=True, timeout=30
+                )
 
         if result.returncode == 0:
             return True, "Connected successfully"
