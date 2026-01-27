@@ -4,11 +4,11 @@ system:
   web_interface: edgeflex_clearlink.html
 driver:
   type: clearlink
-  ip_address: 192.168.1.100
+  ip_address: 192.168.20.240
   port: 44818
   num_axes: 4
-  loop_hz: 10
-  deadman_secs: 3
+  loop_hz: 10.0
+  deadman_secs: 3.0
 motors:
 - name: left
   axis: 1

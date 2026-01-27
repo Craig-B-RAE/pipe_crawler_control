@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="30" id="autoRefresh">
+    <title>Device Mismatch - System Blocked</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #1d1d1f;
+        }
+        .container {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+        .debug-banner {
+            background: #ff9500;
+            color: #1d1d1f;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .debug-banner a {
+            color: #1d1d1f;
+            margin-left: 15px;
+        }
+        .warning-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #ff3b30;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .subtitle {
+            color: #86868b;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .device-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            text-align: left;
+        }
+        .device-table th {
+            background: #f5f5f7;
+            color: #86868b;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 15px;
+        }
+        .device-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+        .device-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+        .device-table td {
+            padding: 14px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+            font-family: -apple-system, monospace;
+            color: #1d1d1f;
+        }
+        .device-table tr:last-child td {
+            border-bottom: none;
+        }
+        .device-table tr:last-child td:first-child {
+            border-radius: 0 0 0 8px;
+        }
+        .device-table tr:last-child td:last-child {
+            border-radius: 0 0 8px 0;
+        }
+        .device-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+        .device-name {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            font-weight: 500;
+            color: #1d1d1f;
+        }
+        .serial {
+            color: #86868b;
+            word-break: break-all;
+            max-width: 150px;
+        }
+        .status-ok {
+            color: #34c759;
+            font-weight: 600;
+        }
+        .status-mismatch {
+            color: #ff3b30;
+            font-weight: 600;
+        }
+        .status-skipped {
+            color: #ff9500;
+            font-weight: 500;
+        }
+        .contact-info {
+            background: #f5f5f7;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+        }
+        .contact-info p {
+            color: #86868b;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        .contact-email {
+            color: #007aff;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+        .contact-email:hover {
+            text-decoration: underline;
+        }
+        .refresh-notice {
+            color: #86868b;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        .loading {
+            color: #86868b;
+            font-size: 14px;
+            padding: 40px;
+        }
+
+        /* Administrator section */
+        .admin-section {
+            margin-top: 30px;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 20px;
+        }
+        .admin-toggle {
+            color: #86868b;
+            font-size: 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s;
+        }
+        .admin-toggle:hover {
+            color: #1d1d1f;
+        }
+        .admin-toggle .arrow {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+        .admin-toggle.expanded .arrow {
+            transform: rotate(90deg);
+        }
+        .admin-content {
+            display: none;
+            margin-top: 15px;
+        }
+        .admin-content.show {
+            display: block;
+        }
+        .admin-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        .admin-input {
+            background: #f5f5f7;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #1d1d1f;
+            font-size: 14px;
+            width: 200px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .admin-input:focus {
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+        }
+        .admin-input::placeholder {
+            color: #86868b;
+        }
+        .admin-btn {
+            background: #f0f7ff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            color: #007aff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .admin-btn:hover {
+            background: #e0efff;
+        }
+        .admin-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .admin-error {
+            color: #ff3b30;
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+        .admin-error.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Debug mode banner (hidden by default) -->
+        <div class="debug-banner" id="debugBanner" style="display: none;">
+            DEBUG MODE - This is a preview
+            <a href="/config.html">Back to Config</a>
+        </div>
+
+        <div class="warning-icon">&#9888;&#65039;</div>
+        <h1>DEVICE MISMATCH - CANNOT START</h1>
+        <p class="subtitle">Hardware binding verification failed</p>
+
+        <div id="deviceTable">
+            <div class="loading">Loading device status...</div>
+        </div>
+
+        <div class="contact-info">
+            <p>For support, please contact:</p>
+            <a href="mailto:c.burke@rae.com" class="contact-email">c.burke@rae.com</a>
+        </div>
+
+        <p class="refresh-notice">Auto-refresh in 30 seconds</p>
+
+        <!-- Administrator Access Section -->
+        <div class="admin-section">
+            <div class="admin-toggle" onclick="toggleAdmin()" id="adminToggle">
+                <span class="arrow">&#9654;</span>
+                <span>Administrator Access</span>
+            </div>
+            <div class="admin-content" id="adminContent">
+                <div class="admin-row">
+                    <input type="password"
+                           class="admin-input"
+                           id="adminPassword"
+                           placeholder="Master Password"
+                           onkeypress="if(event.key==='Enter') attemptBypass()">
+                    <button class="admin-btn" id="adminBtn" onclick="attemptBypass()">Access Config</button>
+                </div>
+                <div class="admin-error" id="adminError">Invalid password</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var isDebugMode = window.location.search.indexOf('debug=true') !== -1;
+
+        // Debug mode sample data
+        var debugData = {
+            devices: {
+                cm5: {
+                    name: "CM5 CPU",
+                    locked: true,
+                    expected: "85e1f88b",
+                    found: "85e1f88b",
+                    detected: true,
+                    match: true
+                },
+                roboclaw: {
+                    name: "RoboClaw",
+                    locked: true,
+                    expected: "ABC123456789",
+                    found: "XYZ789012345",
+                    detected: true,
+                    match: false
+                },
+                clearlink: {
+                    name: "ClearLink",
+                    locked: false,
+                    expected: "",
+                    found: "",
+                    detected: false,
+                    match: true
+                }
+            }
+        };
+
+        function toggleAdmin() {
+            var toggle = document.getElementById('adminToggle');
+            var content = document.getElementById('adminContent');
+            toggle.classList.toggle('expanded');
+            content.classList.toggle('show');
+            if (content.classList.contains('show')) {
+                document.getElementById('adminPassword').focus();
+            }
+        }
+
+        function attemptBypass() {
+            var password = document.getElementById('adminPassword').value;
+            var btn = document.getElementById('adminBtn');
+            var errorEl = document.getElementById('adminError');
+
+            if (!password) {
+                errorEl.textContent = 'Please enter the master password';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+            errorEl.classList.remove('show');
+
+            fetch('/api/security/bypass_mismatch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ master_password: password })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    window.location.href = '/config.html';
+                } else {
+                    errorEl.textContent = data.error || 'Invalid password';
+                    errorEl.classList.add('show');
+                    btn.disabled = false;
+                    btn.textContent = 'Access Config';
+                    document.getElementById('adminPassword').value = '';
+                    document.getElementById('adminPassword').focus();
+                }
+            })
+            .catch(function(err) {
+                errorEl.textContent = 'Connection error';
+                errorEl.classList.add('show');
+                btn.disabled = false;
+                btn.textContent = 'Access Config';
+            });
+        }
+
+        function renderTable(data) {
+            var html = '<table class="device-table">';
+            html += '<thead><tr>';
+            html += '<th>Device</th>';
+            html += '<th>Expected</th>';
+            html += '<th>Found</th>';
+            html += '<th>Status</th>';
+            html += '</tr></thead>';
+            html += '<tbody>';
+
+            var devices = data.devices;
+            for (var key in devices) {
+                var dev = devices[key];
+                var statusClass = 'status-ok';
+                var statusText = '&#10003; OK';
+
+                if (dev.locked) {
+                    if (!dev.detected) {
+                        statusClass = 'status-skipped';
+                        statusText = '&#8212; Not Detected';
+                    } else if (!dev.match) {
+                        statusClass = 'status-mismatch';
+                        statusText = '&#10007; MISMATCH';
+                    }
+                } else {
+                    statusClass = 'status-skipped';
+                    statusText = '&#8212; Unlocked';
+                }
+
+                html += '<tr>';
+                html += '<td class="device-name">' + dev.name + '</td>';
+                html += '<td class="serial">' + (dev.expected || '—') + '</td>';
+                html += '<td class="serial">' + (dev.found || '—') + '</td>';
+                html += '<td class="' + statusClass + '">' + statusText + '</td>';
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            document.getElementById('deviceTable').innerHTML = html;
+        }
+
+        function loadMismatchData() {
+            // Debug mode - show sample data
+            if (isDebugMode) {
+                document.getElementById('debugBanner').style.display = 'block';
+                document.getElementById('autoRefresh').remove(); // Disable auto-refresh in debug
+                renderTable(debugData);
+                return;
+            }
+
+            fetch('/api/device_mismatch')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data || !data.devices) {
+                        // No mismatch - redirect to main page
+                        window.location.href = '/';
+                        return;
+                    }
+                    renderTable(data);
+                })
+                .catch(function(err) {
+                    console.error('Error loading mismatch data:', err);
+                });
+        }
+
+        // Load on page load
+        document.addEventListener('DOMContentLoaded', loadMismatchData);
+    </script>
+</body>
+</html>

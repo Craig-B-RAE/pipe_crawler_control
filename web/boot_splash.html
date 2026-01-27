@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starting Up...</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: #1d1d1f;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+        }
+        .logo {
+            max-width: 350px;
+            width: 80%;
+            margin-bottom: 50px;
+        }
+        .status-text {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 35px;
+            letter-spacing: -0.5px;
+            color: #1d1d1f;
+        }
+
+        /* Progress bar container */
+        .progress-container {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .progress-bar-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .progress-bar-outer {
+            flex: 1;
+            height: 12px;
+            background: #e5e5e7;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .progress-bar-inner {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00C8D4 0%, #00B8C4 100%);
+            border-radius: 6px;
+            transition: width 0.5s ease-out;
+            box-shadow: 0 1px 3px rgba(0, 200, 212, 0.4);
+        }
+        .progress-percent {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00C8D4;
+            min-width: 45px;
+            text-align: right;
+        }
+
+        /* Status message */
+        .status-message {
+            font-size: 15px;
+            color: #86868b;
+            margin-top: 15px;
+            min-height: 20px;
+        }
+
+        /* Step indicators */
+        .step-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            padding: 0 5px;
+        }
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e5e5e7;
+            transition: all 0.3s ease;
+        }
+        .step-dot.complete {
+            background: #00C8D4;
+            box-shadow: 0 0 8px rgba(0, 200, 212, 0.5);
+        }
+        .step-dot.active {
+            background: #00C8D4;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .step-label {
+            font-size: 10px;
+            color: #86868b;
+            white-space: nowrap;
+        }
+        .step-label.active {
+            color: #00C8D4;
+            font-weight: 500;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+                box-shadow: 0 0 8px rgba(0, 200, 212, 0.5);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.2);
+                box-shadow: 0 0 15px rgba(0, 200, 212, 0.8);
+            }
+        }
+
+        /* Error state */
+        .error-state {
+            display: none;
+            margin-top: 25px;
+        }
+        .error-state.show {
+            display: block;
+        }
+        .error-text {
+            color: #ff3b30;
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .error-hint {
+            color: #86868b;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        /* Ready state */
+        .ready-state {
+            display: none;
+        }
+        .ready-state.show {
+            display: block;
+        }
+        .ready-check {
+            font-size: 48px;
+            color: #34c759;
+            margin-bottom: 10px;
+        }
+
+        /* Debug banner */
+        .debug-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #ff9500;
+            color: #000;
+            padding: 10px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            display: none;
+            z-index: 100;
+        }
+        .debug-banner a {
+            color: #000;
+            margin-left: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-banner" id="debugBanner">
+        DEBUG MODE - Boot Splash Preview
+        <a href="/config.html">Back to Config</a>
+    </div>
+
+    <div class="container">
+        <img src="/images/prime_inspections_logo.png" alt="Prime Inspections Inc." class="logo">
+
+        <div class="status-text" id="statusText">Starting up...</div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar-wrapper">
+                <div class="progress-bar-outer">
+                    <div class="progress-bar-inner" id="progressBar"></div>
+                </div>
+                <div class="progress-percent" id="progressPercent">0%</div>
+            </div>
+
+            <div class="status-message" id="statusMessage">Starting system services...</div>
+
+            <div class="step-indicators">
+                <div class="step">
+                    <div class="step-dot" id="step1"></div>
+                    <div class="step-label" id="stepLabel1">Services</div>
+                </div>
+                <div class="step">
+                    <div class="step-dot" id="step2"></div>
+                    <div class="step-label" id="stepLabel2">Config</div>
+                </div>
+                <div class="step">
+                    <div class="step-dot" id="step3"></div>
+                    <div class="step-label" id="stepLabel3">Devices</div>
+                </div>
+                <div class="step">
+                    <div class="step-dot" id="step4"></div>
+                    <div class="step-label" id="stepLabel4">Security</div>
+                </div>
+                <div class="step">
+                    <div class="step-dot" id="step5"></div>
+                    <div class="step-label" id="stepLabel5">Ready</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ready-state" id="readyState">
+            <div class="ready-check">&#10003;</div>
+        </div>
+
+        <div class="error-state" id="errorState">
+            <div class="error-text" id="errorText">Boot check timed out</div>
+            <div class="error-hint">Please reboot the system</div>
+        </div>
+    </div>
+
+    <script>
+        var isDebugMode = window.location.search.indexOf('debug=true') !== -1;
+        var startTime = Date.now();
+        var timeoutMs = 45000; // 45 second timeout
+        var pollInterval = null;
+        var currentProgress = 0;
+        var targetProgress = 0;
+
+        // Progress steps with their percentages and messages
+        var progressSteps = [
+            { percent: 0,   message: "Starting system services...", step: 0 },
+            { percent: 15,  message: "Loading configuration...", step: 1 },
+            { percent: 30,  message: "Checking CM5 CPU...", step: 2 },
+            { percent: 45,  message: "Checking RoboClaw...", step: 2 },
+            { percent: 60,  message: "Checking ClearLink...", step: 2 },
+            { percent: 75,  message: "Performing security checks...", step: 3 },
+            { percent: 90,  message: "Verifying device locks...", step: 3 },
+            { percent: 100, message: "Ready!", step: 4 }
+        ];
+
+        // Debug mode - show banner and simulate progress
+        if (isDebugMode) {
+            document.getElementById('debugBanner').style.display = 'block';
+            simulateDebugMode();
+        } else {
+            // Start polling for boot status
+            checkBootStatus();
+            pollInterval = setInterval(checkBootStatus, 1500);
+        }
+
+        function simulateDebugMode() {
+            var debugStep = 0;
+            setInterval(function() {
+                if (debugStep < progressSteps.length - 1) {
+                    debugStep++;
+                }
+                updateProgressUI(progressSteps[debugStep].percent, progressSteps[debugStep].message, progressSteps[debugStep].step);
+            }, 2000);
+        }
+
+        function mapBootStateToProgress(data) {
+            // Map API response to progress percentage and message
+            if (!data.in_progress) {
+                return { percent: 100, message: "Ready!", step: 4 };
+            }
+
+            var checksComplete = data.checks_complete || 0;
+            var currentCheck = data.current_check || "";
+
+            // Initial state
+            if (checksComplete === 0 && currentCheck === "Initializing") {
+                return { percent: 10, message: "Starting system services...", step: 0 };
+            }
+
+            // Loading configuration
+            if (checksComplete === 0 && currentCheck !== "Initializing") {
+                return { percent: 20, message: "Loading configuration...", step: 1 };
+            }
+
+            // Device checks
+            if (currentCheck === "CM5 CPU") {
+                return { percent: 35, message: "Checking CM5 CPU...", step: 2 };
+            }
+            if (currentCheck === "RoboClaw") {
+                return { percent: 50, message: "Checking RoboClaw...", step: 2 };
+            }
+            if (currentCheck === "ClearLink") {
+                return { percent: 65, message: "Checking ClearLink...", step: 2 };
+            }
+
+            // Security verification
+            if (currentCheck === "Verifying locks") {
+                return { percent: 85, message: "Verifying device locks...", step: 3 };
+            }
+
+            // Fallback based on checks complete
+            if (checksComplete === 1) {
+                return { percent: 40, message: "Device check in progress...", step: 2 };
+            }
+            if (checksComplete === 2) {
+                return { percent: 55, message: "Device check in progress...", step: 2 };
+            }
+            if (checksComplete === 3) {
+                return { percent: 75, message: "Performing security checks...", step: 3 };
+            }
+
+            return { percent: 15, message: "Loading...", step: 1 };
+        }
+
+        function updateProgressUI(percent, message, activeStep) {
+            // Smooth progress animation
+            targetProgress = percent;
+            animateProgress();
+
+            // Update message
+            document.getElementById('statusMessage').textContent = message;
+
+            // Update step indicators
+            for (var i = 1; i <= 5; i++) {
+                var dot = document.getElementById('step' + i);
+                var label = document.getElementById('stepLabel' + i);
+
+                dot.classList.remove('complete', 'active');
+                label.classList.remove('active');
+
+                if (i - 1 < activeStep) {
+                    dot.classList.add('complete');
+                } else if (i - 1 === activeStep) {
+                    dot.classList.add('active');
+                    label.classList.add('active');
+                }
+            }
+
+            // Ready state
+            if (percent >= 100) {
+                document.getElementById('statusText').textContent = 'Ready!';
+                document.getElementById('statusText').style.color = '#34c759';
+                document.getElementById('readyState').classList.add('show');
+
+                // Mark all steps complete
+                for (var j = 1; j <= 5; j++) {
+                    document.getElementById('step' + j).classList.remove('active');
+                    document.getElementById('step' + j).classList.add('complete');
+                }
+            }
+        }
+
+        function animateProgress() {
+            if (currentProgress < targetProgress) {
+                currentProgress = Math.min(currentProgress + 2, targetProgress);
+                document.getElementById('progressBar').style.width = currentProgress + '%';
+                document.getElementById('progressPercent').textContent = Math.round(currentProgress) + '%';
+
+                if (currentProgress < targetProgress) {
+                    requestAnimationFrame(animateProgress);
+                }
+            }
+        }
+
+        function showError(message) {
+            if (pollInterval) clearInterval(pollInterval);
+
+            document.getElementById('progressContainer').style.opacity = '0.5';
+            document.getElementById('statusText').textContent = 'Error';
+            document.getElementById('statusText').style.color = '#ff3b30';
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorState').classList.add('show');
+        }
+
+        function checkBootStatus() {
+            fetch('/api/security/boot_status')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.error) {
+                        // API not ready yet, show initial progress
+                        updateProgressUI(5, "Waiting for system...", 0);
+                        return;
+                    }
+
+                    // Map boot state to progress
+                    var progress = mapBootStateToProgress(data);
+                    updateProgressUI(progress.percent, progress.message, progress.step);
+
+                    // Check if boot is complete
+                    if (!data.in_progress) {
+                        if (pollInterval) clearInterval(pollInterval);
+
+                        // Brief delay to show 100% before redirect
+                        setTimeout(function() {
+                            if (data.redirect) {
+                                window.location.href = data.redirect;
+                            } else {
+                                window.location.href = '/';
+                            }
+                        }, 800);
+                        return;
+                    }
+
+                    // Check for timeout
+                    if (Date.now() - startTime > timeoutMs) {
+                        showError('Boot check timed out');
+                    }
+                })
+                .catch(function(err) {
+                    // Server not ready, show waiting state
+                    updateProgressUI(3, "Waiting for server...", 0);
+
+                    // Check for overall timeout
+                    if (Date.now() - startTime > timeoutMs) {
+                        showError('Could not connect to server');
+                    }
+                });
+        }
+    </script>
+</body>
+</html>

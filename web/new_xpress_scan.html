@@ -547,13 +547,25 @@
         .header { text-align: center; color: #86868b; font-size: 12px; margin-bottom: 15px; }
         .footer { text-align: center; color: #86868b; font-size: 11px; margin-top: 15px; }
         @media (max-width: 400px) { .control-row { grid-template-columns: 1fr; } }
+        /* Support Button and Modal */
+        .support-section { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
+        .support-btn { background: #f5f5f7; color: #1d1d1f; border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .support-btn:hover { background: #e8e8ed; transform: scale(1.02); }
+        .support-btn:active { transform: scale(0.98); }
+        .support-btn svg { width: 16px; height: 16px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div id="connectionStatus" style="display: flex; justify-content: center; align-items: center; font-size: 12px; margin-bottom: 8px; color: #86868b; position: relative;">
-            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #c62828; margin-right: 6px;"></span>
-            <span id="connectionText">Disconnected</span>
+        <div id="connectionStatus" style="display: flex; justify-content: center; align-items: center; font-size: 12px; margin-bottom: 8px; color: #86868b; position: relative; gap: 16px;">
+            <span style="display: flex; align-items: center;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #c62828; margin-right: 6px;" id="rosDot"></span>
+                <span id="connectionText">Disconnected</span>
+            </span>
+            <span style="display: flex; align-items: center; cursor: pointer;" onclick="openWifiModal()" title="WiFi Settings">
+                <svg id="wifiIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                <span id="wifiText">No WiFi</span>
+            </span>
             <button onclick="location.reload()" style="position: absolute; right: 0; background: #f5f5f7; border: none; border-radius: 6px; padding: 6px; cursor: pointer;" title="Refresh page">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
@@ -810,6 +822,81 @@
         </div>
 
         <div class="footer">v<span id="footerVersion">2.0.1</span> | Last updated: <span id="lastUpdated">--</span></div>
+
+        <!-- Support Button -->
+        <div class="support-section">
+            <button class="support-btn" onclick="openSupportModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Contact Support
+            </button>
+        </div>
+    </div>
+
+    <!-- WiFi Settings Modal -->
+    <div class="modal-overlay" id="wifiModal" onclick="closeWifiModal()" style="display: none;">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 420px;">
+            <div class="modal-header">
+                <span class="modal-title">WiFi Settings</span>
+                <button class="modal-close" onclick="closeWifiModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="padding: 20px;">
+                <div style="background: #f5f5f7; border-radius: 10px; padding: 12px 15px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Current Connection</span>
+                        <span id="wifiCurrentStatus" style="font-size: 13px; font-weight: 500; color: #34c759;">Connected</span>
+                    </div>
+                    <div style="font-size: 16px; font-weight: 600; color: #1d1d1f; margin-top: 6px;" id="wifiCurrentSsid">--</div>
+                    <div style="font-size: 12px; color: #86868b; margin-top: 4px;" id="wifiCurrentIp">IP: --</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Available Networks</span>
+                    <button onclick="scanWifiNetworks()" style="background: #007aff; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer;">Scan</button>
+                </div>
+                <div id="wifiNetworkList" style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 10px;">
+                    <div style="padding: 30px; text-align: center; color: #86868b; font-size: 13px;">Click Scan to find networks</div>
+                </div>
+                <div id="wifiConnectForm" style="display: none; margin-top: 15px; padding: 15px; background: #f5f5f7; border-radius: 10px;">
+                    <div style="font-size: 13px; font-weight: 500; color: #1d1d1f; margin-bottom: 10px;">Connect to: <span id="wifiConnectSsid"></span></div>
+                    <input type="password" id="wifiConnectPassword" placeholder="Enter password" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box;">
+                    <div id="wifiConnectError" style="color: #ff3b30; font-size: 12px; margin-bottom: 10px; display: none;"></div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="cancelWifiConnect()" style="flex: 1; padding: 10px; background: #e8e8ed; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Cancel</button>
+                        <button onclick="connectToWifi()" id="wifiConnectBtn" style="flex: 1; padding: 10px; background: #007aff; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Connect</button>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <button onclick="forgetWifiFromModal()" style="width: 100%; padding: 10px; background: #ff3b30; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Forget WiFi & Enable Hotspot</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support Modal -->
+    <div class="modal-overlay" id="supportModal" onclick="closeSupportModal()" style="display: none;">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 420px;">
+            <div class="modal-header">
+                <span class="modal-title">Contact Support</span>
+                <button class="modal-close" onclick="closeSupportModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="padding: 20px;">
+                <p style="color: #86868b; font-size: 13px; margin-bottom: 15px;">Describe your issue and download a diagnostic report to send to support.</p>
+                <label style="font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">Issue Description</label>
+                <textarea id="supportIssueDescription" placeholder="Describe the problem you're experiencing..." style="width: 100%; height: 100px; padding: 12px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 8px; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
+                <div id="supportStatus" style="display: none; margin-top: 10px; padding: 10px; background: #f5f5f7; border-radius: 8px; font-size: 12px; text-align: center;"></div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button onclick="downloadSupportReport()" style="flex: 1; padding: 12px; background: #007aff; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download Report
+                    </button>
+                </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; text-align: center;">
+                    <a id="supportEmailLink" href="mailto:c.burke@rae.com?subject=Crawler%20Support%20Request" style="color: #007aff; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Email: c.burke@rae.com
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Configuration Password Modal -->
@@ -1018,7 +1105,7 @@
             gearRatio: 2,        // Final drive gear ratio
             maxRpm: 179,         // Max motor RPM at 100% (before gearbox)
             numMotors: 1,        // Number of motors
-            motorTorque: 0.5     // Motor torque in Nm (after gearbox, not multiplied again)
+            motorTorque: 0.5     // Motor torque in Nm (before gearbox)
         };
         var protectedUnlocked = false;
         var lockTimeout = null;
@@ -1063,8 +1150,9 @@
         }
 
         // Calculate and display crawler torque
+        // Formula: Motor torque × gearbox ratio × gear ratio × number of motors
         function updateCrawlerTorque() {
-            var crawlerTorque = motorParams.motorTorque * motorParams.gearRatio * motorParams.numMotors;
+            var crawlerTorque = motorParams.motorTorque * motorParams.gearboxRatio * motorParams.gearRatio * motorParams.numMotors;
             document.getElementById('crawlerTorqueDisplay').textContent = crawlerTorque.toFixed(2);
         }
 
@@ -1299,7 +1387,14 @@
         var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
         function updateConnectionStatus(text, color) {
             document.getElementById('connectionText').textContent = text;
-            document.getElementById('connectionStatus').querySelector('span').style.background = color;
+            document.getElementById('rosDot').style.background = color;
+        }
+        function updateWifiStatus(ssid) {
+            var icon = document.getElementById('wifiIcon');
+            var text = document.getElementById('wifiText');
+            var connected = ssid && ssid !== '--' && ssid !== '';
+            icon.style.stroke = connected ? '#2e7d32' : '#c62828';
+            text.textContent = connected ? ssid : 'No WiFi';
         }
         ros.on('connection', function() { updateConnectionStatus('Connected', '#2e7d32'); updateSpeed(4.0); updateRamp(50); });
         ros.on('error', function() { updateConnectionStatus('Error', '#c62828'); });
@@ -1384,6 +1479,7 @@
                 el = document.getElementById('systemWifiIp'); if (el.textContent !== wifiIp) el.textContent = wifiIp;
                 el = document.getElementById('systemEthIp'); if (el.textContent !== ethIp) el.textContent = ethIp;
                 el = document.getElementById('wifiSsidDisplay'); if (el.textContent !== ssid) el.textContent = ssid;
+                updateWifiStatus(ssid);
             } catch(e) { }
         });
 
@@ -1577,6 +1673,207 @@
                     }
                 })
                 .catch(function(e) { console.error('Failed to load system stats:', e); });
+        }
+
+        // WiFi Modal Functions
+        var selectedWifiSsid = '';
+        var selectedWifiSecurity = '';
+
+        function openWifiModal() {
+            document.getElementById('wifiModal').style.display = 'flex';
+            updateWifiModalStatus();
+        }
+
+        function closeWifiModal() {
+            document.getElementById('wifiModal').style.display = 'none';
+            cancelWifiConnect();
+        }
+
+        function updateWifiModalStatus() {
+            var ssidEl = document.getElementById('wifiSsidDisplay');
+            var ssid = ssidEl ? ssidEl.textContent.replace(/[^\w\s-]/g, '').trim() : '--';
+            var ipEl = document.getElementById('systemWifiIp');
+            var ip = ipEl ? ipEl.textContent : '--';
+            document.getElementById('wifiCurrentSsid').textContent = ssid || '--';
+            document.getElementById('wifiCurrentIp').textContent = 'IP: ' + (ip || '--');
+            if (ssid && ssid !== '--') {
+                document.getElementById('wifiCurrentStatus').textContent = 'Connected';
+                document.getElementById('wifiCurrentStatus').style.color = '#34c759';
+            } else {
+                document.getElementById('wifiCurrentStatus').textContent = 'Not Connected';
+                document.getElementById('wifiCurrentStatus').style.color = '#ff9500';
+            }
+        }
+
+        function scanWifiNetworks() {
+            var list = document.getElementById('wifiNetworkList');
+            list.innerHTML = '<div style="padding: 30px; text-align: center; color: #86868b; font-size: 13px;">Scanning...</div>';
+
+            fetch('/api/wifi/scan')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.networks && data.networks.length > 0) {
+                        var html = '';
+                        data.networks.forEach(function(net) {
+                            var signalBars = Math.min(4, Math.ceil(net.signal / 25));
+                            var barsHtml = '';
+                            for (var i = 1; i <= 4; i++) {
+                                barsHtml += '<div style="width: 3px; height: ' + (i * 4) + 'px; background: ' + (i <= signalBars ? '#34c759' : '#c0c0c0') + '; border-radius: 1px;"></div>';
+                            }
+                            var connected = net.connected ? '<span style="color: #34c759; font-size: 11px; font-weight: 500;">Connected</span>' : '<button onclick="selectWifiNetwork(\'' + net.ssid.replace(/'/g, "\\'") + '\', \'' + net.security + '\')" style="background: #007aff; color: white; border: none; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer;">Connect</button>';
+                            html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #e0e0e0;">';
+                            html += '<div style="flex: 1;"><div style="font-size: 14px; font-weight: 500; color: #1d1d1f;">' + net.ssid + '</div>';
+                            html += '<div style="font-size: 11px; color: #86868b; margin-top: 2px;">' + net.security + '</div></div>';
+                            html += '<div style="display: flex; align-items: flex-end; gap: 2px; margin-right: 12px;">' + barsHtml + '</div>';
+                            html += connected + '</div>';
+                        });
+                        list.innerHTML = html;
+                    } else {
+                        list.innerHTML = '<div style="padding: 30px; text-align: center; color: #86868b; font-size: 13px;">No networks found</div>';
+                    }
+                })
+                .catch(function(e) {
+                    list.innerHTML = '<div style="padding: 30px; text-align: center; color: #ff3b30; font-size: 13px;">Scan failed</div>';
+                });
+        }
+
+        function selectWifiNetwork(ssid, security) {
+            selectedWifiSsid = ssid;
+            selectedWifiSecurity = security;
+            document.getElementById('wifiConnectSsid').textContent = ssid;
+            document.getElementById('wifiConnectForm').style.display = 'block';
+            document.getElementById('wifiConnectPassword').value = '';
+            document.getElementById('wifiConnectError').style.display = 'none';
+
+            if (security === 'Open' || security === '--') {
+                document.getElementById('wifiConnectPassword').style.display = 'none';
+            } else {
+                document.getElementById('wifiConnectPassword').style.display = 'block';
+                document.getElementById('wifiConnectPassword').focus();
+            }
+        }
+
+        function cancelWifiConnect() {
+            selectedWifiSsid = '';
+            selectedWifiSecurity = '';
+            document.getElementById('wifiConnectForm').style.display = 'none';
+            document.getElementById('wifiConnectPassword').value = '';
+            document.getElementById('wifiConnectError').style.display = 'none';
+        }
+
+        function connectToWifi() {
+            var password = document.getElementById('wifiConnectPassword').value;
+            var btn = document.getElementById('wifiConnectBtn');
+            var errorEl = document.getElementById('wifiConnectError');
+
+            btn.textContent = 'Connecting...';
+            btn.disabled = true;
+            errorEl.style.display = 'none';
+
+            fetch('/api/wifi/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ssid: selectedWifiSsid, password: password })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.textContent = 'Connect';
+                btn.disabled = false;
+                if (data.success) {
+                    cancelWifiConnect();
+                    document.getElementById('wifiCurrentSsid').textContent = selectedWifiSsid;
+                    document.getElementById('wifiCurrentStatus').textContent = 'Connected';
+                    document.getElementById('wifiCurrentStatus').style.color = '#34c759';
+                    setTimeout(function() {
+                        closeWifiModal();
+                    }, 1500);
+                    scanWifiNetworks();
+                } else {
+                    errorEl.textContent = data.error || 'Connection failed';
+                    errorEl.style.display = 'block';
+                }
+            })
+            .catch(function(e) {
+                btn.textContent = 'Connect';
+                btn.disabled = false;
+                errorEl.textContent = 'Connection failed';
+                errorEl.style.display = 'block';
+            });
+        }
+
+        function forgetWifiFromModal() {
+            if (confirm('This will disconnect from WiFi and enable the hotspot. Continue?')) {
+                closeWifiModal();
+                forgetWifi();
+            }
+        }
+
+        function forgetWifi() {
+            systemCmdPublisher.publish(new ROSLIB.Message({ data: 'forget_wifi' }));
+            alert('WiFi will be forgotten and hotspot enabled. You may need to reconnect to the crawler hotspot.');
+        }
+
+        // Handle Enter key in WiFi password
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('wifiModal').style.display === 'flex' && e.key === 'Enter') {
+                var connectForm = document.getElementById('wifiConnectForm');
+                if (connectForm.style.display === 'block') {
+                    connectToWifi();
+                }
+            }
+        });
+
+        // Support Modal Functions
+        function openSupportModal() {
+            document.getElementById('supportModal').style.display = 'flex';
+            document.getElementById('supportIssueDescription').value = '';
+            document.getElementById('supportStatus').style.display = 'none';
+        }
+
+        function closeSupportModal() {
+            document.getElementById('supportModal').style.display = 'none';
+        }
+
+        function downloadSupportReport() {
+            var statusEl = document.getElementById('supportStatus');
+            var issueDesc = document.getElementById('supportIssueDescription').value.trim() || 'No description provided';
+
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#007aff';
+            statusEl.textContent = 'Generating report...';
+
+            var url = '/api/support/download_report?issue=' + encodeURIComponent(issueDesc);
+
+            fetch(url)
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Download failed');
+                    return response.blob();
+                })
+                .then(function(blob) {
+                    // Create download link
+                    var downloadUrl = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = 'crawler_support_report_' + new Date().toISOString().slice(0,10) + '.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(downloadUrl);
+
+                    statusEl.style.color = '#34c759';
+                    statusEl.textContent = 'Report downloaded! Attach it to your email to c.burke@rae.com';
+
+                    // Update email link with subject
+                    var crawlerName = document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : 'Crawler';
+                    var emailSubject = encodeURIComponent('Support Request - ' + crawlerName);
+                    var emailBody = encodeURIComponent('Issue Description:\n' + issueDesc + '\n\n[Please attach the downloaded PDF report]');
+                    var emailLink = document.getElementById('supportEmailLink');
+                    if (emailLink) emailLink.href = 'mailto:c.burke@rae.com?subject=' + emailSubject + '&body=' + emailBody;
+                })
+                .catch(function(err) {
+                    statusEl.style.color = '#ff3b30';
+                    statusEl.textContent = 'Download failed: ' + err.message;
+                });
         }
 
         window.onload = function() { loadSettings(); loadUsbDevices(); loadFanSpeed(); loadSystemStats(); setTimeout(function() { resetPosition(); }, 100); };

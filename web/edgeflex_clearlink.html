@@ -557,6 +557,12 @@
         .driver-btn:hover:not(.active):not(:disabled) { background: #e8e8ed; }
         .driver-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .restart-banner { background: #ff9500; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; text-align: center; margin-top: 8px; }
+        /* Support Button and Modal */
+        .support-section { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
+        .support-btn { background: #f5f5f7; color: #1d1d1f; border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .support-btn:hover { background: #e8e8ed; transform: scale(1.02); }
+        .support-btn:active { transform: scale(0.98); }
+        .support-btn svg { width: 16px; height: 16px; }
     </style>
 </head>
 <body>
@@ -566,7 +572,7 @@
                 <svg id="internetIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                 <span id="internetText">Offline</span>
             </span>
-            <span style="display: flex; align-items: center;">
+            <span style="display: flex; align-items: center; cursor: pointer;" onclick="openWifiModal()" title="WiFi Settings">
                 <svg id="wifiIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
                 <span id="wifiText">No WiFi</span>
             </span>
@@ -589,10 +595,8 @@
                         <span class="motor-status stopped" id="m1Status"></span>
                         <span class="info-label">Motor 1</span>
                     </span>
-                    <span style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px;">
-                        <span class="current" id="m1CurrentBar">--A</span>
-                        <span class="current" id="m1TorqueBar">--Nm</span>
-                    </span>
+                    <span id="m1VelocityDisplay" style="font-size: 12px; font-weight: 600; color: #1d1d1f;">0.00 in/s</span>
+                    <span id="m1FaultBar" style="font-size: 10px; color: #34c759;">OK</span>
                 </span>
             </div>
             <div class="info-item">
@@ -601,22 +605,14 @@
                         <span class="motor-status stopped" id="m2Status"></span>
                         <span class="info-label">Motor 2</span>
                     </span>
-                    <span style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px;">
-                        <span class="current" id="m2CurrentBar">--A</span>
-                        <span class="current" id="m2TorqueBar">--Nm</span>
-                    </span>
+                    <span id="m2VelocityDisplay" style="font-size: 12px; font-weight: 600; color: #1d1d1f;">0.00 in/s</span>
+                    <span id="m2FaultBar" style="font-size: 10px; color: #34c759;">OK</span>
                 </span>
             </div>
             <div class="info-item">
                 <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
                     <span style="font-size: 10px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Pipe Diameter</span>
                     <span id="pipeDiameterDisplay" style="font-weight: 600; color: #1d1d1f;">12"</span>
-                </span>
-            </div>
-            <div class="info-item">
-                <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
-                    <span style="font-size: 10px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Battery</span>
-                    <span id="batteryDisplay" style="font-weight: 600; color: #1d1d1f;">--V</span>
                 </span>
             </div>
         </div>
@@ -631,17 +627,18 @@
                             <button class="popup-close" onclick="closePopup('statsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                         </div>
                         <div class="popup-content">
-                            <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value-group"><span class="stats-value" id="voltage">--.-V</span><button class="icon-btn" onclick="showGraph(event,'battery')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                            <div class="stats-row-item"><span class="stats-label">Motor Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                            <div class="stats-row-item"><span class="stats-label">Motor Torque</span><span class="stats-value-group"><span class="stats-value" id="m1Torque">-- Nm</span><button class="icon-btn" onclick="showGraph(event,'torque')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                            <div class="stats-row-item" style="padding-top: 4px;"><span class="stats-label" style="font-weight: 600;">ClearLink</span><span class="stats-value" id="clearlinkConnStatus" style="font-size: 11px;">--</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 1 Fault</span><span class="stats-value" id="motor1FaultStatus" style="color: #34c759;">OK</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 2 Fault</span><span class="stats-value" id="motor2FaultStatus" style="color: #34c759;">OK</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 1 Torque</span><span class="stats-value" id="motor1Torque">N/A</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 2 Torque</span><span class="stats-value" id="motor2Torque">N/A</span></div>
+                            <div class="stats-row-item"><span class="stats-label"></span><button class="secondary-btn" id="resetFaultBtn" onclick="resetFaults(event)" style="display: none; font-size: 12px; padding: 6px 12px;">Reset Faults</button></div>
                             <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value-group"><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span><button class="icon-btn" onclick="zeroIMU(event)" title="Zero IMU"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
                             <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: #86868b;">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label" style="color: #86868b;">Rel. Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
-                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">ClearLink</span><span class="stats-value" id="clearlinkConnStatus" style="font-size: 11px;">--</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Motor Fault</span><span class="stats-value-group"><span class="stats-value" id="motorFaultStatus">--</span><button class="icon-btn" id="resetFaultBtn" onclick="resetFaults(event)" title="Reset Faults" style="display: none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></button></span></div>
-                            <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.1</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 8px;"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.1</span></div>
                         </div>
                     </div>
                 </div>
@@ -668,17 +665,17 @@
                                 </div>
                             </div>
                             <div class="settings-row">
-                                <span class="settings-label">Speed</span>
+                                <span class="settings-label">Jog Speed</span>
                                 <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                    <span class="settings-unit" style="margin-right: 6px;">"/s</span>
-                                    <input type="number" class="settings-input" id="speedInput" min="0" max="8.3" step="0.1" value="4.0" onchange="updateSpeed(this.value)">
+                                    <span class="settings-unit" style="margin-right: 6px;">in/s</span>
+                                    <input type="number" class="settings-input" id="jogSpeedInput" min="0.01" max="10" step="0.01" value="0.5" onchange="updateJogSpeed(this.value)" style="width: 70px;">
                                 </div>
                             </div>
                             <div class="settings-row">
                                 <span class="settings-label">Ramp</span>
                                 <div style="display: flex; align-items: center; justify-content: flex-end;">
                                     <span class="settings-unit" style="margin-right: 6px;">%</span>
-                                    <input type="number" class="settings-input" id="rampInput" min="0" max="100" value="50" onchange="updateRamp(this.value)">
+                                    <input type="number" class="settings-input" id="rampInput" min="1" max="100" step="1" value="50" onchange="updateRamp(this.value)" style="width: 70px;">
                                 </div>
                             </div>
                         </div>
@@ -777,11 +774,11 @@
                             <div class="stats-row-item"><span class="stats-label">Storage</span><span class="stats-value" id="diskUsage">--</span></div>
                             <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value-group"><span class="stats-value" id="cpuTemp">--°C</span><button class="icon-btn" onclick="showGraph(event,'temp')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Fan</span><span class="stats-value-group"><span class="stats-value" id="fanSpeed">--</span><button class="icon-btn" onclick="showGraph(event,'fan')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                            <div class="stats-row-item">
+                            <div class="stats-row-item" onclick="openWifiModal()" style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f0f0f5'" onmouseout="this.style.background='transparent'">
                                 <span class="stats-label">Connected WiFi</span>
-                                <span class="stats-value" id="wifiSsidDisplay">--</span>
+                                <span class="stats-value" id="wifiSsidDisplay" style="display: flex; align-items: center; gap: 6px;">--<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
                             </div>
-                            <div class="stats-row-item">
+                            <div class="stats-row-item" onclick="openWifiModal()" style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f0f0f5'" onmouseout="this.style.background='transparent'">
                                 <span class="stats-label">WiFi IP</span>
                                 <span class="stats-value" id="systemWifiIp">--</span>
                             </div>
@@ -838,11 +835,13 @@
 
         <div class="controls">
             <div class="control-row">
-                <button class="control-btn" style="font-size: 13px;" onclick="sendCommand('forward')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Jog Forward</button>
-                <button class="control-btn" style="font-size: 13px;" onclick="sendCommand('backward')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>Jog Backward</button>
+                <button class="control-btn" style="font-size: 13px;"
+                    onclick="startJog(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Jog Forward</button>
+                <button class="control-btn" style="font-size: 13px;"
+                    onclick="startJog(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>Jog Backward</button>
             </div>
             <button class="control-btn btn-auto" onclick="autoMove()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>Auto Move</button>
-            <button class="control-btn btn-stop" onclick="sendCommand('stop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
+            <button class="control-btn btn-stop" onclick="stopJog()"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
         </div>
 
         <div class="camera-section">
@@ -855,6 +854,14 @@
         </div>
 
         <div class="footer">v<span id="footerVersion">2.0.1</span> | Last updated: <span id="lastUpdated">--</span></div>
+
+        <!-- Support Button -->
+        <div class="support-section">
+            <button class="support-btn" onclick="openSupportModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Contact Support
+            </button>
+        </div>
     </div>
 
     <!-- Configuration Password Modal -->
@@ -884,6 +891,73 @@
         </div>
     </div>
 
+    <!-- WiFi Settings Modal -->
+    <div class="modal-overlay" id="wifiModal" onclick="closeWifiModal()" style="display: none;">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 420px;">
+            <div class="modal-header">
+                <span class="modal-title">WiFi Settings</span>
+                <button class="modal-close" onclick="closeWifiModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="padding: 20px;">
+                <div style="background: #f5f5f7; border-radius: 10px; padding: 12px 15px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Current Connection</span>
+                        <span id="wifiCurrentStatus" style="font-size: 13px; font-weight: 500; color: #34c759;">Connected</span>
+                    </div>
+                    <div style="font-size: 16px; font-weight: 600; color: #1d1d1f; margin-top: 6px;" id="wifiCurrentSsid">--</div>
+                    <div style="font-size: 12px; color: #86868b; margin-top: 4px;" id="wifiCurrentIp">IP: --</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Available Networks</span>
+                    <button onclick="scanWifiNetworks()" style="background: #007aff; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer;">Scan</button>
+                </div>
+                <div id="wifiNetworkList" style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 10px;">
+                    <div style="padding: 30px; text-align: center; color: #86868b; font-size: 13px;">Click Scan to find networks</div>
+                </div>
+                <div id="wifiConnectForm" style="display: none; margin-top: 15px; padding: 15px; background: #f5f5f7; border-radius: 10px;">
+                    <div style="font-size: 13px; font-weight: 500; color: #1d1d1f; margin-bottom: 10px;">Connect to: <span id="wifiConnectSsid"></span></div>
+                    <input type="password" id="wifiConnectPassword" placeholder="Enter password" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box;">
+                    <div id="wifiConnectError" style="color: #ff3b30; font-size: 12px; margin-bottom: 10px; display: none;"></div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="cancelWifiConnect()" style="flex: 1; padding: 10px; background: #e8e8ed; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Cancel</button>
+                        <button onclick="connectToWifi()" id="wifiConnectBtn" style="flex: 1; padding: 10px; background: #007aff; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Connect</button>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <button onclick="forgetWifiFromModal()" style="width: 100%; padding: 10px; background: #ff3b30; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Forget WiFi & Enable Hotspot</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support Modal -->
+    <div class="modal-overlay" id="supportModal" onclick="closeSupportModal()" style="display: none;">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 420px;">
+            <div class="modal-header">
+                <span class="modal-title">Contact Support</span>
+                <button class="modal-close" onclick="closeSupportModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="padding: 20px;">
+                <p style="color: #86868b; font-size: 13px; margin-bottom: 15px;">Describe your issue and download a diagnostic report to send to support.</p>
+                <label style="font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">Issue Description</label>
+                <textarea id="supportIssueDescription" placeholder="Describe the problem you're experiencing..." style="width: 100%; height: 100px; padding: 12px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 8px; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
+                <div id="supportStatus" style="display: none; margin-top: 10px; padding: 10px; background: #f5f5f7; border-radius: 8px; font-size: 12px; text-align: center;"></div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button onclick="downloadSupportReport()" style="flex: 1; padding: 12px; background: #007aff; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download Report
+                    </button>
+                </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; text-align: center;">
+                    <a id="supportEmailLink" href="mailto:c.burke@rae.com?subject=Crawler%20Support%20Request" style="color: #007aff; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Email: c.burke@rae.com
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
     <script>
         var CURRENT_VERSION = '2.0.1';
@@ -898,11 +972,11 @@
         document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
         document.getElementById('footerVersion').textContent = CURRENT_VERSION;
 
-        var stats = { battery: { min: 999, max: 0, data: [] }, temp: { data: [], data2: [] }, m1: { min: 999, max: 0, data: [] }, torque: { min: 999, max: 0, data: [] }, fan: { min: 999, max: 0, data: [] } };
+        var stats = { temp: { data: [], data2: [] }, fan: { min: 999, max: 0, data: [] } };
         var currentGraphType = 'battery';
         var MAX_DATA_POINTS = 60;
         var DATA_INTERVAL_MS = 2000; // Add data point every 2 seconds
-        var lastDataTime = { battery: 0, temp: 0, m1: 0, torque: 0 };
+        var lastDataTime = { temp: 0, fan: 0 };
 
         function formatTime(date) {
             return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -918,10 +992,7 @@
         }
 
         var graphConfig = {
-            battery: { title: 'Battery Voltage', unit: 'V', minScale: 16, maxScale: 20, warningLow: 17, color: '#007aff' },
             temp: { title: 'Temperature', unit: '°C', minScale: 30, maxScale: 90, warningHigh: 80, color: '#ff9500', color2: '#34c759', dual: true, label1: 'CPU', label2: 'Motor Board' },
-            m1: { title: 'Motor Current', unit: 'A', minScale: 0, maxScale: 6, warningHigh: 5, color: '#5856d6' },
-            torque: { title: 'Motor Torque', unit: 'Nm', minScale: 0, maxScale: 3, warningHigh: 2, color: '#34c759' },
             fan: { title: 'Fan Speed', unit: '%', minScale: 0, maxScale: 100, color: '#5856d6' }
         };
 
@@ -1070,6 +1141,28 @@
         var LOCK_TIMEOUT_MS = 120000;  // Auto-lock after 2 minutes
         var SETTINGS_PASSWORD = 'Prime';
 
+        // Dynamic conversion values (recalculated when motor params change)
+        var stepsPerInch = 1000;      // Steps per inch of travel
+        var maxStepsPerSec = 66667;   // Max steps/sec from motor RPM
+
+        // Recalculate all conversion factors when motor parameters change
+        function recalculate() {
+            // Step 1: Calculate base conversion factor
+            var totalRatio = motorParams.gearboxRatio * motorParams.gearRatio;
+            var wheelCircumference = Math.PI * motorParams.wheelDia;
+            var travelPerMotorRev = wheelCircumference / totalRatio;
+            stepsPerInch = motorParams.encoderRes / travelPerMotorRev;
+
+            // Step 3: Max speed in steps/sec
+            maxStepsPerSec = (motorParams.maxRpm / 60) * motorParams.encoderRes;
+
+            // Update max jog speed input limit
+            var maxSpeedInSec = maxStepsPerSec / stepsPerInch;
+            document.getElementById('jogSpeedInput').max = maxSpeedInSec.toFixed(2);
+
+            console.log('Recalculated: stepsPerInch=' + stepsPerInch.toFixed(2) + ', maxStepsPerSec=' + maxStepsPerSec.toFixed(0));
+        }
+
         // Calculate max speed in inches per second from motor parameters
         // Formula: Speed = (RPM / (gearboxRatio * gearRatio)) * π * wheelDia / 60
         function calculateMaxSpeed() {
@@ -1079,15 +1172,40 @@
 
         var MAX_SPEED_IPS = calculateMaxSpeed();
 
+        // Convert steps/sec to in/sec
+        function stepsToInPerSec(stepsPerSec) {
+            return stepsPerSec / stepsPerInch;
+        }
+
+        // Convert in/sec to steps/sec
+        function inPerSecToSteps(inPerSec) {
+            return inPerSec * stepsPerInch;
+        }
+
+        // Convert steps/sec² to percentage of max
+        function stepsToRampPercent(stepsPerSecSq) {
+            return (stepsPerSecSq / maxStepsPerSec) * 100;
+        }
+
+        // Convert percentage to steps/sec²
+        function rampPercentToSteps(percent) {
+            return (percent / 100) * maxStepsPerSec;
+        }
+
         // Motor driver toggle state
         var currentDriver = 'clearlink';  // Default for EdgeFlex
         var savedDriver = 'clearlink';
 
         function updateDriverToggle() {
-            document.getElementById('driverClearLink').classList.toggle('active', currentDriver === 'clearlink');
-            document.getElementById('driverRoboClaw').classList.toggle('active', currentDriver === 'roboclaw');
-            var needsRestart = currentDriver !== savedDriver;
-            document.getElementById('driverRestartBanner').style.display = needsRestart ? 'block' : 'none';
+            var clEl = document.getElementById('driverClearLink');
+            var rcEl = document.getElementById('driverRoboClaw');
+            var bannerEl = document.getElementById('driverRestartBanner');
+            if (clEl) clEl.classList.toggle('active', currentDriver === 'clearlink');
+            if (rcEl) rcEl.classList.toggle('active', currentDriver === 'roboclaw');
+            if (bannerEl) {
+                var needsRestart = currentDriver !== savedDriver;
+                bannerEl.style.display = needsRestart ? 'block' : 'none';
+            }
         }
 
         function setDriver(driver) {
@@ -1114,7 +1232,7 @@
             fetch('/api/settings')
                 .then(function(response) { return response.json(); })
                 .then(function(settings) {
-                    // Load motor parameters
+                    // Load motor parameters first (needed for recalculate)
                     if (settings.motorParams) {
                         motorParams = Object.assign(motorParams, settings.motorParams);
                         document.getElementById('encoderResInput').value = motorParams.encoderRes;
@@ -1126,9 +1244,10 @@
                         document.getElementById('motorTorqueInput').value = motorParams.motorTorque;
                         MAX_SPEED_IPS = calculateMaxSpeed();
                         document.getElementById('maxSpeedDisplay').textContent = MAX_SPEED_IPS.toFixed(1);
-                        document.getElementById('speedInput').max = MAX_SPEED_IPS.toFixed(1);
                         updateCrawlerTorque();
                     }
+                    // Recalculate conversion factors
+                    recalculate();
                     // Load pipe diameter
                     if (settings.pipeDiameter) {
                         updatePipeDiameter(settings.pipeDiameter, false);
@@ -1139,6 +1258,26 @@
                         savedDriver = settings.motorDriver;
                         updateDriverToggle();
                     }
+                    // Load ClearLink jog settings (now in in/s and %)
+                    // Check for new format (jogSpeedInSec) or fall back to old format
+                    var maxSpeedInSec = maxStepsPerSec / stepsPerInch;
+                    if (settings.jogSpeedInSec !== undefined) {
+                        jogSpeedInSec = Math.max(0.01, Math.min(maxSpeedInSec, settings.jogSpeedInSec));
+                        document.getElementById('jogSpeedInput').value = jogSpeedInSec.toFixed(2);
+                    } else if (settings.jogSpeed) {
+                        // Old format: convert from steps/sec to in/sec and clamp to max
+                        jogSpeedInSec = Math.max(0.01, Math.min(maxSpeedInSec, stepsToInPerSec(settings.jogSpeed)));
+                        document.getElementById('jogSpeedInput').value = jogSpeedInSec.toFixed(2);
+                    }
+                    if (settings.rampPercent !== undefined) {
+                        rampPercent = Math.max(1, Math.min(100, settings.rampPercent));
+                        document.getElementById('rampInput').value = rampPercent.toFixed(0);
+                    } else if (settings.ramp) {
+                        // Old format: convert from steps/sec² to percent and clamp
+                        rampPercent = Math.max(1, Math.min(100, stepsToRampPercent(settings.ramp)));
+                        document.getElementById('rampInput').value = rampPercent.toFixed(0);
+                    }
+                    console.log('Settings loaded: jogSpeedInSec=' + jogSpeedInSec + ', rampPercent=' + rampPercent + ', stepsPerInch=' + stepsPerInch + ', maxStepsPerSec=' + maxStepsPerSec);
                 })
                 .catch(function(e) { console.error('Failed to load settings:', e); });
         }
@@ -1182,11 +1321,16 @@
             document.getElementById('maxSpeedDisplay').textContent = MAX_SPEED_IPS.toFixed(1);
             document.getElementById('speedInput').max = MAX_SPEED_IPS.toFixed(1);
             updateCrawlerTorque();
-            // Clamp current speed to new max
-            var currentSpeed = parseFloat(document.getElementById('speedInput').value) || 0;
-            if (currentSpeed > MAX_SPEED_IPS) {
-                document.getElementById('speedInput').value = MAX_SPEED_IPS.toFixed(1);
+            // Recalculate conversion factors with new motor params
+            recalculate();
+            // Clamp current jog speed to new max
+            var maxSpeed = maxStepsPerSec / stepsPerInch;
+            if (jogSpeedInSec > maxSpeed) {
+                jogSpeedInSec = maxSpeed;
+                document.getElementById('jogSpeedInput').value = jogSpeedInSec.toFixed(2);
             }
+            // Update max speed input limit
+            document.getElementById('jogSpeedInput').max = maxSpeed.toFixed(2);
             saveMotorParams();
             resetLockTimeout();
         }
@@ -1229,9 +1373,11 @@
             document.querySelectorAll('.protected-input').forEach(function(input) {
                 input.disabled = false;
             });
-            // Enable driver toggle buttons
-            document.getElementById('driverClearLink').disabled = false;
-            document.getElementById('driverRoboClaw').disabled = false;
+            // Enable driver toggle buttons (if they exist)
+            var clEl = document.getElementById('driverClearLink');
+            var rcEl = document.getElementById('driverRoboClaw');
+            if (clEl) clEl.disabled = false;
+            if (rcEl) rcEl.disabled = false;
             document.getElementById('lockBtn').classList.add('unlocked');
             document.getElementById('lockText').textContent = 'Lock';
             document.getElementById('lockIcon').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
@@ -1243,9 +1389,11 @@
             document.querySelectorAll('.protected-input').forEach(function(input) {
                 input.disabled = true;
             });
-            // Disable driver toggle buttons
-            document.getElementById('driverClearLink').disabled = true;
-            document.getElementById('driverRoboClaw').disabled = true;
+            // Disable driver toggle buttons (if they exist)
+            var clEl = document.getElementById('driverClearLink');
+            var rcEl = document.getElementById('driverRoboClaw');
+            if (clEl) clEl.disabled = true;
+            if (rcEl) rcEl.disabled = true;
             document.getElementById('lockBtn').classList.remove('unlocked');
             document.getElementById('lockText').textContent = 'Unlock';
             document.getElementById('lockIcon').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
@@ -1259,18 +1407,89 @@
             }
         }
 
-        function updateSpeed(val) {
-            // Accept inches per second, convert to percentage for motor
-            val = Math.max(0, Math.min(MAX_SPEED_IPS, parseFloat(val) || 0));
-            document.getElementById('speedInput').value = val.toFixed(1);
-            var percentage = Math.round((val / MAX_SPEED_IPS) * 100);
-            speedPublisher.publish(new ROSLIB.Message({ data: percentage.toString() }));
+        // Jog speed and ramp settings for ClearLink (user-facing units)
+        var jogSpeedInSec = 0.5;   // in/sec (user setting)
+        var rampPercent = 50;      // % of max (user setting)
+        var isJogging = false;
+
+        // Get jog speed in steps/sec for ROS communication
+        function getJogSpeedSteps() {
+            return Math.round(inPerSecToSteps(jogSpeedInSec));
+        }
+
+        // Get ramp in steps/sec² for ROS communication
+        function getRampSteps() {
+            return Math.round(rampPercentToSteps(rampPercent));
+        }
+
+        function updateJogSpeed(val) {
+            // Validate: 0 < speed <= max speed
+            var maxSpeed = maxStepsPerSec / stepsPerInch;
+            val = Math.max(0.01, Math.min(maxSpeed, parseFloat(val) || 0.5));
+            jogSpeedInSec = val;
+            document.getElementById('jogSpeedInput').value = val.toFixed(2);
+            // Save in user-facing units (in/sec) - speed used when jog button pressed
+            saveSettings({ jogSpeedInSec: val });
+            console.log('Jog speed updated: ' + val + ' in/s = ' + getJogSpeedSteps() + ' steps/s');
         }
 
         function updateRamp(val) {
-            val = Math.max(0, Math.min(100, parseInt(val) || 50));
+            // Validate: 1% <= ramp <= 100%
+            val = Math.max(1, Math.min(100, parseInt(val) || 50));
+            rampPercent = val;
             document.getElementById('rampInput').value = val;
-            rampPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+            // Save in user-facing units (%) - ramp used when jog button pressed
+            saveSettings({ rampPercent: val });
+            console.log('Ramp updated: ' + val + '% = ' + getRampSteps() + ' steps/s²');
+        }
+
+        function startJog(direction) {
+            // Allow direction change while jogging (latching mode)
+            isJogging = true;
+            // Calculate velocity in steps/sec (positive = forward, negative = backward)
+            var velocitySteps = direction * getJogSpeedSteps();
+            var accel = getRampSteps();
+            console.log('startJog: direction=' + direction + ', jogSpeedInSec=' + jogSpeedInSec + ', stepsPerInch=' + stepsPerInch + ', velocitySteps=' + velocitySteps + ', accel=' + accel);
+            // Publish MotorCommand to /clearlink/command
+            // Motor 2 is inverted in config, so negate its velocity for straight motion
+            var jogMsg = new ROSLIB.Message({
+                header: { stamp: { sec: 0, nanosec: 0 }, frame_id: '' },
+                axis1_enable: true,
+                axis2_enable: true,
+                axis3_enable: false,
+                axis4_enable: false,
+                axis1_steps_per_sec: velocitySteps,
+                axis2_steps_per_sec: -velocitySteps,  // Inverted for right motor
+                axis3_steps_per_sec: 0,
+                axis4_steps_per_sec: 0,
+                acceleration: accel,
+                max_secs: 0
+            });
+            console.log('Publishing jog command:', JSON.stringify(jogMsg));
+            clearlinkCmdPublisher.publish(jogMsg);
+            console.log('Jog command published');
+        }
+
+        function stopJog() {
+            if (!isJogging) return;
+            isJogging = false;
+            // Publish zero velocity MotorCommand to stop
+            var jogMsg = new ROSLIB.Message({
+                header: { stamp: { sec: 0, nanosec: 0 }, frame_id: '' },
+                axis1_enable: true,
+                axis2_enable: true,
+                axis3_enable: false,
+                axis4_enable: false,
+                axis1_steps_per_sec: 0,
+                axis2_steps_per_sec: 0,
+                axis3_steps_per_sec: 0,
+                axis4_steps_per_sec: 0,
+                acceleration: getRampSteps(),
+                max_secs: 0
+            });
+            console.log('Publishing jog command:', JSON.stringify(jogMsg));
+            clearlinkCmdPublisher.publish(jogMsg);
+            console.log('Jog command published');
         }
 
         // Helper function to create smooth bezier curve path
@@ -1419,50 +1638,105 @@
                 .catch(function() { updateInternetStatus(navigator.onLine); });
         }
         checkInternet(); setInterval(checkInternet, 10000);
-        ros.on('connection', function() { rosbridgeConnected = true; updateClearlinkStatus(false); updateSpeed(4.0); updateRamp(50); });
+        ros.on('connection', function() {
+            rosbridgeConnected = true;
+            updateClearlinkStatus(false);
+            console.log('ROS connected. Jog speed: ' + jogSpeedInSec + ' in/s, Ramp: ' + rampPercent + '%');
+        });
         ros.on('error', function() { rosbridgeConnected = false; updateClearlinkStatus(false); });
         ros.on('close', function() { rosbridgeConnected = false; updateClearlinkStatus(false); });
 
-        var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
-        var speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
-        var rampPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_ramp', messageType: 'std_msgs/String' });
+        // ClearLink motor command publisher (sends MotorCommand messages)
+        var clearlinkCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/clearlink/command', messageType: 'clearlink_interfaces/MotorCommand' });
+        var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/edgeflex/command', messageType: 'std_msgs/String' });
         var systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
-        var statsSubscriber = new ROSLIB.Topic({ ros: ros, name: '/stats', messageType: 'roboclaw_interfaces/Stats' });
         var cpuTempSubscriber = new ROSLIB.Topic({ ros: ros, name: '/cpu_temp', messageType: 'std_msgs/Float32' });
         var networkInfoSubscriber = new ROSLIB.Topic({ ros: ros, name: '/network_info', messageType: 'std_msgs/String' });
         var updateStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/update_status', messageType: 'std_msgs/String' });
         var imuRollSubscriber = new ROSLIB.Topic({ ros: ros, name: '/imu/roll', messageType: 'std_msgs/Float32' });
         var imuPitchSubscriber = new ROSLIB.Topic({ ros: ros, name: '/imu/pitch', messageType: 'std_msgs/Float32' });
-        var clearlinkStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/clearlink/status', messageType: 'clearlink_interfaces/MotorStatus' });
+        var edgeflexStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/clearlink/status', messageType: 'clearlink_interfaces/MotorStatus' });
 
-        clearlinkStatusSubscriber.subscribe(function(msg) {
-            updateClearlinkStatus(msg.connected);
+        edgeflexStatusSubscriber.subscribe(function(msg) {
+            // Support both old field names (axis1_*) and new field names (m0_*)
+            var m0Fault = msg.m0_fault !== undefined ? msg.m0_fault : msg.axis1_fault;
+            var m1Fault = msg.m1_fault !== undefined ? msg.m1_fault : msg.axis2_fault;
+            var m0Moving = msg.m0_velocity !== undefined ? (msg.m0_velocity !== 0) : msg.axis1_moving;
+            var m1Moving = msg.m1_velocity !== undefined ? (msg.m1_velocity !== 0) : msg.axis2_moving;
+            var isConnected = msg.connected !== undefined ? msg.connected : true;
+            var isEnabled = msg.enabled !== undefined ? msg.enabled : true;
+
+            updateClearlinkStatus(isConnected);
             // Update connection status in stats
             var connEl = document.getElementById('clearlinkConnStatus');
-            if (msg.connected) {
+            if (isConnected) {
                 connEl.textContent = 'Connected';
                 connEl.style.color = '#34c759';
             } else {
                 connEl.textContent = 'Not Connected';
                 connEl.style.color = '#ff3b30';
             }
-            // Check for faults on any axis
-            var hasFault = msg.axis1_fault || msg.axis2_fault || msg.axis3_fault || msg.axis4_fault;
-            var faultEl = document.getElementById('motorFaultStatus');
+            // Update per-motor fault status
+            var m1FaultEl = document.getElementById('motor1FaultStatus');
+            var m2FaultEl = document.getElementById('motor2FaultStatus');
+            var m1FaultBar = document.getElementById('m1FaultBar');
+            var m2FaultBar = document.getElementById('m2FaultBar');
             var resetBtn = document.getElementById('resetFaultBtn');
-            if (hasFault) {
-                var faultedAxes = [];
-                if (msg.axis1_fault) faultedAxes.push('1');
-                if (msg.axis2_fault) faultedAxes.push('2');
-                if (msg.axis3_fault) faultedAxes.push('3');
-                if (msg.axis4_fault) faultedAxes.push('4');
-                faultEl.textContent = 'Yes (Axis ' + faultedAxes.join(', ') + ')';
-                faultEl.style.color = '#ff3b30';
-                resetBtn.style.display = 'flex';
+
+            // Motor 1 (M0)
+            if (m0Fault) {
+                m1FaultEl.textContent = 'FAULT';
+                m1FaultEl.style.color = '#ff3b30';
+                m1FaultBar.textContent = 'FAULT';
+                m1FaultBar.style.color = '#ff3b30';
             } else {
-                faultEl.textContent = 'No';
-                faultEl.style.color = '#34c759';
-                resetBtn.style.display = 'none';
+                m1FaultEl.textContent = 'OK';
+                m1FaultEl.style.color = '#34c759';
+                m1FaultBar.textContent = 'OK';
+                m1FaultBar.style.color = '#34c759';
+            }
+
+            // Motor 2 (M1)
+            if (m1Fault) {
+                m2FaultEl.textContent = 'FAULT';
+                m2FaultEl.style.color = '#ff3b30';
+                m2FaultBar.textContent = 'FAULT';
+                m2FaultBar.style.color = '#ff3b30';
+            } else {
+                m2FaultEl.textContent = 'OK';
+                m2FaultEl.style.color = '#34c759';
+                m2FaultBar.textContent = 'OK';
+                m2FaultBar.style.color = '#34c759';
+            }
+
+            // Show reset button if any motor has fault
+            var hasFault = m0Fault || m1Fault;
+            resetBtn.style.display = hasFault ? 'block' : 'none';
+
+            // Update motor status indicators (moving)
+            document.getElementById('m1Status').className = 'motor-status ' + (m0Moving ? 'running' : 'stopped');
+            document.getElementById('m2Status').className = 'motor-status ' + (m1Moving ? 'running' : 'stopped');
+
+            // Update live velocity displays (convert steps/sec to in/sec)
+            var m0Velocity = msg.m0_velocity !== undefined ? msg.m0_velocity : 0;
+            var m1Velocity = msg.m1_velocity !== undefined ? msg.m1_velocity : 0;
+            var m0VelInSec = Math.abs(stepsToInPerSec(m0Velocity));
+            var m1VelInSec = Math.abs(stepsToInPerSec(m1Velocity));
+            document.getElementById('m1VelocityDisplay').textContent = m0VelInSec.toFixed(2) + ' in/s';
+            document.getElementById('m2VelocityDisplay').textContent = m1VelInSec.toFixed(2) + ' in/s';
+
+            // Update torque readings
+            var m1TorqueEl = document.getElementById('motor1Torque');
+            var m2TorqueEl = document.getElementById('motor2Torque');
+            if (msg.m0_torque !== undefined && msg.m0_torque !== -9999) {
+                m1TorqueEl.textContent = Math.round(msg.m0_torque) + '%';
+            } else {
+                m1TorqueEl.textContent = 'N/A';
+            }
+            if (msg.m1_torque !== undefined && msg.m1_torque !== -9999) {
+                m2TorqueEl.textContent = Math.round(msg.m1_torque) + '%';
+            } else {
+                m2TorqueEl.textContent = 'N/A';
             }
         });
         updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = 'Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = 'Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
@@ -1477,44 +1751,8 @@
             document.getElementById('lastUpdated').textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         }
 
-        statsSubscriber.subscribe(function(msg) {
-            updateLastUpdated();
-            var v = msg.battery_voltage;
-            document.getElementById('voltage').textContent = v.toFixed(1) + 'V';
-            document.getElementById('voltage').className = 'stats-value' + (v < 15 ? ' alarm' : v < 17 ? ' warning' : '');
-            document.getElementById('batteryDisplay').textContent = v.toFixed(1) + 'V';
-            if (v > 0 && v < stats.battery.min) stats.battery.min = v;
-            if (v > stats.battery.max) stats.battery.max = v;
-            addDataPoint('battery', v);
-
-            var m1 = msg.m1_current;
-            document.getElementById('m1Current').textContent = m1.toFixed(1) + 'A';
-            document.getElementById('m1Current').className = 'stats-value' + (m1 > 5 ? ' alarm' : m1 > 3 ? ' warning' : '');
-            document.getElementById('m1CurrentBar').textContent = m1.toFixed(1) + 'A';
-            if (m1 > 0 && m1 < stats.m1.min) stats.m1.min = m1;
-            if (m1 > stats.m1.max) stats.m1.max = m1;
-            addDataPoint('m1', m1);
-
-            // Calculate motor torque from current: torque = 0.43 * (current - 0.3), min 0
-            var m1Torque = m1 > 0.3 ? 0.43 * (m1 - 0.3) : 0;
-            document.getElementById('m1Torque').textContent = m1Torque.toFixed(2) + ' Nm';
-            document.getElementById('m1TorqueBar').textContent = m1Torque.toFixed(1) + 'Nm';
-            if (m1Torque > 0 && m1Torque < stats.torque.min) stats.torque.min = m1Torque;
-            if (m1Torque > stats.torque.max) stats.torque.max = m1Torque;
-            addDataPoint('torque', m1Torque);
-
-            var m1Rpm = Math.abs(msg.m1_enc_qpps) * 60 / 1425.1;
-            var m1Speed = ((m1Rpm / 2) * Math.PI * 1.77 / 60).toFixed(1);
-            document.getElementById('pipeSpeedDisplay').textContent = m1Speed + '"/s';
-            document.getElementById('m1Status').className = 'motor-status ' + (m1Rpm > 1 ? 'running' : 'stopped');
-
-            var now = Date.now();
-            var dt = (now - lastUpdateTime) / 60000;
-            lastUpdateTime = now;
-            var m1SpeedSigned = (msg.m1_enc_qpps / 1425.1) * 60 / 2 * Math.PI * 1.77;
-            totalDistance += m1SpeedSigned * dt;
-            updatePositionFromDistance();
-        });
+        // Note: ClearLink doesn't provide motor feedback (position/velocity/current)
+        // Motor status (moving/stopped) is now handled by clearlinkStatusSubscriber
 
         cpuTempSubscriber.subscribe(function(msg) {
             var t = msg.data;
@@ -1564,23 +1802,26 @@
             var request = new ROSLIB.ServiceRequest({
                 axis1: true,
                 axis2: true,
-                axis3: true,
-                axis4: true
+                axis3: false,
+                axis4: false
             });
-            var faultEl = document.getElementById('motorFaultStatus');
-            faultEl.textContent = 'Clearing...';
-            faultEl.style.color = '#ff9500';
+            var resetBtn = document.getElementById('resetFaultBtn');
+            resetBtn.textContent = 'Clearing...';
+            resetBtn.disabled = true;
             clearFaultsClient.callService(request, function(result) {
+                resetBtn.disabled = false;
                 if (result.success) {
-                    faultEl.textContent = 'Cleared';
-                    faultEl.style.color = '#34c759';
+                    resetBtn.textContent = 'Reset Faults';
+                    // Status will update from the next status message
                 } else {
-                    faultEl.textContent = 'Failed: ' + result.message;
-                    faultEl.style.color = '#ff3b30';
+                    resetBtn.textContent = 'Reset Failed';
+                    setTimeout(function() { resetBtn.textContent = 'Reset Faults'; }, 2000);
+                    console.error('Clear faults failed:', result.message);
                 }
             }, function(error) {
-                faultEl.textContent = 'Error';
-                faultEl.style.color = '#ff3b30';
+                resetBtn.disabled = false;
+                resetBtn.textContent = 'Reset Error';
+                setTimeout(function() { resetBtn.textContent = 'Reset Faults'; }, 2000);
                 console.error('Clear faults service error:', error);
             });
         }
@@ -1641,13 +1882,156 @@
             if (document.getElementById('configAuthModal').style.display === 'flex' && e.key === 'Enter') {
                 checkConfigAuth();
             }
+            if (document.getElementById('wifiModal').style.display === 'flex' && e.key === 'Enter') {
+                var connectForm = document.getElementById('wifiConnectForm');
+                if (connectForm.style.display !== 'none') {
+                    connectToWifi();
+                }
+            }
         });
 
-        function forgetWifi() {
-            if (confirm('This will disconnect from WiFi and enable the hotspot. Continue?')) {
-                systemCmdPublisher.publish(new ROSLIB.Message({ data: 'forget_wifi' }));
-                alert('WiFi will be forgotten and hotspot enabled. You may need to reconnect to the crawler hotspot.');
+        // WiFi Modal Functions
+        var selectedWifiSsid = '';
+        var selectedWifiSecurity = '';
+
+        function openWifiModal() {
+            document.getElementById('wifiModal').style.display = 'flex';
+            updateWifiModalStatus();
+        }
+
+        function closeWifiModal() {
+            document.getElementById('wifiModal').style.display = 'none';
+            cancelWifiConnect();
+        }
+
+        function updateWifiModalStatus() {
+            var ssid = document.getElementById('wifiSsidDisplay').textContent.replace(/[^\w\s-]/g, '').trim();
+            var ip = document.getElementById('systemWifiIp').textContent;
+            document.getElementById('wifiCurrentSsid').textContent = ssid || '--';
+            document.getElementById('wifiCurrentIp').textContent = 'IP: ' + (ip || '--');
+            if (ssid && ssid !== '--') {
+                document.getElementById('wifiCurrentStatus').textContent = 'Connected';
+                document.getElementById('wifiCurrentStatus').style.color = '#34c759';
+            } else {
+                document.getElementById('wifiCurrentStatus').textContent = 'Not Connected';
+                document.getElementById('wifiCurrentStatus').style.color = '#ff9500';
             }
+        }
+
+        function scanWifiNetworks() {
+            var list = document.getElementById('wifiNetworkList');
+            list.innerHTML = '<div style="padding: 30px; text-align: center; color: #86868b; font-size: 13px;"><div style="width: 24px; height: 24px; border: 2px solid #007aff; border-top-color: transparent; border-radius: 50%; margin: 0 auto 10px; animation: spin 1s linear infinite;"></div>Scanning...</div>';
+
+            fetch('/api/wifi/scan')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.networks || data.networks.length === 0) {
+                        list.innerHTML = '<div style="padding: 30px; text-align: center; color: #86868b; font-size: 13px;">No networks found</div>';
+                        return;
+                    }
+
+                    var html = '';
+                    data.networks.forEach(function(net) {
+                        var signalBars = Math.ceil(net.signal / 25);
+                        var barsHtml = '';
+                        for (var i = 1; i <= 4; i++) {
+                            var active = i <= signalBars ? 'background: #007aff;' : 'background: #d0d0d0;';
+                            barsHtml += '<div style="width: 4px; height: ' + (4 + i * 3) + 'px; border-radius: 1px; ' + active + '"></div>';
+                        }
+
+                        var connected = net.connected ? '<span style="color: #34c759; font-size: 11px; font-weight: 500;">Connected</span>' : '<button onclick="selectWifiNetwork(\'' + net.ssid.replace(/'/g, "\\'") + '\', \'' + net.security + '\')" style="background: #007aff; color: white; border: none; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer;">Connect</button>';
+
+                        html += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #f0f0f0;">';
+                        html += '<div style="display: flex; align-items: center; gap: 10px;">';
+                        html += '<div style="display: flex; align-items: flex-end; gap: 2px; height: 16px;">' + barsHtml + '</div>';
+                        html += '<div>';
+                        html += '<div style="font-size: 14px; font-weight: 500; color: #1d1d1f;">' + net.ssid + '</div>';
+                        html += '<div style="font-size: 11px; color: #86868b;">' + (net.security || 'Open') + '</div>';
+                        html += '</div></div>';
+                        html += connected;
+                        html += '</div>';
+                    });
+
+                    list.innerHTML = html;
+                })
+                .catch(function(err) {
+                    list.innerHTML = '<div style="padding: 30px; text-align: center; color: #ff3b30; font-size: 13px;">Error scanning networks</div>';
+                });
+        }
+
+        function selectWifiNetwork(ssid, security) {
+            selectedWifiSsid = ssid;
+            selectedWifiSecurity = security;
+            document.getElementById('wifiConnectSsid').textContent = ssid;
+            document.getElementById('wifiConnectForm').style.display = 'block';
+            document.getElementById('wifiConnectPassword').value = '';
+            document.getElementById('wifiConnectError').style.display = 'none';
+
+            if (!security || security === 'Open' || security === '--') {
+                document.getElementById('wifiConnectPassword').style.display = 'none';
+            } else {
+                document.getElementById('wifiConnectPassword').style.display = 'block';
+                document.getElementById('wifiConnectPassword').focus();
+            }
+        }
+
+        function cancelWifiConnect() {
+            selectedWifiSsid = '';
+            selectedWifiSecurity = '';
+            document.getElementById('wifiConnectForm').style.display = 'none';
+            document.getElementById('wifiConnectPassword').value = '';
+            document.getElementById('wifiConnectError').style.display = 'none';
+        }
+
+        function connectToWifi() {
+            var password = document.getElementById('wifiConnectPassword').value;
+            var btn = document.getElementById('wifiConnectBtn');
+            var errorEl = document.getElementById('wifiConnectError');
+
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+            errorEl.style.display = 'none';
+
+            fetch('/api/wifi/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ssid: selectedWifiSsid, password: password })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = 'Connect';
+
+                if (data.success) {
+                    cancelWifiConnect();
+                    document.getElementById('wifiCurrentSsid').textContent = selectedWifiSsid;
+                    document.getElementById('wifiCurrentStatus').textContent = 'Connected';
+                    document.getElementById('wifiCurrentStatus').style.color = '#34c759';
+                    setTimeout(function() { closeWifiModal(); }, 2000);
+                    scanWifiNetworks();
+                } else {
+                    errorEl.textContent = data.message || 'Connection failed';
+                    errorEl.style.display = 'block';
+                }
+            })
+            .catch(function(err) {
+                btn.disabled = false;
+                btn.textContent = 'Connect';
+                errorEl.textContent = 'Connection error';
+                errorEl.style.display = 'block';
+            });
+        }
+
+        function forgetWifiFromModal() {
+            if (confirm('This will disconnect from WiFi and enable the hotspot. Continue?')) {
+                closeWifiModal();
+                forgetWifi();
+            }
+        }
+
+        function forgetWifi() {
+            systemCmdPublisher.publish(new ROSLIB.Message({ data: 'forget_wifi' }));
+            alert('WiFi will be forgotten and hotspot enabled. You may need to reconnect to the crawler hotspot.');
         }
 
         function rebootSystem() {
@@ -1762,7 +2146,60 @@
                 .catch(function(e) { console.error('Failed to load system stats:', e); });
         }
 
-        window.onload = function() { loadSettings(); loadUsbDevices(); loadFanSpeed(); loadSystemStats(); setTimeout(function() { resetPosition(); }, 100); };
+        // Support Modal Functions
+        function openSupportModal() {
+            document.getElementById('supportModal').style.display = 'flex';
+            document.getElementById('supportIssueDescription').value = '';
+            document.getElementById('supportStatus').style.display = 'none';
+        }
+
+        function closeSupportModal() {
+            document.getElementById('supportModal').style.display = 'none';
+        }
+
+        function downloadSupportReport() {
+            var statusEl = document.getElementById('supportStatus');
+            var issueDesc = document.getElementById('supportIssueDescription').value.trim() || 'No description provided';
+
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#007aff';
+            statusEl.textContent = 'Generating report...';
+
+            var url = '/api/support/download_report?issue=' + encodeURIComponent(issueDesc);
+
+            fetch(url)
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Download failed');
+                    return response.blob();
+                })
+                .then(function(blob) {
+                    // Create download link
+                    var downloadUrl = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = 'crawler_support_report_' + new Date().toISOString().slice(0,10) + '.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(downloadUrl);
+
+                    statusEl.style.color = '#34c759';
+                    statusEl.textContent = 'Report downloaded! Attach it to your email to c.burke@rae.com';
+
+                    // Update email link with subject
+                    var crawlerName = document.querySelector('.system-badge') ? document.querySelector('.system-badge').textContent.trim() : 'Crawler';
+                    var emailSubject = encodeURIComponent('Support Request - ' + crawlerName);
+                    var emailBody = encodeURIComponent('Issue Description:\n' + issueDesc + '\n\n[Please attach the downloaded PDF report]');
+                    var emailLink = document.getElementById('supportEmailLink');
+                    if (emailLink) emailLink.href = 'mailto:c.burke@rae.com?subject=' + emailSubject + '&body=' + emailBody;
+                })
+                .catch(function(err) {
+                    statusEl.style.color = '#ff3b30';
+                    statusEl.textContent = 'Download failed: ' + err.message;
+                });
+        }
+
+        window.onload = function() { recalculate(); loadSettings(); loadUsbDevices(); loadFanSpeed(); loadSystemStats(); setTimeout(function() { resetPosition(); }, 100); };
         setInterval(loadUsbDevices, 10000); // Refresh USB info every 10 seconds
         setInterval(loadFanSpeed, 5000); // Refresh fan speed every 5 seconds
         setInterval(loadSystemStats, 3000); // Refresh system stats every 3 seconds

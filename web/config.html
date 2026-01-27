@@ -342,58 +342,73 @@
             <!-- Device Bindings Table -->
             <div id="deviceBindingsSection">
                 <div style="font-size: 12px; color: #86868b; margin-bottom: 8px;">Device Bindings:</div>
-                <table id="deviceBindingsTable" style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 15px;">
+                <table id="deviceBindingsTable" style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px;">
                     <thead>
                         <tr style="background: #f5f5f7;">
                             <th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #86868b;">Device</th>
                             <th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #86868b;">Connected</th>
                             <th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #86868b;">Locked To</th>
                             <th style="padding: 8px 10px; text-align: center; font-weight: 600; color: #86868b;">Status</th>
+                            <th style="padding: 8px 10px; text-align: center; font-weight: 600; color: #86868b;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="deviceBindingsBody">
-                        <tr><td colspan="4" style="padding: 15px; text-align: center; color: #86868b;">Loading...</td></tr>
+                        <tr><td colspan="5" style="padding: 15px; text-align: center; color: #86868b;">Loading...</td></tr>
                     </tbody>
                 </table>
-            </div>
-
-            <!-- Lock Device Controls -->
-            <div id="lockDeviceSection" style="display: none; border-top: 1px solid #f0f0f0; padding-top: 15px; margin-top: 10px;">
-                <div style="font-size: 12px; color: #86868b; margin-bottom: 8px;">Lock Device:</div>
-                <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 100px;">
-                        <select id="lockDeviceSelect" class="form-input" style="padding: 8px 10px; font-size: 13px;">
-                            <option value="cm5">CM5 CPU</option>
-                        </select>
-                    </div>
-                    <div style="flex: 1; min-width: 100px;">
-                        <input type="text" id="lockConfirmInput" class="form-input" placeholder="Type LOCK"
-                               style="text-transform: uppercase; text-align: center; padding: 8px 10px; font-size: 13px;">
-                    </div>
-                    <button type="button" class="btn btn-primary" onclick="lockSelectedDevice()"
-                            style="background: #ff9500; padding: 8px 16px; font-size: 13px;">
-                        Lock
-                    </button>
+                <div id="deviceBindingsNote" style="display: none; font-size: 11px; color: #86868b; font-style: italic;">
+                    Note: Devices must be connected before they can be locked.
                 </div>
             </div>
+        </div>
 
-            <!-- Unlock Device Controls -->
-            <div id="unlockDeviceSection" style="display: none; border-top: 1px solid #f0f0f0; padding-top: 15px; margin-top: 10px;">
-                <div style="font-size: 12px; color: #86868b; margin-bottom: 8px;">Unlock Device:</div>
-                <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 100px;">
-                        <select id="unlockDeviceSelect" class="form-input" style="padding: 8px 10px; font-size: 13px;">
-                            <option value="cm5">CM5 CPU</option>
-                        </select>
-                    </div>
-                    <div style="flex: 1.5; min-width: 120px;">
-                        <input type="password" id="unlockPasswordInput" class="form-input" placeholder="Master password"
-                               style="padding: 8px 10px; font-size: 13px;">
-                    </div>
-                    <button type="button" class="btn btn-secondary" onclick="unlockSelectedDevice()"
-                            style="padding: 8px 16px; font-size: 13px;">
-                        Unlock
-                    </button>
+        <!-- Device Lock/Unlock Modal -->
+        <div id="deviceActionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: white; border-radius: 16px; padding: 24px; max-width: 320px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.2);">
+                <h3 id="modalTitle" style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #1d1d1f;">Lock Device</h3>
+                <input type="hidden" id="modalDevice" value="">
+                <input type="hidden" id="modalAction" value="">
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: #86868b; display: block; margin-bottom: 4px;">Master Password:</label>
+                    <input type="password" id="modalPassword" class="form-input" placeholder="Enter master password"
+                           style="width: 100%; padding: 10px 12px; font-size: 14px; box-sizing: border-box;">
+                </div>
+
+                <div id="lockConfirmSection" style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: #86868b; display: block; margin-bottom: 4px;">Type "LOCK" to confirm:</label>
+                    <input type="text" id="modalLockConfirm" class="form-input" placeholder="LOCK"
+                           style="width: 100%; padding: 10px 12px; font-size: 14px; text-transform: uppercase; text-align: center; box-sizing: border-box;">
+                </div>
+
+                <div id="modalNote" style="font-size: 11px; color: #86868b; margin-bottom: 16px; padding: 8px; background: #f5f5f7; border-radius: 6px;"></div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeDeviceModal()" style="flex: 1; padding: 10px;">Cancel</button>
+                    <button type="button" id="modalConfirmBtn" class="btn btn-primary" onclick="executeDeviceAction()" style="flex: 1; padding: 10px;">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Program RoboClaw ID Modal -->
+        <div id="programRoboclawModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: white; border-radius: 16px; padding: 24px; max-width: 340px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.2);">
+                <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #1d1d1f;">Program RoboClaw ID</h3>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: #86868b; display: block; margin-bottom: 4px;">Custom ID (6-12 hex characters) or leave blank to auto-generate:</label>
+                    <input type="text" id="programIdInput" class="form-input" placeholder="e.g., CRAWLER01 or leave blank"
+                           style="width: 100%; padding: 10px 12px; font-size: 14px; text-transform: uppercase; box-sizing: border-box;"
+                           maxlength="12">
+                </div>
+
+                <div style="font-size: 11px; color: #86868b; margin-bottom: 16px; padding: 8px; background: #fff3cd; border-radius: 6px; border: 1px solid #ffc107;">
+                    This ID will be permanently written to the RoboClaw EEPROM and will persist across power cycles.
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeProgramModal()" style="flex: 1; padding: 10px;">Cancel</button>
+                    <button type="button" id="programConfirmBtn" class="btn btn-primary" onclick="executeProgramRoboclaw()" style="flex: 1; padding: 10px; background: #007aff;">Program</button>
                 </div>
             </div>
         </div>
@@ -417,8 +432,8 @@
             </div>
         </div>
 
-        <!-- Crawler Selection -->
-        <div class="section">
+        <!-- Crawler Selection (Hidden - accessed via Config Tools) -->
+        <div class="section" id="crawlerTypeSection" style="display: none;">
             <div class="section-title">Crawler Type</div>
             <div class="crawler-options" id="crawlerOptions">
                 <div class="loading">Loading...</div>
@@ -448,29 +463,81 @@
             <button type="button" class="btn btn-danger" onclick="saveAndReboot()">Reboot and Save Changes</button>
         </div>
 
-        <!-- WiFi Scanner -->
-        <div class="section" style="margin-top: 25px; text-align: center;">
-            <div class="section-title">Available WiFi Networks</div>
-            <button type="button" class="btn btn-secondary btn-small scan-btn" onclick="scanWifi()">
-                Scan Networks
+        <!-- Config Tools Button -->
+        <div class="section" style="margin-top: 20px; text-align: center; border-bottom: none;">
+            <button type="button" class="btn btn-secondary" onclick="openConfigTools()" style="width: auto; padding: 10px 20px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                Open Config Tools
             </button>
-            <div id="wifiList" class="wifi-list" style="text-align: left;">
-                <div class="loading" style="text-align: center;">Click "Scan Networks" to find available networks</div>
-            </div>
         </div>
     </div>
 
-    <!-- WiFi Password Modal -->
-    <div id="wifiModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-title">Connect to <span id="modalSsid"></span></div>
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" id="wifiPassword" class="form-input" placeholder="Enter WiFi password">
+    <!-- Config Tools Modal -->
+    <div id="configToolsModal" class="modal">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Config Tools</span>
+                <button onclick="closeConfigTools()" style="background: none; border: none; cursor: pointer; padding: 4px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
             </div>
+
+            <!-- Crawler Type Selection -->
+            <div style="margin-bottom: 20px;">
+                <div class="section-title" style="margin-bottom: 10px;">Crawler Type</div>
+                <select id="crawlerSelect" class="form-input" style="cursor: pointer;" onchange="onCrawlerSelectChange()">
+                    <option value="">Loading...</option>
+                </select>
+                <div style="font-size: 11px; color: #86868b; margin-top: 6px;">
+                    Current: <span id="currentCrawlerName" style="font-weight: 500;">--</span>
+                </div>
+            </div>
+
+            <!-- Page Preview (Debug) -->
+            <div style="margin-bottom: 20px;">
+                <div class="section-title" style="margin-bottom: 10px;">Page Preview (Debug)</div>
+                <div style="background: #f9f9f9; border-radius: 10px; padding: 12px; max-height: 300px; overflow-y: auto;">
+                    <p style="font-size: 11px; color: #86868b; margin-bottom: 10px;">Test pages in debug mode:</p>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <a href="/boot_splash.html?debug=true" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            Boot Splash Screen
+                        </a>
+                        <a href="/device_mismatch.html?debug=true" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            Device Mismatch Page
+                        </a>
+                        <a href="/config.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            Config Page
+                        </a>
+                        <a href="/index.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                            Index (Home)
+                        </a>
+                        <a href="/magnetic_phased_array.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            Magnetic Phased Array
+                        </a>
+                        <a href="/new_xpress_scan.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            XPressCan
+                        </a>
+                        <a href="/edgeflex.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            EdgeFlex RoboClaw
+                        </a>
+                        <a href="/edgeflex_clearlink.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            EdgeFlex ClearLink
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <div class="modal-buttons">
-                <button type="button" class="btn btn-secondary" onclick="closeWifiModal()">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="connectWifi()">Connect</button>
+                <button type="button" class="btn btn-secondary" onclick="closeConfigTools()">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveConfigTools()" id="saveConfigToolsBtn" disabled>Save Changes</button>
             </div>
         </div>
     </div>
@@ -640,80 +707,7 @@
             });
         }
 
-        function scanWifi() {
-            var list = document.getElementById('wifiList');
-            list.innerHTML = '<div class="loading">Scanning...</div>';
-
-            fetch('/api/wifi/scan')
-                .then(r => r.json())
-                .then(data => {
-                    if (!data.networks || data.networks.length === 0) {
-                        list.innerHTML = '<div class="loading">No networks found</div>';
-                        return;
-                    }
-
-                    list.innerHTML = data.networks.map(net =>
-                        '<div class="wifi-network ' + (net.connected ? 'connected' : '') + '" onclick="showConnectModal(\'' + net.ssid.replace(/'/g, "\\'") + '\', ' + net.connected + ', \'' + net.security + '\')">' +
-                            '<div class="wifi-info">' +
-                                '<div class="wifi-ssid">' + net.ssid + (net.connected ? ' (Connected)' : '') + '</div>' +
-                                '<div class="wifi-details">' + (net.security || 'Open') + '</div>' +
-                            '</div>' +
-                            '<div class="wifi-signal">' +
-                                '<div class="signal-bars">' +
-                                    '<div class="signal-bar ' + (net.signal > 0 ? 'active' : '') + '"></div>' +
-                                    '<div class="signal-bar ' + (net.signal > 25 ? 'active' : '') + '"></div>' +
-                                    '<div class="signal-bar ' + (net.signal > 50 ? 'active' : '') + '"></div>' +
-                                    '<div class="signal-bar ' + (net.signal > 75 ? 'active' : '') + '"></div>' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>'
-                    ).join('');
-                })
-                .catch(err => {
-                    list.innerHTML = '<div class="loading">Error scanning networks</div>';
-                });
-        }
-
-        function showConnectModal(ssid, connected, security) {
-            if (connected) return;
-            selectedSsid = ssid;
-            document.getElementById('modalSsid').textContent = ssid;
-            document.getElementById('wifiPassword').value = '';
-            document.getElementById('wifiPassword').parentElement.style.display = security ? 'block' : 'none';
-            document.getElementById('wifiModal').classList.add('show');
-        }
-
-        function closeWifiModal() {
-            document.getElementById('wifiModal').classList.remove('show');
-        }
-
-        function connectWifi() {
-            var password = document.getElementById('wifiPassword').value;
-            closeWifiModal();
-
-            var list = document.getElementById('wifiList');
-            list.innerHTML = '<div class="loading">Connecting to ' + selectedSsid + '...</div>';
-
-            fetch('/api/wifi/connect', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ssid: selectedSsid, password: password })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    showSuccess('Connected to ' + selectedSsid);
-                    setTimeout(function() { location.reload(); }, 2000);
-                } else {
-                    showError(data.message || 'Connection failed');
-                    setTimeout(scanWifi, 2000);
-                }
-            })
-            .catch(err => {
-                showError('Connection failed');
-                setTimeout(scanWifi, 2000);
-            });
-        }
+        // WiFi functions moved to main control page
 
         function showHotspotAuth() {
             document.getElementById('hotspotAuthPassword').value = '';
@@ -790,20 +784,74 @@
         document.getElementById('hotspotAuthPassword').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') checkHotspotAuth();
         });
-        document.getElementById('wifiPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') connectWifi();
-        });
-        document.getElementById('lockConfirmInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') lockDevice();
-        });
-        document.getElementById('unlockPasswordInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') unlockDevice();
-        });
-        document.getElementById('lockConfirmInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') lockSelectedDevice();
-        });
-        document.getElementById('unlockPasswordInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') unlockSelectedDevice();
+
+        // =====================================================================
+        // Config Tools Modal Functions
+        // =====================================================================
+
+        var configToolsSelectedCrawler = null;
+
+        function openConfigTools() {
+            var modal = document.getElementById('configToolsModal');
+            var select = document.getElementById('crawlerSelect');
+            var currentName = document.getElementById('currentCrawlerName');
+            var saveBtn = document.getElementById('saveConfigToolsBtn');
+
+            // Populate the dropdown
+            select.innerHTML = '';
+            for (var id in CRAWLERS) {
+                var opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = CRAWLERS[id].name;
+                if (id === currentConfig.crawler_id) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            }
+
+            // Show current crawler name
+            currentName.textContent = CRAWLERS[currentConfig.crawler_id]?.name || currentConfig.crawler_id || '--';
+
+            // Reset state
+            configToolsSelectedCrawler = currentConfig.crawler_id;
+            saveBtn.disabled = true;
+
+            modal.classList.add('show');
+        }
+
+        function closeConfigTools() {
+            document.getElementById('configToolsModal').classList.remove('show');
+        }
+
+        function onCrawlerSelectChange() {
+            var select = document.getElementById('crawlerSelect');
+            var saveBtn = document.getElementById('saveConfigToolsBtn');
+
+            configToolsSelectedCrawler = select.value;
+
+            // Enable save button only if different from current
+            saveBtn.disabled = (configToolsSelectedCrawler === currentConfig.crawler_id);
+        }
+
+        function saveConfigTools() {
+            if (!configToolsSelectedCrawler || configToolsSelectedCrawler === currentConfig.crawler_id) {
+                closeConfigTools();
+                return;
+            }
+
+            // Update the selected crawler in the main form
+            selectedCrawler = configToolsSelectedCrawler;
+
+            // Update the hidden crawler options (for saveAndReboot)
+            renderCrawlerOptions();
+
+            closeConfigTools();
+            showSuccess('Crawler type changed to ' + CRAWLERS[selectedCrawler].name + '. Click "Reboot and Save Changes" to apply.');
+        }
+
+        // Close Config Tools modal when clicking outside
+        document.getElementById('configToolsModal').addEventListener('click', function(e) {
+            if (e.target === this) closeConfigTools();
         });
 
         // =====================================================================
@@ -825,28 +873,20 @@
                     }
 
                     var noMasterPw = document.getElementById('noMasterPassword');
-                    var lockSection = document.getElementById('lockDeviceSection');
-                    var unlockSection = document.getElementById('unlockDeviceSection');
 
                     // Check if master password is set
                     if (!data.master_password_set) {
                         noMasterPw.style.display = 'block';
-                        lockSection.style.display = 'none';
-                        unlockSection.style.display = 'none';
                         document.getElementById('deviceBindingsBody').innerHTML =
-                            '<tr><td colspan="4" style="padding: 15px; text-align: center; color: #86868b;">Master password not configured</td></tr>';
+                            '<tr><td colspan="5" style="padding: 15px; text-align: center; color: #86868b;">Master password not configured</td></tr>';
+                        document.getElementById('deviceBindingsNote').style.display = 'none';
                         return;
                     }
 
                     noMasterPw.style.display = 'none';
-                    lockSection.style.display = 'block';
-                    unlockSection.style.display = 'block';
 
-                    // Update device bindings table
+                    // Update device bindings table with action buttons
                     updateDeviceBindingsTable(data);
-
-                    // Update device selectors
-                    updateDeviceSelectors(data);
                 })
                 .catch(function(err) {
                     console.error('Error loading security status:', err);
@@ -857,7 +897,10 @@
         function updateDeviceBindingsTable(data) {
             var tbody = document.getElementById('deviceBindingsBody');
             var html = '';
-            var relevant = data.relevant_devices || ['cm5'];
+            // Always show all three devices
+            var allDevices = ['cm5', 'roboclaw', 'clearlink'];
+            var anyNotDetected = false;
+            var anyNotProgrammed = false;
 
             var deviceNames = {
                 'cm5': 'CM5 CPU',
@@ -865,7 +908,7 @@
                 'clearlink': 'ClearLink'
             };
 
-            relevant.forEach(function(device) {
+            allDevices.forEach(function(device) {
                 var info = data[device] || {};
                 var locked = info.locked || false;
                 var detected = info.detected !== false;
@@ -874,18 +917,32 @@
                 var connectedVal = '';
                 var lockedVal = '';
                 var statusHtml = '';
+                var actionHtml = '';
+                var isRoboclawNotProgrammed = false;
 
                 if (device === 'cm5') {
                     connectedVal = info.current_serial ? info.current_serial.slice(-8) : 'Not detected';
                     lockedVal = locked ? info.locked_serial.slice(-8) : 'Not locked';
                 } else if (device === 'roboclaw') {
-                    connectedVal = info.current_serial || 'Not detected';
-                    if (connectedVal.length > 20) connectedVal = connectedVal.slice(0, 20) + '...';
+                    // RoboClaw has special states: not detected, detected but not programmed, detected with EEPROM ID
+                    if (!info.current_serial) {
+                        connectedVal = 'Not detected';
+                    } else if (/^[0-9A-F]{12}$/.test(info.current_serial)) {
+                        // Has programmed ID (12-char hex)
+                        connectedVal = info.current_serial;
+                    } else {
+                        // Detected but no EEPROM ID (returns firmware version)
+                        connectedVal = 'Not programmed';
+                        isRoboclawNotProgrammed = true;
+                        anyNotProgrammed = true;
+                    }
                     lockedVal = locked ? (info.locked_serial.length > 20 ? info.locked_serial.slice(0, 20) + '...' : info.locked_serial) : 'Not locked';
                 } else if (device === 'clearlink') {
                     connectedVal = info.current_mac || 'Not detected';
                     lockedVal = locked ? info.locked_mac : 'Not locked';
                 }
+
+                if (!detected) anyNotDetected = true;
 
                 if (locked) {
                     if (!detected) {
@@ -895,160 +952,264 @@
                     } else {
                         statusHtml = '<span style="color: #ff3b30;">&#10007; MISMATCH</span>';
                     }
+                    // Locked: show Unlock button (always enabled - need to unlock even if not detected)
+                    actionHtml = '<button type="button" class="btn btn-secondary" onclick="openDeviceModal(\'' + device + '\', \'unlock\')" style="padding: 4px 12px; font-size: 11px;">Unlock</button>';
                 } else {
                     statusHtml = '<span style="color: #86868b;">&#128275; Unlocked</span>';
+
+                    // Special case: RoboClaw detected but not programmed - show Program ID button
+                    if (device === 'roboclaw' && isRoboclawNotProgrammed) {
+                        actionHtml = '<button type="button" class="btn btn-primary" onclick="openProgramModal()" style="padding: 4px 12px; font-size: 11px; background: #007aff;">Program ID</button>';
+                    } else if (detected) {
+                        // Normal case: show Lock button
+                        actionHtml = '<button type="button" class="btn btn-primary" onclick="openDeviceModal(\'' + device + '\', \'lock\')" style="padding: 4px 12px; font-size: 11px; background: #ff9500;">Lock</button>';
+                    } else {
+                        // Not detected: show disabled Lock button
+                        actionHtml = '<button type="button" class="btn btn-secondary" disabled style="padding: 4px 12px; font-size: 11px; opacity: 0.5; cursor: not-allowed;">Lock</button>';
+                    }
                 }
 
                 html += '<tr style="border-bottom: 1px solid #f0f0f0;">';
                 html += '<td style="padding: 8px 10px; font-weight: 500;">' + deviceNames[device] + '</td>';
-                html += '<td style="padding: 8px 10px; font-family: monospace; font-size: 11px; color: ' + (detected ? '#1d1d1f' : '#c0c0c0') + ';">' + connectedVal + '</td>';
+                html += '<td style="padding: 8px 10px; font-family: monospace; font-size: 11px; color: ' + (detected && !isRoboclawNotProgrammed ? '#1d1d1f' : '#c0c0c0') + ';">' + connectedVal + '</td>';
                 html += '<td style="padding: 8px 10px; font-family: monospace; font-size: 11px; color: ' + (locked ? '#1d1d1f' : '#c0c0c0') + ';">' + lockedVal + '</td>';
                 html += '<td style="padding: 8px 10px; text-align: center;">' + statusHtml + '</td>';
+                html += '<td style="padding: 8px 10px; text-align: center;">' + actionHtml + '</td>';
                 html += '</tr>';
             });
 
             tbody.innerHTML = html;
+
+            // Show/hide the note about devices needing to be connected
+            var noteText = '';
+            if (anyNotDetected) noteText = 'Note: Devices must be connected before they can be locked.';
+            if (anyNotProgrammed) noteText += (noteText ? ' ' : '') + 'RoboClaw requires programming an ID before it can be locked.';
+            var noteEl = document.getElementById('deviceBindingsNote');
+            noteEl.textContent = noteText;
+            noteEl.style.display = noteText ? 'block' : 'none';
         }
 
-        function updateDeviceSelectors(data) {
-            var relevant = data.relevant_devices || ['cm5'];
-            var deviceNames = {
-                'cm5': 'CM5 CPU',
-                'roboclaw': 'RoboClaw',
-                'clearlink': 'ClearLink'
-            };
+        var deviceNames = {
+            'cm5': 'CM5 CPU',
+            'roboclaw': 'RoboClaw',
+            'clearlink': 'ClearLink'
+        };
 
-            var lockSelect = document.getElementById('lockDeviceSelect');
-            var unlockSelect = document.getElementById('unlockDeviceSelect');
+        function openDeviceModal(device, action) {
+            var modal = document.getElementById('deviceActionModal');
+            var title = document.getElementById('modalTitle');
+            var lockSection = document.getElementById('lockConfirmSection');
+            var noteEl = document.getElementById('modalNote');
+            var confirmBtn = document.getElementById('modalConfirmBtn');
 
-            // Update lock selector (show unlocked devices that are detected)
-            var lockOptions = '';
-            relevant.forEach(function(device) {
-                var info = data[device] || {};
-                if (!info.locked && info.detected) {
-                    lockOptions += '<option value="' + device + '">' + deviceNames[device] + '</option>';
-                }
-            });
-            lockSelect.innerHTML = lockOptions || '<option value="">No devices to lock</option>';
+            document.getElementById('modalDevice').value = device;
+            document.getElementById('modalAction').value = action;
+            document.getElementById('modalPassword').value = '';
+            document.getElementById('modalLockConfirm').value = '';
 
-            // Update unlock selector (show locked devices)
-            var unlockOptions = '';
-            relevant.forEach(function(device) {
-                var info = data[device] || {};
-                if (info.locked) {
-                    unlockOptions += '<option value="' + device + '">' + deviceNames[device] + '</option>';
-                }
-            });
-            unlockSelect.innerHTML = unlockOptions || '<option value="">No devices locked</option>';
-        }
-
-        function lockSelectedDevice() {
-            var device = document.getElementById('lockDeviceSelect').value;
-            var confirmation = document.getElementById('lockConfirmInput').value.toUpperCase();
-
-            if (!device) {
-                showError('No device selected');
-                return;
-            }
-
-            if (confirmation !== 'LOCK') {
-                showError('Type "LOCK" to confirm device locking.');
-                return;
-            }
-
-            var deviceNames = {'cm5': 'CM5 CPU', 'roboclaw': 'RoboClaw', 'clearlink': 'ClearLink'};
-            var message = 'Lock ' + deviceNames[device] + ' to current hardware?';
-            if (device === 'cm5') {
-                message += '\n\nThis will also encrypt the source code.';
-            }
-            message += '\n\nYou will need the master password to unlock later.';
-
-            if (!confirm(message)) {
-                return;
-            }
-
-            document.getElementById('lockConfirmInput').disabled = true;
-
-            fetch('/api/security/lock', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ device: device, confirmation: 'LOCK' })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    if (device === 'cm5') {
-                        document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;background:#f5f5f7;"><div style="text-align:center;background:white;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><h2 style="color:#1d1d1f;margin-bottom:12px;">Locking Device...</h2><p style="color:#86868b;">' + data.message + '</p></div></div>';
-                    } else {
-                        showSuccess(data.message);
-                        document.getElementById('lockConfirmInput').value = '';
-                        document.getElementById('lockConfirmInput').disabled = false;
-                        loadSecurityStatus();
-                    }
+            if (action === 'lock') {
+                title.textContent = 'Lock ' + deviceNames[device];
+                lockSection.style.display = 'block';
+                confirmBtn.style.background = '#ff9500';
+                confirmBtn.textContent = 'Lock';
+                if (device === 'cm5') {
+                    noteEl.innerHTML = 'This will encrypt the source code and bind it to this device.';
                 } else {
-                    showError(data.error || 'Lock failed');
-                    document.getElementById('lockConfirmInput').disabled = false;
+                    noteEl.innerHTML = 'This will bind the software to this specific ' + deviceNames[device] + '.';
                 }
-            })
-            .catch(function(err) {
-                showError('Lock request failed');
-                document.getElementById('lockConfirmInput').disabled = false;
-            });
+            } else {
+                title.textContent = 'Unlock ' + deviceNames[device];
+                lockSection.style.display = 'none';
+                confirmBtn.style.background = '#007aff';
+                confirmBtn.textContent = 'Unlock';
+                if (device === 'cm5') {
+                    noteEl.innerHTML = 'This will decrypt the source code so it can be cloned to other devices.';
+                } else {
+                    noteEl.innerHTML = 'This will remove the hardware binding for ' + deviceNames[device] + '.';
+                }
+            }
+
+            modal.style.display = 'flex';
+            document.getElementById('modalPassword').focus();
         }
 
-        function unlockSelectedDevice() {
-            var device = document.getElementById('unlockDeviceSelect').value;
-            var password = document.getElementById('unlockPasswordInput').value;
+        function closeDeviceModal() {
+            document.getElementById('deviceActionModal').style.display = 'none';
+            document.getElementById('modalPassword').value = '';
+            document.getElementById('modalLockConfirm').value = '';
+        }
 
-            if (!device) {
-                showError('No device selected');
-                return;
-            }
+        function executeDeviceAction() {
+            var device = document.getElementById('modalDevice').value;
+            var action = document.getElementById('modalAction').value;
+            var password = document.getElementById('modalPassword').value;
+            var lockConfirm = document.getElementById('modalLockConfirm').value.toUpperCase();
 
             if (!password) {
                 showError('Enter the master password');
                 return;
             }
 
-            var deviceNames = {'cm5': 'CM5 CPU', 'roboclaw': 'RoboClaw', 'clearlink': 'ClearLink'};
-            var message = 'Unlock ' + deviceNames[device] + '?';
-            if (device === 'cm5') {
-                message += '\n\nThis will decrypt the source code so it can be cloned.';
-            }
-
-            if (!confirm(message)) {
+            if (action === 'lock' && lockConfirm !== 'LOCK') {
+                showError('Type "LOCK" to confirm device locking');
                 return;
             }
 
-            document.getElementById('unlockPasswordInput').disabled = true;
+            var confirmBtn = document.getElementById('modalConfirmBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = action === 'lock' ? 'Locking...' : 'Unlocking...';
 
-            fetch('/api/security/unlock', {
+            if (action === 'lock') {
+                fetch('/api/security/lock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device: device, confirmation: 'LOCK', master_password: password })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        closeDeviceModal();
+                        if (device === 'cm5') {
+                            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;background:#f5f5f7;"><div style="text-align:center;background:white;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><h2 style="color:#1d1d1f;margin-bottom:12px;">Locking Device...</h2><p style="color:#86868b;">' + data.message + '</p></div></div>';
+                        } else {
+                            showSuccess(data.message);
+                            loadSecurityStatus();
+                        }
+                    } else {
+                        showError(data.error || 'Lock failed');
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = 'Lock';
+                    }
+                })
+                .catch(function(err) {
+                    showError('Lock request failed');
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Lock';
+                });
+            } else {
+                fetch('/api/security/unlock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device: device, master_password: password })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        closeDeviceModal();
+                        if (device === 'cm5') {
+                            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;background:#f5f5f7;"><div style="text-align:center;background:white;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><h2 style="color:#1d1d1f;margin-bottom:12px;">Unlocking Device...</h2><p style="color:#86868b;">' + data.message + '</p></div></div>';
+                        } else {
+                            showSuccess(data.message);
+                            loadSecurityStatus();
+                        }
+                    } else {
+                        showError(data.error || 'Unlock failed');
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = 'Unlock';
+                    }
+                })
+                .catch(function(err) {
+                    showError('Unlock request failed');
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Unlock';
+                });
+            }
+        }
+
+        // Program RoboClaw ID Modal Functions
+        function openProgramModal() {
+            document.getElementById('programIdInput').value = '';
+            document.getElementById('programRoboclawModal').style.display = 'flex';
+            document.getElementById('programIdInput').focus();
+        }
+
+        function closeProgramModal() {
+            document.getElementById('programRoboclawModal').style.display = 'none';
+            document.getElementById('programIdInput').value = '';
+        }
+
+        function executeProgramRoboclaw() {
+            var customId = document.getElementById('programIdInput').value.trim().toUpperCase();
+            var confirmBtn = document.getElementById('programConfirmBtn');
+
+            // Validate custom ID if provided
+            if (customId) {
+                // Must be valid hex characters only, 6-12 chars
+                if (!/^[0-9A-F]{6,12}$/.test(customId)) {
+                    showError('ID must be 6-12 hex characters (0-9, A-F)');
+                    return;
+                }
+                // Pad to 12 characters if less
+                while (customId.length < 12) {
+                    customId = '0' + customId;
+                }
+            }
+
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Programming...';
+
+            fetch('/api/security/program_roboclaw', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ device: device, master_password: password })
+                body: JSON.stringify({ custom_id: customId })
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success) {
-                    if (device === 'cm5') {
-                        document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;background:#f5f5f7;"><div style="text-align:center;background:white;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><h2 style="color:#1d1d1f;margin-bottom:12px;">Unlocking Device...</h2><p style="color:#86868b;">' + data.message + '</p></div></div>';
-                    } else {
-                        showSuccess(data.message);
-                        document.getElementById('unlockPasswordInput').value = '';
-                        document.getElementById('unlockPasswordInput').disabled = false;
-                        loadSecurityStatus();
-                    }
+                    closeProgramModal();
+                    showSuccess('RoboClaw programmed: ' + data.new_id);
+                    loadSecurityStatus();
                 } else {
-                    showError(data.error || 'Unlock failed');
-                    document.getElementById('unlockPasswordInput').value = '';
-                    document.getElementById('unlockPasswordInput').disabled = false;
+                    showError(data.error || 'Programming failed');
                 }
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Program';
             })
             .catch(function(err) {
-                showError('Unlock request failed');
-                document.getElementById('unlockPasswordInput').disabled = false;
+                showError('Programming request failed');
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Program';
             });
         }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDeviceModal();
+                closeProgramModal();
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('deviceActionModal').addEventListener('click', function(e) {
+            if (e.target === this) closeDeviceModal();
+        });
+
+        // Handle Enter key in modal inputs
+        document.getElementById('modalPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                var action = document.getElementById('modalAction').value;
+                if (action === 'unlock') {
+                    executeDeviceAction();
+                } else {
+                    document.getElementById('modalLockConfirm').focus();
+                }
+            }
+        });
+
+        document.getElementById('modalLockConfirm').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') executeDeviceAction();
+        });
+
+        // Close Program modal when clicking outside
+        document.getElementById('programRoboclawModal').addEventListener('click', function(e) {
+            if (e.target === this) closeProgramModal();
+        });
+
+        // Handle Enter key in Program modal
+        document.getElementById('programIdInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') executeProgramRoboclaw();
+        });
 
         // Load config and security status on page load
         document.addEventListener('DOMContentLoaded', function() {
