@@ -873,6 +873,22 @@
         .support-btn:hover { background: var(--button-secondary-hover); transform: scale(1.02); }
         .support-btn:active { transform: scale(0.98); }
         .support-btn svg { width: 16px; height: 16px; }
+        .alarm-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--status-error);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+        }
     </style>
 </head>
 <body>
@@ -956,9 +972,22 @@
             <button class="icon-button" onclick="togglePopup('systemPopup', event)" title="System Settings">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
+            <div class="icon-button" id="alarmsButton" onclick="togglePopup('alarmsPopup', event)" title="Alarms" style="position: relative;">
+                <svg id="alarmsIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="alarm-badge" id="alarmBadge" style="display:none;">0</span>
+            </div>
             <button class="icon-button" onclick="location.reload()" title="Refresh page">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
+        </div>
+        <div class="stats-popup" id="alarmsPopup" onclick="event.stopPropagation()" style="background-color: var(--popup-bg); border: 1px solid var(--border-color);">
+            <div class="popup-header" onmousedown="startDrag(event, 'alarmsPopup')" ontouchstart="startDragTouch(event, 'alarmsPopup')">
+                <span class="popup-title">Alarms</span>
+                <button class="popup-close" onclick="closePopup('alarmsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="popup-content" id="alarmsContent">
+                <div style="text-align:center; color:var(--text-tertiary); padding:20px;">No alarms</div>
+            </div>
         </div>
 
         <!-- Row 2: Status indicators - centered -->
@@ -1453,7 +1482,55 @@
         };
 
         // Popup management
-        var allPopups = ['statsPopup', 'settingsPopup', 'motorParamsPopup', 'systemPopup'];
+        var allPopups = ['statsPopup', 'settingsPopup', 'motorParamsPopup', 'systemPopup', 'alarmsPopup'];
+
+        var clearlinkIsConnected = false;
+        var alarms = [];
+        var alarmCounter = 0;
+
+        function addAlarm(message) {
+            alarmCounter++;
+            var now = new Date();
+            var timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0');
+            alarms.push({ id: alarmCounter, message: message, time: timeStr });
+            updateAlarmIcon();
+            renderAlarms();
+        }
+
+        function clearAlarms() {
+            alarms = [];
+            updateAlarmIcon();
+            renderAlarms();
+        }
+
+        function updateAlarmIcon() {
+            var icon = document.getElementById('alarmsIcon');
+            var badge = document.getElementById('alarmBadge');
+            if (alarms.length > 0) {
+                icon.style.color = 'var(--status-error)';
+                icon.setAttribute('stroke', '#ff3b30');
+                badge.textContent = alarms.length;
+                badge.style.display = 'flex';
+            } else {
+                icon.style.color = '';
+                icon.setAttribute('stroke', 'currentColor');
+                badge.style.display = 'none';
+            }
+        }
+
+        function renderAlarms() {
+            var container = document.getElementById('alarmsContent');
+            if (alarms.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:var(--text-tertiary); padding:20px;">No alarms</div>';
+                return;
+            }
+            var html = '';
+            for (var i = alarms.length - 1; i >= 0; i--) {
+                html += '<div class="stats-row-item"><span class="stats-label" style="color:var(--status-error);">\u26A0 ' + alarms[i].message + '</span><span class="stats-value" style="font-size:10px; color:var(--text-tertiary);">' + alarms[i].time + '</span></div>';
+            }
+            html += '<div style="border-top:1px solid var(--border-color); margin-top:8px; padding-top:8px; text-align:center;"><button class="secondary-btn" onclick="clearAlarms()" style="font-size:12px; padding:6px 16px;">Clear Alarms</button></div>';
+            container.innerHTML = html;
+        }
 
         function togglePopup(popupId, event) {
             event.stopPropagation();
@@ -1991,6 +2068,14 @@
         }
 
         function startJog(direction) {
+            if (!rosbridgeConnected) {
+                addAlarm('Cannot start motor: ROS bridge not connected');
+                return;
+            }
+            if (!clearlinkIsConnected) {
+                addAlarm('Cannot start motor: ClearLink not connected');
+                return;
+            }
             // Allow direction change while jogging (latching mode)
             isJogging = true;
             // Calculate velocity in steps/sec (positive = forward, negative = backward)
@@ -2273,6 +2358,7 @@
             var m1Moving = msg.m1_velocity !== undefined ? (msg.m1_velocity !== 0) : msg.axis2_moving;
             var isConnected = msg.connected !== undefined ? msg.connected : true;
             var isEnabled = msg.enabled !== undefined ? msg.enabled : true;
+            clearlinkIsConnected = isConnected;
 
             updateClearlinkStatus(isConnected);
             // Update connection status in stats
@@ -2753,6 +2839,14 @@
 
         var shots = [];
         function autoMove() {
+            if (!rosbridgeConnected) {
+                addAlarm('Cannot start motor: ROS bridge not connected');
+                return;
+            }
+            if (!clearlinkIsConnected) {
+                addAlarm('Cannot start motor: ClearLink not connected');
+                return;
+            }
             sendCommand('auto_move');
             var relAngle = document.getElementById('pipeRelAngleDisplay').textContent;
             shots.push({ num: shots.length + 1, angle: relAngle });
