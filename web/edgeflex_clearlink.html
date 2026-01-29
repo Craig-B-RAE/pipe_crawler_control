@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1d1d1f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pipe Crawler">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
     <title>EdgeFlex ClearLink Controller</title>
     <!-- EMERGENCY: Inline CSS variables as fallback before external theme.css -->
     <style id="theme-fallback">
@@ -650,6 +656,9 @@
             height: clamp(200px, 50vw, 280px);
             min-width: 200px;
             min-height: 200px;
+            max-width: 280px;
+            max-height: 280px;
+            aspect-ratio: 1;
             margin: 0 auto 15px;
         }
         .pipe-circle {
@@ -748,6 +757,89 @@
             color: var(--text-tertiary);
             font-size: 14px;
         }
+        .camera-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .camera-header span {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+        .camera-header svg.camera-chevron {
+            color: var(--text-tertiary);
+            transition: transform 0.3s ease;
+            transform: rotate(180deg);
+        }
+        .camera-header:hover svg.camera-chevron { color: var(--text-secondary); }
+        .camera-header.collapsed svg.camera-chevron { transform: rotate(0deg); }
+        .camera-collapsible {
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            max-height: 600px;
+            opacity: 1;
+        }
+        .camera-collapsible.collapsed { max-height: 0; opacity: 0; }
+        .camera-fullscreen-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-tertiary);
+            padding: 4px;
+            margin-left: 12px;
+            display: flex;
+            align-items: center;
+        }
+        .camera-fullscreen-btn:hover { color: var(--text-secondary); }
+        .camera-expanded-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        .camera-expanded-overlay.active { display: flex; }
+        .camera-expanded-inner {
+            position: relative;
+            width: 90vw;
+            max-width: 1200px;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .camera-expanded-inner img,
+        .camera-expanded-inner video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .camera-expanded-close {
+            position: absolute;
+            top: 12px; right: 12px;
+            background: rgba(0,0,0,0.6);
+            border: none;
+            color: #fff;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+        .camera-expanded-close:hover { background: rgba(0,0,0,0.9); }
         button.control-btn {
             padding: clamp(16px, 3vw, 20px);
             font-size: clamp(14px, 3vw, 16px);
@@ -1158,10 +1250,21 @@
         </div>
 
         <div class="camera-section">
-            <div class="camera-frame" id="cameraFrame">
-                <div class="camera-placeholder">
-                    <img src="https://freepngimg.com/save/23298-wall-e/918x990" alt="Wall-E" style="max-height: 120px; opacity: 0.6; filter: grayscale(30%);">
-                    <span>Camera Feed</span>
+            <div class="camera-header" id="cameraToggleBtn" onclick="toggleCameraView()">
+                <span>Camera Feed</span>
+                <div style="display:flex;align-items:center;">
+                    <button class="camera-fullscreen-btn" onclick="event.stopPropagation(); toggleCameraFullscreen()" title="Fullscreen">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                    </button>
+                    <svg class="camera-chevron" width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 10 10 18 2"/></svg>
+                </div>
+            </div>
+            <div id="cameraCollapsible" class="camera-collapsible collapsed">
+                <div class="camera-frame" id="cameraFrame">
+                    <div class="camera-placeholder">
+                        <img src="https://freepngimg.com/save/23298-wall-e/918x990" alt="Wall-E" style="max-height: 120px; opacity: 0.6; filter: grayscale(30%);">
+                        <span>Camera Feed</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2591,6 +2694,39 @@
             }
         })();
 
+        function toggleCameraView() {
+            var collapsible = document.getElementById('cameraCollapsible');
+            var btn = document.getElementById('cameraToggleBtn');
+            collapsible.classList.toggle('collapsed');
+            btn.classList.toggle('collapsed');
+            localStorage.setItem('cameraViewCollapsed', collapsible.classList.contains('collapsed'));
+        }
+
+        function toggleCameraFullscreen() {
+            var overlay = document.getElementById('cameraExpandedOverlay');
+            var container = document.getElementById('cameraExpandedContent');
+            if (overlay.classList.contains('active')) {
+                overlay.classList.remove('active');
+                container.innerHTML = '';
+            } else {
+                var frame = document.getElementById('cameraFrame');
+                container.innerHTML = frame.innerHTML;
+                overlay.classList.add('active');
+            }
+        }
+
+        // Restore camera view state on load (default collapsed)
+        (function() {
+            var saved = localStorage.getItem('cameraViewCollapsed');
+            if (saved === null || saved === 'true') {
+                document.getElementById('cameraCollapsible').classList.add('collapsed');
+                document.getElementById('cameraToggleBtn').classList.add('collapsed');
+            } else {
+                document.getElementById('cameraCollapsible').classList.remove('collapsed');
+                document.getElementById('cameraToggleBtn').classList.remove('collapsed');
+            }
+        })();
+
         function setTestAngle(value) {
             var angle = parseFloat(value) || 0;
             document.getElementById('pipeContainer').style.transform = 'rotate(' + angle + 'deg)';
@@ -2748,6 +2884,17 @@
             </div>
         </div>
     </div>
+    <div class="camera-expanded-overlay" id="cameraExpandedOverlay" onclick="toggleCameraFullscreen()">
+        <div class="camera-expanded-inner" onclick="event.stopPropagation()">
+            <button class="camera-expanded-close" onclick="toggleCameraFullscreen()">&times;</button>
+            <div id="cameraExpandedContent"></div>
+        </div>
+    </div>
     <script src="/js/theme.js"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function(){});
+    }
+    </script>
 </body>
 </html>
