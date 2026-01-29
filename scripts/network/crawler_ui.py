@@ -18,10 +18,68 @@ import time
 import logging
 import threading
 import io
+import cv2
+import numpy as np
 from datetime import datetime
 from flask import Flask, render_template_string, jsonify, send_from_directory, request, make_response, redirect, Response
 
 app = Flask(__name__)
+
+# --- Camera streaming (frame-averaged to eliminate color flicker) ---
+_camera_frame = None
+_camera_frame_lock = threading.Lock()
+BLEND_COUNT = 4
+
+def _camera_capture_thread():
+    global _camera_frame
+    cap = None
+    while True:
+        try:
+            if cap is None or not cap.isOpened():
+                cap = cv2.VideoCapture('/dev/video0', cv2.CAP_V4L2)
+                cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+                cap.set(cv2.CAP_PROP_FPS, 30)
+                subprocess.run(
+                    ['v4l2-ctl', '-d', '/dev/video0',
+                     '--set-ctrl=white_balance_automatic=0',
+                     '--set-ctrl=white_balance_temperature=4600',
+                     '--set-ctrl=auto_exposure=1',
+                     '--set-ctrl=exposure_time_absolute=83',
+                     '--set-ctrl=gain=32',
+                     '--set-ctrl=power_line_frequency=2'],
+                    stderr=subprocess.DEVNULL
+                )
+            # Read BLEND_COUNT frames, use the median to kill color outliers
+            frames = []
+            for _ in range(BLEND_COUNT):
+                ret, frame = cap.read()
+                if ret:
+                    frames.append(frame)
+            if frames:
+                blended = np.median(frames, axis=0).astype(np.uint8)
+                ret, jpeg = cv2.imencode('.jpg', blended, [cv2.IMWRITE_JPEG_QUALITY, 75])
+                if ret:
+                    with _camera_frame_lock:
+                        _camera_frame = jpeg.tobytes()
+            else:
+                cap = None
+                time.sleep(0.5)
+        except Exception:
+            cap = None
+            time.sleep(1)
+
+threading.Thread(target=_camera_capture_thread, daemon=True).start()
+
+@app.route('/api/camera/snapshot')
+def camera_snapshot():
+    with _camera_frame_lock:
+        frame = _camera_frame
+    if frame is None:
+        return Response(status=503)
+    return Response(frame, mimetype='image/jpeg',
+                    headers={'Cache-Control': 'no-store'})
 
 # Configure logging for security events
 logging.basicConfig(level=logging.INFO)
@@ -507,6 +565,25 @@ def index():
 def api_status():
     """API endpoint for status."""
     return jsonify(get_system_status())
+
+
+@app.route("/api/last_updated")
+def api_last_updated():
+    """Return the date of the last git commit (i.e. last system update)."""
+    repo = "/home/craig/ros2_ws/src/pipe_crawler_control"
+    try:
+        env = os.environ.copy()
+        env["GIT_DIR"] = os.path.join(repo, ".git")
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%ci"],
+            capture_output=True, text=True,
+            env=env
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return jsonify({"last_updated": result.stdout.strip()})
+    except Exception:
+        pass
+    return jsonify({"last_updated": None})
 
 
 @app.route("/api/reboot", methods=["POST"])
@@ -1348,12 +1425,14 @@ def check_boot_and_mismatch():
     # Always allow these paths (including static assets needed by boot splash)
     always_skip = [
         '/boot_splash.html',
-        '/api/security/boot_status',
+        '/api/',
         '/images/',
         '/static/',
         '/css/',
         '/js/',
-        '/favicon.ico'
+        '/favicon.ico',
+        '/manifest.json',
+        '/sw.js'
     ]
     for path in always_skip:
         if request.path.startswith(path) or request.path == path:

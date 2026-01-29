@@ -430,6 +430,12 @@
         .save-defaults-btn:hover { opacity: 0.9; }
         .save-defaults-btn:active { transform: scale(0.98); }
         .save-defaults-btn.saved { background: var(--status-ok); }
+        .toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .toggle-switch input { display: none; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--border-color); border-radius: 22px; transition: 0.3s; }
+        .toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; bottom: 3px; background: var(--text-primary); border-radius: 50%; transition: 0.3s; }
+        .toggle-switch input:checked + .toggle-slider { background: var(--accent-cyan); }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(18px); }
         .seg-toggle { display: flex; background: var(--border-color); border-radius: 8px; padding: 2px; }
         .seg-toggle button { border: none; background: transparent; color: var(--text-secondary); font-size: 12px; font-weight: 500; padding: 5px 10px; cursor: pointer; font-family: inherit; transition: all 0.2s ease; border-radius: 7px; }
         .seg-toggle button.active { background: var(--bg-primary); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08); }
@@ -653,12 +659,7 @@
         .pipe-container {
             position: relative;
             width: clamp(200px, 50vw, 280px);
-            height: clamp(200px, 50vw, 280px);
-            min-width: 200px;
-            min-height: 200px;
-            max-width: 280px;
-            max-height: 280px;
-            aspect-ratio: 1;
+            aspect-ratio: 1 / 1;
             margin: 0 auto 15px;
         }
         .pipe-circle {
@@ -1027,12 +1028,13 @@
                             <div class="stats-row-item"><span class="stats-label">Motor 1 Encoder</span><span class="stats-value" id="motor1Position">0</span></div>
                             <div class="stats-row-item"><span class="stats-label">Motor 2 Encoder</span><span class="stats-value" id="motor2Position">0</span></div>
                             <div class="stats-row-item"><span class="stats-label"></span><button class="secondary-btn" id="resetFaultBtn" onclick="resetFaults(event)" style="display: none; font-size: 12px; padding: 6px 12px;">Reset Faults</button></div>
-                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value-group"><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span><button class="icon-btn" onclick="zeroIMU(event)" title="Zero IMU"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></button></span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span></div>
                             <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
-                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label" style="color: var(--text-tertiary);">Rel. Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
-                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.1</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Calibrated Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label" style="color: var(--text-tertiary);">Calibrated Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Invert Angle</span><label class="toggle-switch"><input type="checkbox" id="invertAngleToggleStats" onchange="setInvertAngle(this.checked)"><span class="toggle-slider"></span></label></div>
+                            <div class="stats-row-item" style="justify-content: center; padding-top: 8px;"><button class="secondary-btn" onclick="openCalibrateModal()" style="font-size: 12px; padding: 6px 16px;">Calibrate</button></div>
                         </div>
                     </div>
                 </div>
@@ -1078,6 +1080,10 @@
                                     <span class="settings-unit" style="margin-right: 6px;">%</span>
                                     <input type="number" class="settings-input" id="rampInput" min="1" max="100" step="1" value="50" onchange="updateRamp(this.value)" style="width: 70px;">
                                 </div>
+                            </div>
+                            <div class="settings-row">
+                                <span class="settings-label">Invert Angle</span>
+                                <label class="toggle-switch"><input type="checkbox" id="invertAngleToggleSettings" onchange="setInvertAngle(this.checked)"><span class="toggle-slider"></span></label>
                             </div>
                             <button class="save-defaults-btn" onclick="saveAllDefaults()">Save as Defaults</button>
                         </div>
@@ -1209,7 +1215,7 @@
             <div class="pipe-calc-row" style="margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Speed</span><span class="pipe-calc-value" id="pipeSpeedDisplay">0.0"/s</span></div>
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Distance</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
-                <div class="pipe-calc-item"><span class="pipe-calc-label">Angle</span><input type="number" class="pipe-calc-value" id="pipeRelAngleDisplay" value="0.0" step="0.1" style="width: 60px; border: 1px solid var(--border-color); border-radius: 6px; text-align: center; background: var(--bg-primary);" onchange="setTestAngle(this.value)">°</div>
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Angle</span><span class="pipe-calc-value" id="pipeRelAngleDisplay" style="width: 60px; text-align: center;">0.0</span>°</div>
             </div>
             <div class="pipe-toggle-bar" id="pipeToggleBtn" onclick="togglePipeView()">
                 <svg width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 10 10 18 2"/></svg>
@@ -1261,9 +1267,9 @@
             </div>
             <div id="cameraCollapsible" class="camera-collapsible collapsed">
                 <div class="camera-frame" id="cameraFrame">
-                    <div class="camera-placeholder">
-                        <img src="https://freepngimg.com/save/23298-wall-e/918x990" alt="Wall-E" style="max-height: 120px; opacity: 0.6; filter: grayscale(30%);">
-                        <span>Camera Feed</span>
+                    <img id="cameraStream" alt="Camera Feed" style="width: 100%; height: auto; display: block; border-radius: 8px;">
+                    <div class="camera-placeholder" id="cameraOffline" style="display: none;">
+                        <span>Camera Offline</span>
                     </div>
                 </div>
             </div>
@@ -1304,6 +1310,38 @@
             <div class="modal-header"><span class="modal-title" id="graphTitle">Graph</span><button class="modal-close" onclick="closeGraph(event)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
             <div class="graph-container"><svg class="graph-svg" id="graphSvg" viewBox="0 0 450 220"></svg></div>
             <div class="graph-stats" id="graphStats"></div>
+        </div>
+    </div>
+
+    <!-- Calibration Modal -->
+    <div class="modal-overlay" id="calibrateModal" onclick="closeCalibrateModal()" style="display: none;">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 360px;">
+            <div class="modal-header">
+                <span class="modal-title">Calibrate Angle Sensor</span>
+                <button class="modal-close" onclick="closeCalibrateModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="padding: 20px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.5;">Before you start, place the crawler on a flat surface, or at the angle you want to calibrate.</p>
+                <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Live Angles</div>
+                <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="calLiveRoll">--</span>&deg;</span></div>
+                <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="calLivePitch">--</span>&deg;</span></div>
+                <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 8px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Calibrated Angles</div>
+                <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="calRelRoll">--</span>&deg;</span></div>
+                <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="calRelPitch">--</span>&deg;</span></div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="control-btn" onclick="performCalibration()" style="padding: 10px 24px; font-size: 14px;">Calibrate Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calibration Success Dialog -->
+    <div class="password-modal" id="calibrateSuccessModal">
+        <div class="password-dialog">
+            <h3>Angle sensor calibrated.</h3>
+            <div class="btn-row">
+                <button class="btn-unlock" onclick="closeCalibrateSuccess()">OK</button>
+            </div>
         </div>
     </div>
 
@@ -1388,7 +1426,6 @@
         var prevRelPitch = null;
         var lastUpdateTime = Date.now();
 
-        document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
         document.getElementById('footerVersion').textContent = CURRENT_VERSION;
 
         var stats = { temp: { data: [], data2: [] }, fan: { min: 999, max: 0, data: [] } };
@@ -1711,12 +1748,19 @@
                         rampPercent = Math.max(1, Math.min(100, stepsToRampPercent(settings.ramp)));
                         document.getElementById('rampInput').value = rampPercent.toFixed(0);
                     }
+                    // Load invert angle setting
+                    if (settings.imuInvertAngle !== undefined) {
+                        imuInvertAngle = settings.imuInvertAngle;
+                        document.getElementById('invertAngleToggleStats').checked = imuInvertAngle;
+                        document.getElementById('invertAngleToggleSettings').checked = imuInvertAngle;
+                    }
                     console.log('Settings loaded: jogSpeedInSec=' + jogSpeedInSec + ', rampPercent=' + rampPercent + ', stepsPerInch=' + stepsPerInch + ', maxStepsPerSec=' + maxStepsPerSec);
                     savedDefaults = {
                         pipeDiameter: pipeDiameter,
                         distanceMode: distanceMode,
                         jogSpeedInSec: jogSpeedInSec,
-                        rampPercent: rampPercent
+                        rampPercent: rampPercent,
+                        imuInvertAngle: imuInvertAngle
                     };
                 })
                 .catch(function(e) { console.error('Failed to load settings:', e); });
@@ -1751,7 +1795,8 @@
                 pipeDiameter: pipeDiameter,
                 distanceMode: distanceMode,
                 jogSpeedInSec: jogSpeedInSec,
-                rampPercent: rampPercent
+                rampPercent: rampPercent,
+                imuInvertAngle: imuInvertAngle
             };
             fetch('/api/settings', {
                 method: 'POST',
@@ -1764,7 +1809,8 @@
                         pipeDiameter: pipeDiameter,
                         distanceMode: distanceMode,
                         jogSpeedInSec: jogSpeedInSec,
-                        rampPercent: rampPercent
+                        rampPercent: rampPercent,
+                        imuInvertAngle: imuInvertAngle
                     };
                     btn.classList.add('saved');
                     var count = 5;
@@ -1902,7 +1948,8 @@
             if (pipeDiameter !== savedDefaults.pipeDiameter ||
                 distanceMode !== savedDefaults.distanceMode ||
                 jogSpeedInSec !== savedDefaults.jogSpeedInSec ||
-                rampPercent !== savedDefaults.rampPercent) {
+                rampPercent !== savedDefaults.rampPercent ||
+                imuInvertAngle !== savedDefaults.imuInvertAngle) {
                 btn.classList.add('show');
             } else {
                 btn.classList.remove('show');
@@ -2244,6 +2291,16 @@
             var m2FaultEl = document.getElementById('motor2FaultStatus');
             var resetBtn = document.getElementById('resetFaultBtn');
 
+            if (!isConnected) {
+                // ClearLink disconnected — show dashes for fault and encoder
+                m1FaultEl.textContent = '--';
+                m1FaultEl.style.color = '';
+                m2FaultEl.textContent = '--';
+                m2FaultEl.style.color = '';
+                resetBtn.style.display = 'none';
+                document.getElementById('motor1Position').textContent = '--';
+                document.getElementById('motor2Position').textContent = '--';
+            } else {
             // Motor 1 (M0) fault status
             if (m0Fault) {
                 m1FaultEl.textContent = 'FAULT';
@@ -2265,6 +2322,14 @@
             // Show reset button if any motor has fault
             var hasFault = m0Fault || m1Fault;
             resetBtn.style.display = hasFault ? 'block' : 'none';
+            }
+
+            // When ClearLink is disconnected, skip motor data updates
+            if (!isConnected) {
+                document.getElementById('m1Status').className = 'motor-status stopped';
+                document.getElementById('m2Status').className = 'motor-status stopped';
+                return;
+            }
 
             // Update motor status indicators (fault=red, running=green, stopped=yellow)
             var m1StatusClass = 'stopped';  // default yellow
@@ -2332,14 +2397,16 @@
         updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = 'Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = 'Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
         function installUpdate() { if (isUpdating) return; isUpdating = true; var banner = document.getElementById('updateBanner'); banner.innerHTML = 'Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
 
-        var lastUpdatedTimestamp = 0;
-        function updateLastUpdated() {
-            var now = Date.now();
-            if (now - lastUpdatedTimestamp < 5000) return;
-            lastUpdatedTimestamp = now;
-            var date = new Date();
-            document.getElementById('lastUpdated').textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        }
+        // Fetch last git update date on page load
+        fetch('/api/last_updated')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.last_updated) {
+                    var date = new Date(data.last_updated);
+                    document.getElementById('lastUpdated').textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                }
+            })
+            .catch(function() {});
 
         // Motor status, velocity, torque, and position are handled by clearlinkStatusSubscriber
 
@@ -2370,13 +2437,43 @@
         var imuPitchOffset = 0;
         var imuCurrentRoll = 0;
         var imuCurrentPitch = 0;
+        var imuInvertAngle = false;
 
-        function zeroIMU(event) {
-            event.stopPropagation();
+        function setInvertAngle(checked) {
+            imuInvertAngle = checked;
+            document.getElementById('invertAngleToggleStats').checked = checked;
+            document.getElementById('invertAngleToggleSettings').checked = checked;
+            saveSettings({ imuInvertAngle: checked });
+            checkDefaultsMatch();
+        }
+
+        var calibrateModalOpen = false;
+
+        function openCalibrateModal() {
+            calibrateModalOpen = true;
+            document.getElementById('calibrateModal').style.display = 'flex';
+            document.getElementById('calLiveRoll').textContent = imuCurrentRoll.toFixed(1);
+            document.getElementById('calLivePitch').textContent = imuCurrentPitch.toFixed(1);
+            document.getElementById('calRelRoll').textContent = (imuCurrentRoll - imuRollOffset).toFixed(1);
+            document.getElementById('calRelPitch').textContent = (imuCurrentPitch - imuPitchOffset).toFixed(1);
+        }
+
+        function closeCalibrateModal() {
+            calibrateModalOpen = false;
+            document.getElementById('calibrateModal').style.display = 'none';
+        }
+
+        function performCalibration() {
             imuRollOffset = imuCurrentRoll;
             imuPitchOffset = imuCurrentPitch;
             document.getElementById('imuRelRoll').textContent = '0.0';
             document.getElementById('imuRelPitch').textContent = '0.0';
+            closeCalibrateModal();
+            document.getElementById('calibrateSuccessModal').classList.add('show');
+        }
+
+        function closeCalibrateSuccess() {
+            document.getElementById('calibrateSuccessModal').classList.remove('show');
         }
 
         // ClearLink fault reset service client
@@ -2424,13 +2521,22 @@
             document.getElementById('imuRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
             document.getElementById('imuStatus').textContent = 'Connected';
             document.getElementById('imuStatus').style.color = getThemeColor('--status-ok');
+            if (calibrateModalOpen) {
+                document.getElementById('calLiveRoll').textContent = msg.data.toFixed(1);
+                document.getElementById('calRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
+            }
         });
         imuPitchSubscriber.subscribe(function(msg) {
-            imuCurrentPitch = msg.data;
-            var relPitch = msg.data - imuPitchOffset;
-            document.getElementById('imuPitch').textContent = msg.data.toFixed(1);
+            var pitch = imuInvertAngle ? -msg.data : msg.data;
+            imuCurrentPitch = pitch;
+            var relPitch = pitch - imuPitchOffset;
+            document.getElementById('imuPitch').textContent = pitch.toFixed(1);
             document.getElementById('imuRelPitch').textContent = relPitch.toFixed(1);
-            document.getElementById('pipeRelAngleDisplay').textContent = relPitch.toFixed(1) + '°';
+            if (calibrateModalOpen) {
+                document.getElementById('calLivePitch').textContent = pitch.toFixed(1);
+                document.getElementById('calRelPitch').textContent = relPitch.toFixed(1);
+            }
+            document.getElementById('pipeRelAngleDisplay').textContent = relPitch.toFixed(1);
             document.getElementById('pipeContainer').style.transform = 'rotate(' + relPitch + 'deg)';
 
             // Degrees-based distance tracking
@@ -2648,7 +2754,7 @@
         var shots = [];
         function autoMove() {
             sendCommand('auto_move');
-            var relAngle = document.getElementById('pipeRelAngleDisplay').value;
+            var relAngle = document.getElementById('pipeRelAngleDisplay').textContent;
             shots.push({ num: shots.length + 1, angle: relAngle });
             renderShots();
         }
@@ -2705,12 +2811,14 @@
         function toggleCameraFullscreen() {
             var overlay = document.getElementById('cameraExpandedOverlay');
             var container = document.getElementById('cameraExpandedContent');
+            var frame = document.getElementById('cameraFrame');
             if (overlay.classList.contains('active')) {
                 overlay.classList.remove('active');
-                container.innerHTML = '';
+                frame.appendChild(document.getElementById('cameraStream'));
+                frame.appendChild(document.getElementById('cameraOffline'));
             } else {
-                var frame = document.getElementById('cameraFrame');
-                container.innerHTML = frame.innerHTML;
+                container.appendChild(document.getElementById('cameraStream'));
+                container.appendChild(document.getElementById('cameraOffline'));
                 overlay.classList.add('active');
             }
         }
@@ -2727,11 +2835,38 @@
             }
         })();
 
-        function setTestAngle(value) {
-            var angle = parseFloat(value) || 0;
-            document.getElementById('pipeContainer').style.transform = 'rotate(' + angle + 'deg)';
-            document.getElementById('imuRelPitch').textContent = angle.toFixed(1);
-        }
+        // Camera snapshot polling — loads each frame fully before displaying
+        (function() {
+            var img = document.getElementById('cameraStream');
+            var offline = document.getElementById('cameraOffline');
+            var failCount = 0;
+            function loadFrame() {
+                var collapsible = document.getElementById('cameraCollapsible');
+                var fullscreen = document.getElementById('cameraExpandedOverlay');
+                if (collapsible.classList.contains('collapsed') && !fullscreen.classList.contains('active')) {
+                    setTimeout(loadFrame, 500);
+                    return;
+                }
+                var next = new Image();
+                next.onload = function() {
+                    img.src = next.src;
+                    img.style.display = 'block';
+                    offline.style.display = 'none';
+                    failCount = 0;
+                    setTimeout(loadFrame, 66);
+                };
+                next.onerror = function() {
+                    failCount++;
+                    if (failCount > 5) {
+                        img.style.display = 'none';
+                        offline.style.display = 'flex';
+                    }
+                    setTimeout(loadFrame, 1000);
+                };
+                next.src = '/api/camera/snapshot?t=' + Date.now();
+            }
+            loadFrame();
+        })();
 
         function updatePositionFromDistance() {
             document.getElementById('distanceTraveled').textContent = Math.abs(totalDistance).toFixed(1) + ' in';
