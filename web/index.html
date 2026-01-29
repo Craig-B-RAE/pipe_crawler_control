@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pipe Crawler Control</title>
+    <link rel="stylesheet" href="/css/theme.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -16,17 +17,17 @@
             padding: 2vw;
         }
         .container {
-            background: #ffffff;
+            background: var(--bg-primary);
             border-radius: 20px;
             padding: clamp(20px, 5vw, 40px);
             width: 90vw;
             max-width: 500px;
             min-width: 280px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 30px var(--card-shadow);
         }
         h1 {
             text-align: center;
-            color: #1d1d1f;
+            color: var(--text-primary);
             margin-bottom: 20px;
             font-size: clamp(22px, 5vw, 28px);
             font-weight: 600;
@@ -35,20 +36,20 @@
         .info-toolbar {
             display: flex;
             justify-content: space-around;
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             border-radius: 12px;
             padding: 12px 8px;
             margin-bottom: 15px;
             font-size: 12px;
         }
         .info-item { text-align: center; flex: 1; }
-        .info-label { color: #86868b; font-size: 11px; margin-right: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .info-value { font-weight: 600; color: #1d1d1f; font-size: 13px; }
-        .info-value .current { color: #1d1d1f; }
-        .info-value .rpm { color: #007aff; font-size: 11px; }
+        .info-label { color: var(--text-tertiary); font-size: 11px; margin-right: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-weight: 600; color: var(--text-primary); font-size: 13px; }
+        .info-value .current { color: var(--text-primary); }
+        .info-value .rpm { color: var(--status-info); font-size: 11px; }
         .motor-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
-        .motor-status.running { background: #2e7d32; }
-        .motor-status.stopped { background: #c62828; }
+        .motor-status.running { background: var(--motor-running); }
+        .motor-status.stopped { background: var(--motor-stopped); }
         .status-row {
             display: flex;
             justify-content: space-between;
@@ -56,8 +57,8 @@
             margin-bottom: 20px;
         }
         .stats-button {
-            background: #f5f5f7;
-            color: #1d1d1f;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             padding: 8px 16px;
             border-radius: 20px;
             cursor: pointer;
@@ -68,18 +69,18 @@
             border: none;
             transition: background 0.2s;
         }
-        .stats-button:hover { background: #e8e8ed; }
+        .stats-button:hover { background: var(--button-secondary-hover); }
         .stats-popup {
             display: none;
             position: absolute;
             top: calc(100% + 8px);
             right: 0;
-            background: #ffffff;
+            background: var(--bg-primary);
             border-radius: 14px;
             padding: 16px;
             min-width: 200px;
             z-index: 100;
-            color: #1d1d1f;
+            color: var(--text-primary);
             text-align: left;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
@@ -89,21 +90,21 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px 0;
-            border-bottom: 1px solid #f5f5f7;
+            border-bottom: 1px solid var(--border-light);
             font-size: 14px;
         }
         .stats-row-item:last-child { border-bottom: none; }
-        .stats-label { color: #86868b; }
-        .stats-value { font-weight: 600; color: #1d1d1f; }
-        .stats-value.warning { color: #ff9500; }
-        .stats-value.alarm { color: #ff3b30; }
+        .stats-label { color: var(--text-tertiary); }
+        .stats-value { font-weight: 600; color: var(--text-primary); }
+        .stats-value.warning { color: var(--status-warning); }
+        .stats-value.alarm { color: var(--status-error); }
         .stats-value-group { display: flex; align-items: center; gap: 6px; }
         .icon-btn {
             background: none;
             border: none;
             cursor: pointer;
             padding: 2px;
-            color: #86868b;
+            color: var(--text-tertiary);
             line-height: 1;
             border-radius: 4px;
             transition: all 0.2s;
@@ -111,19 +112,19 @@
             align-items: center;
             justify-content: center;
         }
-        .icon-btn:hover { background: #f5f5f7; color: #1d1d1f; }
+        .icon-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
         .icon-btn:active { transform: scale(0.9); }
         .settings-popup {
             display: none;
             position: absolute;
             top: calc(100% + 8px);
             right: 0;
-            background: #ffffff;
+            background: var(--bg-primary);
             border-radius: 14px;
             padding: 16px;
             min-width: 220px;
             z-index: 100;
-            color: #1d1d1f;
+            color: var(--text-primary);
             text-align: left;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
@@ -133,24 +134,24 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 0;
-            border-bottom: 1px solid #f5f5f7;
+            border-bottom: 1px solid var(--border-light);
         }
         .settings-row:last-child { border-bottom: none; }
-        .settings-label { color: #1d1d1f; font-weight: 500; font-size: 14px; }
+        .settings-label { color: var(--text-primary); font-weight: 500; font-size: 14px; }
         .settings-input {
             width: 70px;
             padding: 8px 10px;
             font-size: 14px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             text-align: center;
-            background: #f5f5f7;
-            color: #1d1d1f;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             font-weight: 600;
         }
         .settings-input:focus {
             outline: none;
-            border-color: #007aff;
+            border-color: var(--status-info);
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
         }
         .settings-input::-webkit-outer-spin-button,
@@ -162,7 +163,7 @@
             -moz-appearance: textfield;
         }
         .settings-unit {
-            color: #86868b;
+            color: var(--text-tertiary);
             font-size: 13px;
             margin-left: 4px;
         }
@@ -170,7 +171,7 @@
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: var(--modal-overlay);
             z-index: 200;
             justify-content: center;
             align-items: center;
@@ -178,14 +179,14 @@
         }
         .modal-overlay.show { display: flex; }
         .modal {
-            background: #ffffff;
+            background: var(--bg-primary);
             border-radius: 20px;
             padding: 24px;
             width: 100%;
             max-width: 500px;
             max-height: 90vh;
             overflow: auto;
-            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 50px var(--popup-shadow);
         }
         .modal-header {
             display: flex;
@@ -193,9 +194,9 @@
             align-items: center;
             margin-bottom: 20px;
         }
-        .modal-title { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .modal-title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
         .modal-close {
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             border: none;
             width: 32px; height: 32px;
             border-radius: 50%;
@@ -203,24 +204,24 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #86868b;
+            color: var(--text-tertiary);
             transition: all 0.2s;
         }
-        .modal-close:hover { background: #e8e8ed; color: #1d1d1f; }
-        .graph-container { background: #f5f5f7; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .modal-close:hover { background: var(--button-secondary-hover); color: var(--text-primary); }
+        .graph-container { background: var(--bg-secondary); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
         .graph-svg { width: 100%; height: 200px; }
-        .graph-stats { display: flex; justify-content: space-around; align-items: flex-end; padding-top: 16px; border-top: 1px solid #e0e0e0; }
+        .graph-stats { display: flex; justify-content: space-around; align-items: flex-end; padding-top: 16px; border-top: 1px solid var(--border-color); }
         .graph-stat { text-align: center; }
-        .graph-stat-label { font-size: 12px; color: #86868b; margin-bottom: 4px; }
-        .graph-stat-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
-        .graph-stat-value.low { color: #ff3b30; }
-        .graph-stat-value.high { color: #34c759; }
+        .graph-stat-label { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; }
+        .graph-stat-value { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+        .graph-stat-value.low { color: var(--status-error); }
+        .graph-stat-value.high { color: var(--status-ok); }
         .reset-btn-large {
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             border: none;
             cursor: pointer;
             padding: 8px 12px;
-            color: #86868b;
+            color: var(--text-tertiary);
             font-size: 12px;
             border-radius: 8px;
             transition: all 0.2s;
@@ -228,11 +229,11 @@
             align-items: center;
             gap: 6px;
         }
-        .reset-btn-large:hover { background: #e8e8ed; color: #1d1d1f; }
+        .reset-btn-large:hover { background: var(--button-secondary-hover); color: var(--text-primary); }
         .reset-btn-large:active { transform: scale(0.95); }
         .update-banner {
             display: none;
-            background: #007aff;
+            background: var(--button-primary-bg);
             color: white;
             padding: 12px 16px;
             border-radius: 12px;
@@ -243,19 +244,19 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-        .update-banner:hover { background: #0056b3; }
+        .update-banner:hover { background: var(--button-primary-hover); }
         .update-banner.show { display: block; }
-        .update-banner.updating { background: #ff9500; cursor: wait; }
-        .update-banner.success { background: #34c759; }
-        .update-banner.error { background: #ff3b30; }
+        .update-banner.updating { background: var(--status-warning); cursor: wait; }
+        .update-banner.success { background: var(--button-success-bg); }
+        .update-banner.error { background: var(--button-danger-bg); }
         .pipe-section {
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             padding: clamp(15px, 3vw, 25px);
             border-radius: 16px;
             margin-bottom: 20px;
             text-align: center;
         }
-        .pipe-title { font-weight: 600; color: #1d1d1f; margin-bottom: 15px; font-size: 15px; }
+        .pipe-title { font-weight: 600; color: var(--text-primary); margin-bottom: 15px; font-size: 15px; }
         .pipe-container {
             position: relative;
             width: clamp(180px, 45vw, 260px);
@@ -267,7 +268,7 @@
             top: 20%; left: 20%;
             width: 60%; height: 60%;
             border-radius: 50%;
-            border: 3px solid #86868b;
+            border: 3px solid var(--text-tertiary);
             background: transparent;
         }
         .degree-display {
@@ -277,12 +278,12 @@
             text-align: center;
             font-size: clamp(28px, 7vw, 36px);
             font-weight: 600;
-            color: #1d1d1f;
+            color: var(--text-primary);
         }
         .degree-display .distance {
             font-size: clamp(12px, 3vw, 14px);
             font-weight: 500;
-            color: #86868b;
+            color: var(--text-tertiary);
             display: block;
         }
         .bug, .radiation { position: absolute; display: flex; align-items: center; justify-content: center; }
@@ -297,8 +298,8 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            background: #e0e0e0;
-            color: #1d1d1f;
+            background: var(--border-color);
+            color: var(--text-primary);
             transition: all 0.2s;
         }
         .reset-btn:hover { background: #d0d0d0; }
@@ -310,19 +311,19 @@
             border: none;
             border-radius: 10px;
             text-align: center;
-            background: #ffffff;
-            color: #1d1d1f;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-weight: 500;
         }
         .degree-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3); }
-        .pipe-calc-row { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
+        .pipe-calc-row { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
         .pipe-calc-item { text-align: center; }
-        .pipe-calc-label { font-size: 12px; color: #86868b; display: block; margin-bottom: 5px; }
-        .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .pipe-calc-label { font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 5px; }
+        .pipe-calc-value { font-size: 18px; font-weight: 600; color: var(--text-primary); }
         .controls { display: grid; gap: 12px; margin-bottom: 20px; }
         .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .camera-section {
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             border-radius: 16px;
             margin-bottom: 20px;
             overflow: hidden;
@@ -340,7 +341,7 @@
             flex-direction: column;
             align-items: center;
             gap: 8px;
-            color: #86868b;
+            color: var(--text-tertiary);
             font-size: 14px;
         }
         button.control-btn {
@@ -351,21 +352,40 @@
             border-radius: 14px;
             cursor: pointer;
             color: #ffffff;
-            background: #007aff;
+            background: var(--button-primary-bg);
             transition: all 0.2s;
         }
-        button.control-btn:hover { background: #0056b3; transform: scale(1.02); }
+        button.control-btn:hover { background: var(--button-primary-hover); transform: scale(1.02); }
         button.control-btn:active { transform: scale(0.98); }
-        button.control-btn.btn-stop { grid-column: 1 / -1; background: #ff3b30; }
-        button.control-btn.btn-stop:hover { background: #d63027; }
-        .header { text-align: center; color: #86868b; font-size: 12px; margin-bottom: 15px; }
-        .footer { text-align: center; color: #86868b; font-size: 11px; margin-top: 15px; }
+        button.control-btn.btn-stop { grid-column: 1 / -1; background: var(--button-danger-bg); }
+        button.control-btn.btn-stop:hover { background: var(--button-danger-hover); }
+        .header { text-align: center; color: var(--text-tertiary); font-size: 12px; margin-bottom: 15px; }
+        .footer { text-align: center; color: var(--text-tertiary); font-size: 11px; margin-top: 15px; }
         @media (max-width: 400px) { .control-row { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
+    <!-- Inline theme initialization to apply saved theme - Default is LIGHT -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('crawler-theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                if (!savedTheme) localStorage.setItem('crawler-theme', 'light');
+            }
+        })();
+    </script>
     <div class="container">
-        <div class="header">Pipe Crawler Control System v<span id="footerVersion">2.0.1</span></div>
+        <div class="header" style="position: relative;">
+            Pipe Crawler Control System v<span id="footerVersion">2.0.1</span>
+            <div style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;">
+                <button class="icon-button" onclick="location.reload()" title="Refresh page">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
+            </div>
+        </div>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">🔄 Update available! Click to install (v<span id="newVersion"></span>)</div>
         
         <div class="info-toolbar">
@@ -379,8 +399,8 @@
             </div>
             <div class="info-item">
                 <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
-                    <span style="font-size: 10px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Pipe Diameter</span>
-                    <span id="pipeDiameterDisplay" style="font-weight: 600; color: #1d1d1f;">12"</span>
+                    <span style="font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Pipe Diameter</span>
+                    <span id="pipeDiameterDisplay" style="font-weight: 600; color: var(--text-primary);">12"</span>
                 </span>
             </div>
             <div class="info-item">
@@ -394,7 +414,7 @@
         </div>
         
         <div class="status-row">
-            <span id="internetStatus" style="font-size: 13px; font-weight: 500; color: #86868b;" title="Internet Connection">Internet</span>
+            <span id="internetStatus" style="font-size: 13px; font-weight: 500; color: var(--text-tertiary);" title="Internet Connection">Internet</span>
             <div style="display: flex; gap: 10px;">
                 <div class="stats-button" onclick="toggleStats(event)">
                     📈 Stats
@@ -604,7 +624,11 @@
         function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (compareVersions(CURRENT_VERSION, v) < 0) { document.getElementById('updateBanner').classList.add('show'); document.getElementById('newVersion').textContent = v; } else { document.getElementById('updateBanner').classList.remove('show'); } }).catch(function(e) { console.log('Version check failed:', e); }); }
         setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
         
-        function checkInternet() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { if (r.ok) { document.getElementById('internetStatus').style.color = '#2e7d32'; } else { throw new Error(); } }).catch(function() { document.getElementById('internetStatus').style.color = '#c62828'; }); }
+        // Helper to get current theme colors from CSS variables
+        function getThemeColor(varName) {
+            return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        }
+        function checkInternet() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { if (r.ok) { document.getElementById('internetStatus').style.color = getThemeColor('--status-ok'); } else { throw new Error(); } }).catch(function() { document.getElementById('internetStatus').style.color = getThemeColor('--status-error'); }); }
         checkInternet(); setInterval(checkInternet, 30000);
 
         var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
@@ -710,5 +734,6 @@
         function updateBugPosition(deg) { document.getElementById('degreeValue').textContent = Math.round(deg); document.getElementById('degreeValueStats').textContent = Math.round(deg); var c = document.querySelector('.pipe-container'), bug = document.getElementById('bug'), rad = document.getElementById('radiation'); var size = c.offsetWidth, r = size * 0.35, cx = size / 2, cy = size / 2; var a = (deg - 90) * Math.PI / 180; bug.style.left = (cx + r * Math.cos(a) - bug.offsetWidth / 2) + 'px'; bug.style.top = (cy + r * Math.sin(a) - bug.offsetHeight / 2) + 'px'; bug.style.transform = 'rotate(' + deg + 'deg) scaleX(-1)'; var ra = (deg + 90) * Math.PI / 180; rad.style.left = (cx + r * Math.cos(ra) - rad.offsetWidth / 2) + 'px'; rad.style.top = (cy + r * Math.sin(ra) - rad.offsetHeight / 2) + 'px'; }
         window.onload = function() { setTimeout(function() { resetPosition(); }, 100); };
     </script>
+    <script src="/js/theme.js"></script>
 </body>
 </html>

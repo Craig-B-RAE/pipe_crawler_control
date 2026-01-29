@@ -155,4 +155,13 @@ def generate_launch_description():
         )
     )
 
+    # Motor data logger (for support report graphs)
+    nodes.append(
+        Node(
+            package='pipe_crawler_control',
+            executable='motor_data_logger',
+            name='motor_data_logger'
+        )
+    )
+
     return LaunchDescription(nodes)

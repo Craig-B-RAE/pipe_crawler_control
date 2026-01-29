@@ -1218,10 +1218,17 @@ def verify_bypass_cookie():
 
 
 def run_boot_security_checks():
-    """Run security checks in background thread during boot."""
+    """Run security checks in background thread during boot.
+
+    Ensures minimum 30 second boot splash is shown to allow all
+    services (ROS2, rosbridge, WiFi) to fully initialize.
+    """
     global boot_state
     import sys
     sys.path.insert(0, "/opt/crawler")
+
+    # Minimum boot time in seconds - matches boot_splash.html timer
+    MINIMUM_BOOT_TIME = 30
 
     try:
         from security_utils import (
@@ -1286,6 +1293,7 @@ def run_boot_security_checks():
             if dev_result.get("locked") and not dev_result.get("match"):
                 has_mismatch = True
 
+        # Set result but keep in_progress=True until minimum boot time
         with boot_state_lock:
             if has_mismatch:
                 boot_state["result"] = "mismatch"
@@ -1296,15 +1304,39 @@ def run_boot_security_checks():
                 boot_state["result"] = "ok"
                 boot_state["redirect"] = "/"
 
+            boot_state["current_check"] = "Ready"
+
+        # Wait until minimum boot time has elapsed
+        # This ensures the splash screen shows for full 30 seconds
+        with boot_state_lock:
+            start_time = boot_state["start_time"]
+
+        elapsed = time.time() - start_time
+        remaining = MINIMUM_BOOT_TIME - elapsed
+        if remaining > 0:
+            security_logger.info(f"Security checks done, waiting {remaining:.1f}s for minimum boot time")
+            time.sleep(remaining)
+
+        # Now mark boot as complete
+        with boot_state_lock:
             boot_state["in_progress"] = False
 
         security_logger.info(f"Boot security checks complete: {boot_state['result']}")
 
     except Exception as e:
         security_logger.error(f"Boot security check error: {e}")
+        # On error, still wait for minimum boot time before allowing access
         with boot_state_lock:
             boot_state["result"] = "error"
             boot_state["redirect"] = "/"
+            start_time = boot_state["start_time"]
+
+        elapsed = time.time() - start_time
+        remaining = MINIMUM_BOOT_TIME - elapsed
+        if remaining > 0:
+            time.sleep(remaining)
+
+        with boot_state_lock:
             boot_state["in_progress"] = False
 
 
@@ -1313,12 +1345,14 @@ def check_boot_and_mismatch():
     """Handle boot splash and device mismatch redirects."""
     global boot_state
 
-    # Always allow these paths
+    # Always allow these paths (including static assets needed by boot splash)
     always_skip = [
         '/boot_splash.html',
         '/api/security/boot_status',
         '/images/',
         '/static/',
+        '/css/',
+        '/js/',
         '/favicon.ico'
     ]
     for path in always_skip:
@@ -1392,18 +1426,36 @@ def serve_images(filename):
     return send_from_directory(images_dir, filename)
 
 
+@app.route("/css/<path:filename>")
+def serve_css(filename):
+    """Serve CSS files from the css directory."""
+    css_dir = os.path.join(HTML_DIR, "css")
+    return send_from_directory(css_dir, filename)
+
+
+@app.route("/js/<path:filename>")
+def serve_js(filename):
+    """Serve JavaScript files from the js directory."""
+    js_dir = os.path.join(HTML_DIR, "js")
+    return send_from_directory(js_dir, filename)
+
+
 @app.route("/api/security/boot_status")
 def api_boot_status():
     """Get current boot/security check status."""
     global boot_state
     with boot_state_lock:
+        result = boot_state["result"]
         return jsonify({
             "in_progress": boot_state["in_progress"],
             "current_check": boot_state["current_check"],
             "checks_complete": boot_state["checks_complete"],
             "checks_total": boot_state["checks_total"],
-            "result": boot_state["result"],
-            "redirect": boot_state["redirect"]
+            "result": result,
+            "redirect": boot_state["redirect"],
+            # New fields for manual continue button flow
+            "all_passed": result == "ok",
+            "mismatch_detected": result == "mismatch"
         })
 
 
@@ -2164,25 +2216,47 @@ def get_support_system_info():
         except:
             info["boot"]["boot_count"] = 0
 
-        # Versions - Git commit hash
-        try:
-            result = subprocess.run(
-                ["git", "-C", "/home/craig/ros2_ws/src/pipe_crawler_control", "rev-parse", "--short", "HEAD"],
-                capture_output=True, text=True, timeout=5
-            )
-            info["versions"]["git_commit"] = result.stdout.strip()
-        except:
-            info["versions"]["git_commit"] = "Unknown"
+        # Versions - Git info (need HOME=/root to find safe.directory config)
+        git_env = os.environ.copy()
+        git_env["HOME"] = "/root"
+        git_repo = "/home/craig/ros2_ws/src/pipe_crawler_control"
 
-        # Versions - Git branch
+        # Git commit hash
         try:
             result = subprocess.run(
-                ["git", "-C", "/home/craig/ros2_ws/src/pipe_crawler_control", "branch", "--show-current"],
-                capture_output=True, text=True, timeout=5
+                ["git", "-C", git_repo, "rev-parse", "--short", "HEAD"],
+                capture_output=True, text=True, timeout=5, env=git_env
             )
-            info["versions"]["git_branch"] = result.stdout.strip()
+            commit = result.stdout.strip() if result.returncode == 0 else ""
+            info["versions"]["git_commit"] = commit if commit else "Unknown"
+            if result.returncode != 0:
+                info["versions"]["git_commit_error"] = result.stderr.strip()
+        except Exception as e:
+            info["versions"]["git_commit"] = f"Error: {str(e)}"
+
+        # Git branch
+        try:
+            result = subprocess.run(
+                ["git", "-C", git_repo, "branch", "--show-current"],
+                capture_output=True, text=True, timeout=5, env=git_env
+            )
+            branch = result.stdout.strip() if result.returncode == 0 else ""
+            info["versions"]["git_branch"] = branch if branch else "Unknown"
+            if result.returncode != 0:
+                info["versions"]["git_branch_error"] = result.stderr.strip()
+        except Exception as e:
+            info["versions"]["git_branch"] = f"Error: {str(e)}"
+
+        # Git last commit message
+        try:
+            result = subprocess.run(
+                ["git", "-C", git_repo, "log", "-1", "--pretty=%s"],
+                capture_output=True, text=True, timeout=5, env=git_env
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                info["versions"]["git_commit_msg"] = result.stdout.strip()[:100]
         except:
-            info["versions"]["git_branch"] = "Unknown"
+            pass
 
         # Versions - Python version
         try:
@@ -2212,26 +2286,113 @@ def get_support_system_info():
 
         # Motor status - depends on motor driver type
         motor_driver = info.get("crawler", {}).get("motor_driver", "unknown")
+        MOTOR_PEAK_TORQUE_NM = 2.0  # CPM-SDHP-2311S-ELN @ 60V
+
+        # Get steps_per_inch from UI settings for conversions
+        steps_per_inch = 53950  # Default
+        try:
+            crawler_id = info.get("crawler", {}).get("id", "edgeflex_clearlink")
+            settings_path = f"/etc/xpresscan/ui_settings_{crawler_id}.json"
+            if os.path.exists(settings_path):
+                with open(settings_path, "r") as f:
+                    ui_settings_data = json.load(f)
+                    steps_per_inch = ui_settings_data.get("motorParams", {}).get("stepsPerInch", 53950)
+        except:
+            pass
 
         if motor_driver == "clearlink":
-            # ClearLink motor status via ROS2
+            # ClearLink motor status via ROS2 - get structured data
             try:
-                ROS2_SOURCE = "source /opt/ros/jazzy/setup.bash && source /home/craig/ros2_ws/install/setup.bash"
+                ROS2_SOURCE = "export HOME=/home/craig && source /opt/ros/jazzy/setup.bash && source /home/craig/ros2_ws/install/setup.bash"
                 result = subprocess.run(
-                    ["bash", "-c", f"{ROS2_SOURCE} && ros2 topic echo /clearlink/motor_status --once --no-arr 2>/dev/null"],
+                    ["bash", "-c", f"{ROS2_SOURCE} && ros2 topic echo /clearlink/status --once --no-arr 2>/dev/null"],
                     capture_output=True, text=True, timeout=10
                 )
                 if result.returncode == 0 and result.stdout.strip():
-                    info["motor_status"]["clearlink"] = result.stdout.strip()
+                    raw_status = result.stdout.strip()
+                    info["motor_status"]["clearlink_raw"] = raw_status
+
+                    # Parse YAML-like output into structured data
+                    motor_data = {}
+                    for line in raw_status.split("\n"):
+                        line = line.strip()
+                        if ": " in line:
+                            key, val = line.split(": ", 1)
+                            motor_data[key] = val
+
+                    # Extract and convert values
+                    def parse_bool(v):
+                        return str(v).lower() == "true"
+
+                    def parse_int(v, default=0):
+                        try:
+                            return int(v)
+                        except:
+                            return default
+
+                    def parse_float(v, default=0.0):
+                        try:
+                            return float(v)
+                        except:
+                            return default
+
+                    # Motor 0 (Axis 1)
+                    m0_vel_steps = parse_int(motor_data.get("axis1_velocity", 0))
+                    m0_vel_in_s = abs(m0_vel_steps) / steps_per_inch if steps_per_inch else 0
+                    m0_torque_pct = parse_float(motor_data.get("axis1_torque", 0))
+                    m0_torque_nm = abs(m0_torque_pct) / 100.0 * MOTOR_PEAK_TORQUE_NM if m0_torque_pct != -9999 else 0
+
+                    info["motor_status"]["motor0"] = {
+                        "name": "Motor 0 (Left/Axis 1)",
+                        "velocity_steps": m0_vel_steps,
+                        "velocity_in_s": round(m0_vel_in_s, 3),
+                        "torque_percent": m0_torque_pct if m0_torque_pct != -9999 else "N/A",
+                        "torque_nm": round(m0_torque_nm, 3),
+                        "position": parse_int(motor_data.get("axis1_position", 0)),
+                        "enabled": parse_bool(motor_data.get("axis1_enabled", "false")),
+                        "moving": parse_bool(motor_data.get("axis1_moving", "false")),
+                        "fault": parse_bool(motor_data.get("axis1_fault", "false")),
+                        "homed": parse_bool(motor_data.get("axis1_homed", "false")),
+                        "direction": "Forward" if m0_vel_steps > 0 else "Reverse" if m0_vel_steps < 0 else "Stopped"
+                    }
+
+                    # Motor 1 (Axis 2)
+                    m1_vel_steps = parse_int(motor_data.get("axis2_velocity", 0))
+                    m1_vel_in_s = abs(m1_vel_steps) / steps_per_inch if steps_per_inch else 0
+                    m1_torque_pct = parse_float(motor_data.get("axis2_torque", 0))
+                    m1_torque_nm = abs(m1_torque_pct) / 100.0 * MOTOR_PEAK_TORQUE_NM if m1_torque_pct != -9999 else 0
+
+                    info["motor_status"]["motor1"] = {
+                        "name": "Motor 1 (Right/Axis 2)",
+                        "velocity_steps": m1_vel_steps,
+                        "velocity_in_s": round(m1_vel_in_s, 3),
+                        "torque_percent": m1_torque_pct if m1_torque_pct != -9999 else "N/A",
+                        "torque_nm": round(m1_torque_nm, 3),
+                        "position": parse_int(motor_data.get("axis2_position", 0)),
+                        "enabled": parse_bool(motor_data.get("axis2_enabled", "false")),
+                        "moving": parse_bool(motor_data.get("axis2_moving", "false")),
+                        "fault": parse_bool(motor_data.get("axis2_fault", "false")),
+                        "homed": parse_bool(motor_data.get("axis2_homed", "false")),
+                        "direction": "Forward" if m1_vel_steps > 0 else "Reverse" if m1_vel_steps < 0 else "Stopped"
+                    }
+
+                    # ClearLink controller info
+                    info["motor_status"]["controller"] = {
+                        "type": "ClearLink",
+                        "ip": "192.168.20.240",
+                        "port": 44818,
+                        "connected": parse_bool(motor_data.get("connected", "false")),
+                        "firmware": motor_data.get("firmware_version", "Unknown")
+                    }
                 else:
-                    info["motor_status"]["clearlink"] = "No data available"
-            except:
-                info["motor_status"]["clearlink"] = "Unable to retrieve"
+                    info["motor_status"]["clearlink_raw"] = "No data available"
+            except Exception as e:
+                info["motor_status"]["clearlink_error"] = str(e)
 
         elif motor_driver == "roboclaw":
             # RoboClaw status via ROS2
             try:
-                ROS2_SOURCE = "source /opt/ros/jazzy/setup.bash && source /home/craig/ros2_ws/install/setup.bash"
+                ROS2_SOURCE = "export HOME=/home/craig && source /opt/ros/jazzy/setup.bash && source /home/craig/ros2_ws/install/setup.bash"
                 result = subprocess.run(
                     ["bash", "-c", f"{ROS2_SOURCE} && ros2 topic echo /roboclaw/status --once --no-arr 2>/dev/null"],
                     capture_output=True, text=True, timeout=10
@@ -2242,6 +2403,51 @@ def get_support_system_info():
                     info["motor_status"]["roboclaw"] = "No data available"
             except:
                 info["motor_status"]["roboclaw"] = "Unable to retrieve"
+
+        # Historical motor data (from data logger if available)
+        try:
+            import sqlite3
+            DB_PATH = "/var/lib/crawler/motor_data.db"
+            if os.path.exists(DB_PATH):
+                conn = sqlite3.connect(DB_PATH)
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                # Get last hour of data for graphs
+                from datetime import timedelta
+                cutoff = datetime.now() - timedelta(hours=1)
+                cursor.execute('''
+                    SELECT * FROM motor_data
+                    WHERE timestamp > ?
+                    ORDER BY timestamp ASC
+                ''', (cutoff,))
+                rows = cursor.fetchall()
+                info["motor_status"]["historical_data"] = [dict(row) for row in rows]
+                info["motor_status"]["historical_count"] = len(rows)
+
+                # Get command history
+                cursor.execute('''
+                    SELECT * FROM command_history
+                    ORDER BY timestamp DESC
+                    LIMIT 10
+                ''')
+                cmd_rows = cursor.fetchall()
+                info["motor_status"]["command_history"] = [dict(row) for row in cmd_rows]
+
+                conn.close()
+        except Exception as e:
+            info["motor_status"]["historical_error"] = str(e)
+
+        # Motor-related log entries
+        try:
+            result = subprocess.run(
+                ["bash", "-c", "journalctl -u pipe_crawler.service -n 100 --no-pager 2>/dev/null | grep -iE '(clearlink|motor|fault|error|warn)' | tail -30"],
+                capture_output=True, text=True, timeout=15
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                info["motor_status"]["motor_logs"] = result.stdout.strip()
+        except:
+            pass
 
         # IMU/Sensor status - improved detection
         # Check multiple indicators: serial port, ROS node, topic publisher
@@ -2368,34 +2574,43 @@ def api_support_download_report():
             # Remove any remaining non-ASCII characters
             return text.encode('ascii', 'replace').decode('ascii')
 
-        # Apple-style colors
-        HEADER_BG = (245, 245, 247)      # Light gray header
-        ROW_ALT = (250, 250, 252)        # Alternating row color
+        # Prime Inspections brand colors
+        PRIME_CYAN = (0, 200, 212)       # #00C8D4 - Primary brand color
+        PRIME_DARK = (51, 51, 51)        # #333333 - Dark text
+        PRIME_GRAY = (102, 102, 102)     # #666666 - Secondary text
+        PRIME_LIGHT_GRAY = (153, 153, 153)  # #999999 - Muted text
+
+        HEADER_BG = (0, 200, 212)        # Cyan header background
+        HEADER_TEXT = (255, 255, 255)    # White header text
+        ROW_ALT = (245, 245, 247)        # Light gray alternating row
         ROW_WHITE = (255, 255, 255)      # White row
         BORDER_COLOR = (224, 224, 224)   # Light border
-        TEXT_DARK = (29, 29, 31)         # Dark text
-        TEXT_GRAY = (134, 134, 139)      # Gray text
-        GREEN = (52, 199, 89)            # Success green
-        RED = (255, 59, 48)              # Error red
-        BLUE = (0, 122, 255)             # Link blue
+        TEXT_DARK = (51, 51, 51)         # Dark text
+        TEXT_GRAY = (102, 102, 102)      # Gray text
+        GREEN = (0, 200, 81)             # #00C851 - Success green
+        YELLOW = (255, 215, 0)           # #FFD700 - Warning yellow
+        RED = (255, 68, 68)              # #FF4444 - Error red
+        BLUE = (0, 102, 204)             # Link blue
 
         def draw_section_header(pdf, title):
-            """Draw an Apple-style section header."""
+            """Draw a Prime Inspections-style section header with cyan accent."""
             pdf.set_font("Helvetica", "B", 13)
-            pdf.set_text_color(*TEXT_DARK)
+            pdf.set_text_color(*PRIME_CYAN)
             pdf.cell(0, 10, title, ln=True)
-            pdf.set_draw_color(*BORDER_COLOR)
+            pdf.set_draw_color(*PRIME_CYAN)
+            pdf.set_line_width(0.8)
             pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+            pdf.set_line_width(0.2)
             pdf.ln(3)
 
         def draw_table(pdf, headers, rows, col_widths=None):
-            """Draw an Apple-style table with alternating row colors."""
+            """Draw a Prime Inspections-style table with cyan header and alternating rows."""
             if not col_widths:
                 col_widths = [190 // len(headers)] * len(headers)
 
-            # Header row
-            pdf.set_fill_color(*HEADER_BG)
-            pdf.set_text_color(*TEXT_GRAY)
+            # Header row with cyan background
+            pdf.set_fill_color(*PRIME_CYAN)
+            pdf.set_text_color(*HEADER_TEXT)
             pdf.set_font("Helvetica", "B", 9)
             for i, header in enumerate(headers):
                 pdf.cell(col_widths[i], 7, header, border=0, fill=True)
@@ -2408,9 +2623,16 @@ def api_support_download_report():
                 fill_color = ROW_ALT if row_idx % 2 == 0 else ROW_WHITE
                 pdf.set_fill_color(*fill_color)
                 for i, cell in enumerate(row):
-                    # Handle status coloring
+                    # Handle status coloring with symbols
                     if isinstance(cell, tuple):
                         text, color = cell
+                        # Add status symbols
+                        if color == GREEN:
+                            text = f"[OK] {text}" if "OK" not in str(text).upper() and "PASS" not in str(text).upper() else text
+                        elif color == RED:
+                            text = f"[X] {text}" if "FAIL" not in str(text).upper() and "ERROR" not in str(text).upper() else text
+                        elif color == YELLOW:
+                            text = f"[!] {text}"
                         pdf.set_text_color(*color)
                         pdf.cell(col_widths[i], 6, str(text), border=0, fill=True)
                         pdf.set_text_color(*TEXT_DARK)
@@ -2431,16 +2653,151 @@ def api_support_download_report():
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
 
-        # Title with logo placeholder
-        pdf.set_font("Helvetica", "B", 20)
-        pdf.set_text_color(*TEXT_DARK)
-        pdf.cell(0, 12, "Crawler Support Report", ln=True, align="C")
+        # Professional header with Prime Inspections branding
+        # Try to add logo
+        logo_path = "/opt/xpresscan/html/images/prime_inspections_logo.png"
+        if os.path.exists(logo_path):
+            try:
+                pdf.image(logo_path, x=10, y=10, w=60)
+                pdf.set_xy(75, 10)
+            except:
+                pdf.set_xy(10, 10)
+        else:
+            pdf.set_xy(10, 10)
+
+        # Title
+        pdf.set_font("Helvetica", "B", 18)
+        pdf.set_text_color(*PRIME_CYAN)
+        pdf.cell(0, 10, "CRAWLER SUPPORT REPORT", ln=True, align="R")
 
         # Subtitle with timestamp
-        pdf.set_font("Helvetica", "", 11)
+        pdf.set_font("Helvetica", "", 10)
         pdf.set_text_color(*TEXT_GRAY)
-        pdf.cell(0, 6, f"Generated: {info.get('report_timestamp', 'Unknown')}", ln=True, align="C")
+        pdf.cell(0, 5, f"Generated: {info.get('report_timestamp', 'Unknown')}", ln=True, align="R")
+        crawler_name = info.get("crawler", {}).get("name", "Unknown Crawler")
+        pdf.cell(0, 5, f"Crawler: {crawler_name}", ln=True, align="R")
+
+        # Horizontal line separator
+        pdf.ln(5)
+        pdf.set_draw_color(*PRIME_CYAN)
+        pdf.set_line_width(1)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.set_line_width(0.2)
         pdf.ln(8)
+
+        # Diagnostic Summary Box
+        pdf.set_fill_color(245, 245, 247)
+        pdf.set_draw_color(*PRIME_CYAN)
+        summary_y = pdf.get_y()
+        pdf.rect(10, summary_y, 190, 40, style='D')
+
+        pdf.set_xy(15, summary_y + 3)
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.set_text_color(*PRIME_CYAN)
+        pdf.cell(0, 6, "DIAGNOSTIC SUMMARY", ln=True)
+
+        # Quick status checks
+        services = info.get("services", {})
+        ros2 = info.get("ros2", {})
+        network = info.get("network", {})
+        devices = info.get("devices", {})
+        system = info.get("system", {})
+        motor_status = info.get("motor_status", {})
+
+        checks = []
+        warnings = 0
+        criticals = 0
+
+        # Service check - distinguish critical vs optional services
+        critical_services = ["pipe_crawler.service", "xpresscan-crawler-ui.service", "rosbridge.service"]
+        optional_services = ["xpresscan-portal.service"]
+
+        critical_ok = all(services.get(s) == "active" for s in critical_services)
+        optional_ok = all(services.get(s) == "active" for s in optional_services)
+        active_count = sum(1 for s in services.values() if s == "active")
+        total_count = len(services)
+
+        if critical_ok and optional_ok:
+            checks.append(("[OK]", "System Services", GREEN))
+        elif critical_ok and not optional_ok:
+            # Optional services inactive - just a warning
+            checks.append(("[!]", f"Services ({active_count}/{total_count} active)", YELLOW))
+            warnings += 1
+        else:
+            # Critical service failed
+            failed_critical = [s for s in critical_services if services.get(s) != "active"]
+            checks.append(("[X]", f"Services FAILED ({', '.join(s.replace('.service','') for s in failed_critical)})", RED))
+            criticals += 1
+
+        # ROS2 check
+        ros2_ok = ros2.get("running", False)
+        checks.append(("[OK]", "ROS2 Running", GREEN) if ros2_ok else ("[X]", "ROS2 Stopped", RED))
+        if not ros2_ok:
+            criticals += 1
+
+        # Network check
+        inet_ok = network.get("internet_ping", {}).get("success", False)
+        checks.append(("[OK]", "Network Connectivity", GREEN) if inet_ok else ("[!]", "No Internet", YELLOW))
+        if not inet_ok:
+            warnings += 1
+
+        # Device security check
+        cm5_match = devices.get("cm5", {}).get("match", True)
+        checks.append(("[OK]", "Device Security", GREEN) if cm5_match else ("[X]", "Device Mismatch", RED))
+        if not cm5_match:
+            criticals += 1
+
+        # Motor check
+        m0_fault = motor_status.get("motor0", {}).get("fault", False)
+        m1_fault = motor_status.get("motor1", {}).get("fault", False)
+        motors_ok = not (m0_fault or m1_fault)
+        checks.append(("[OK]", "Motors OK", GREEN) if motors_ok else ("[X]", "Motor Fault", RED))
+        if not motors_ok:
+            criticals += 1
+
+        # Disk check
+        disk_pct = system.get("disk", {}).get("percent", 0)
+        if disk_pct > 90:
+            checks.append(("[X]", f"Disk {disk_pct}% Full", RED))
+            criticals += 1
+        elif disk_pct > 75:
+            checks.append(("[!]", f"Disk {disk_pct}% Used", YELLOW))
+            warnings += 1
+        else:
+            checks.append(("[OK]", f"Disk {disk_pct}% Used", GREEN))
+
+        # Display checks in two columns
+        pdf.set_font("Helvetica", "", 9)
+        col1_x = 15
+        col2_x = 105
+        check_y = summary_y + 12
+
+        for i, (symbol, text, color) in enumerate(checks):
+            x = col1_x if i % 2 == 0 else col2_x
+            if i % 2 == 0 and i > 0:
+                check_y += 5
+            pdf.set_xy(x, check_y)
+            pdf.set_text_color(*color)
+            pdf.cell(10, 5, symbol)
+            pdf.set_text_color(*TEXT_DARK)
+            pdf.cell(0, 5, text)
+
+        # Overall status
+        pdf.set_xy(15, summary_y + 32)
+        pdf.set_font("Helvetica", "B", 10)
+        if criticals > 0:
+            pdf.set_text_color(*RED)
+            pdf.cell(0, 5, f"Overall: CRITICAL ({criticals} issues, {warnings} warnings)")
+        elif warnings > 0:
+            pdf.set_text_color(*YELLOW)
+            pdf.cell(0, 5, f"Overall: WARNING ({warnings} warnings)")
+        else:
+            pdf.set_text_color(*GREEN)
+            pdf.cell(0, 5, "Overall: HEALTHY")
+
+        pdf.set_text_color(*TEXT_DARK)
+        pdf.set_y(summary_y + 45)
+        pdf.ln(5)
 
         # Issue Description Box
         pdf.set_fill_color(255, 243, 224)  # Light orange/warning background
@@ -2538,11 +2895,26 @@ def api_support_download_report():
         # ==================== SERVICES ====================
         draw_section_header(pdf, "System Services")
         services = info.get("services", {})
+        optional_services = ["xpresscan-portal.service"]
         service_rows = []
         for svc, status in services.items():
-            status_colored = (status, GREEN) if status == "active" else (status, RED)
-            service_rows.append([svc, status_colored])
+            # Color: active=green, inactive optional=yellow, inactive critical=red
+            is_optional = svc in optional_services
+            if status == "active":
+                status_colored = (status, GREEN)
+            elif is_optional:
+                status_colored = (f"{status} (optional)", YELLOW)
+            else:
+                status_colored = (status, RED)
+            svc_name = svc.replace(".service", "")
+            service_rows.append([svc_name, status_colored])
         draw_table(pdf, ["Service", "Status"], service_rows, [140, 50])
+
+        # Add note about optional services
+        pdf.set_font("Helvetica", "I", 8)
+        pdf.set_text_color(*TEXT_GRAY)
+        pdf.cell(0, 4, "Note: xpresscan-portal is optional (only needed for WiFi captive portal setup).", ln=True)
+        pdf.set_text_color(*TEXT_DARK)
 
         # ==================== ROS2 STATUS ====================
         draw_section_header(pdf, "ROS2 Status")
@@ -2574,14 +2946,24 @@ def api_support_download_report():
         # ==================== VERSION INFO ====================
         draw_section_header(pdf, "Version Information")
         versions = info.get("versions", {})
+        git_commit = versions.get('git_commit', 'Unknown')
+        git_commit_display = git_commit[:12] if git_commit and not git_commit.startswith("Error") else git_commit
         version_data = {
             "Git Branch": versions.get('git_branch', 'Unknown'),
-            "Git Commit": versions.get('git_commit', 'Unknown')[:12] if versions.get('git_commit') else 'Unknown',
+            "Git Commit": git_commit_display,
             "Python": versions.get('python', 'Unknown'),
             "pycomm3": versions.get('pycomm3', 'Unknown'),
             "fpdf2": versions.get('fpdf2', 'Unknown'),
         }
         draw_kv_table(pdf, version_data)
+
+        # Show commit message if available
+        commit_msg = versions.get('git_commit_msg', '')
+        if commit_msg:
+            pdf.set_font("Helvetica", "I", 8)
+            pdf.set_text_color(*TEXT_GRAY)
+            pdf.cell(0, 4, f"Last commit: {sanitize_text(commit_msg[:80])}", ln=True)
+            pdf.set_text_color(*TEXT_DARK)
 
         # ==================== BOOT INFO ====================
         boot = info.get("boot", {})
@@ -2679,22 +3061,249 @@ def api_support_download_report():
         pdf.set_text_color(*TEXT_DARK)
 
         # ==================== MOTOR STATUS ====================
-        motor_status = info.get("motor_status", {})
-        if motor_status:
-            pdf.add_page()
-            draw_section_header(pdf, "Motor Driver Status")
+        pdf.add_page()
+        draw_section_header(pdf, "Motor Driver Status")
 
-            for driver, status in motor_status.items():
+        motor_status = info.get("motor_status", {})
+        motor_driver = info.get("crawler", {}).get("motor_driver", "unknown")
+
+        # Always show this section - display errors if data unavailable
+        if not motor_status or (not motor_status.get("motor0") and not motor_status.get("controller")):
+            # No live motor data available - try to use historical data
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_text_color(*TEXT_GRAY)
+            pdf.cell(0, 6, f"Motor Driver Type: {motor_driver.upper()}", ln=True)
+
+            historical_data = motor_status.get("historical_data", [])
+            if historical_data:
+                # Use most recent historical data point
+                latest = historical_data[-1]
+                pdf.ln(2)
+                pdf.set_font("Helvetica", "B", 10)
+                pdf.set_text_color(*PRIME_CYAN)
+                pdf.cell(0, 6, "Latest Recorded Motor Status", ln=True)
+                pdf.set_font("Helvetica", "I", 8)
+                pdf.set_text_color(*TEXT_GRAY)
+                pdf.cell(0, 4, f"(from database: {latest.get('timestamp', 'Unknown')})", ln=True)
+                pdf.set_text_color(*TEXT_DARK)
+
+                # Motor 0 from historical
+                pdf.set_font("Helvetica", "B", 10)
+                pdf.cell(0, 6, "Motor 0 (Left/Axis 1)", ln=True)
+                m0_rows = [
+                    ["Velocity", f"{latest.get('m0_velocity_steps', 0):,} steps/s ({latest.get('m0_velocity_in_s', 0):.3f} in/s)"],
+                    ["Torque", f"{latest.get('m0_torque_percent', 0):.1f}% ({latest.get('m0_torque_nm', 0):.3f} Nm)"],
+                    ["Position", f"{latest.get('m0_position', 0):,} steps"],
+                    ["Enabled", ("Yes", GREEN) if latest.get("m0_enabled") else ("No", TEXT_GRAY)],
+                    ["Moving", ("Yes", PRIME_CYAN) if latest.get("m0_moving") else ("No", TEXT_GRAY)],
+                    ["Fault", ("FAULT", RED) if latest.get("m0_fault") else ("OK", GREEN)],
+                ]
+                draw_table(pdf, ["Parameter", "Value"], m0_rows, [60, 130])
+
+                # Motor 1 from historical
+                pdf.set_font("Helvetica", "B", 10)
+                pdf.cell(0, 6, "Motor 1 (Right/Axis 2)", ln=True)
+                m1_rows = [
+                    ["Velocity", f"{latest.get('m1_velocity_steps', 0):,} steps/s ({latest.get('m1_velocity_in_s', 0):.3f} in/s)"],
+                    ["Torque", f"{latest.get('m1_torque_percent', 0):.1f}% ({latest.get('m1_torque_nm', 0):.3f} Nm)"],
+                    ["Position", f"{latest.get('m1_position', 0):,} steps"],
+                    ["Enabled", ("Yes", GREEN) if latest.get("m1_enabled") else ("No", TEXT_GRAY)],
+                    ["Moving", ("Yes", PRIME_CYAN) if latest.get("m1_moving") else ("No", TEXT_GRAY)],
+                    ["Fault", ("FAULT", RED) if latest.get("m1_fault") else ("OK", GREEN)],
+                ]
+                draw_table(pdf, ["Parameter", "Value"], m1_rows, [60, 130])
+
+                pdf.ln(3)
+                pdf.set_font("Helvetica", "I", 8)
+                pdf.set_text_color(*YELLOW)
+                pdf.cell(0, 4, "Note: Live ROS data unavailable. Showing last recorded values from database.", ln=True)
+
+            elif motor_status.get("clearlink_error"):
+                pdf.set_text_color(*RED)
+                error_text = str(motor_status.get('clearlink_error'))[:100]
+                pdf.cell(0, 6, f"Error: {error_text}", ln=True)
+            elif motor_status.get("clearlink_raw"):
+                pdf.cell(0, 6, f"Status: {motor_status.get('clearlink_raw')}", ln=True)
+            elif motor_status.get("roboclaw"):
+                pdf.cell(0, 6, f"Status: {motor_status.get('roboclaw')}", ln=True)
+            else:
+                pdf.cell(0, 6, "Motor status data unavailable - ROS node may not be responding.", ln=True)
+
+            pdf.ln(3)
+            pdf.set_font("Helvetica", "I", 8)
+            pdf.set_text_color(*TEXT_GRAY)
+            if motor_driver == "clearlink":
+                pdf.cell(0, 4, "Expected ROS topic: /clearlink/status", ln=True)
+            elif motor_driver == "roboclaw":
+                pdf.cell(0, 4, "Expected ROS topic: /roboclaw/status", ln=True)
+            pdf.set_text_color(*TEXT_DARK)
+        else:
+            # Controller info
+            controller = motor_status.get("controller", {})
+            if controller:
                 pdf.set_font("Helvetica", "B", 10)
                 pdf.set_text_color(*TEXT_DARK)
-                pdf.cell(0, 6, f"{driver.upper()}:", ln=True)
+                pdf.cell(0, 6, f"ClearLink Controller ({controller.get('ip', 'Unknown')}:{controller.get('port', 44818)})", ln=True)
+                conn_status = ("Connected", GREEN) if controller.get("connected") else ("Disconnected", RED)
+                ctrl_rows = [
+                    ["Connection Status", conn_status],
+                    ["Firmware Version", controller.get("firmware", "Unknown")],
+                ]
+                draw_table(pdf, ["Setting", "Value"], ctrl_rows, [80, 110])
+
+            # Motor 0 details
+            motor0 = motor_status.get("motor0", {})
+            if motor0:
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.set_text_color(*PRIME_CYAN)
+                pdf.cell(0, 8, motor0.get("name", "Motor 0"), ln=True)
+                pdf.set_text_color(*TEXT_DARK)
+
+                fault_status = ("FAULT", RED) if motor0.get("fault") else ("OK", GREEN)
+                enabled_status = ("Yes", GREEN) if motor0.get("enabled") else ("No", TEXT_GRAY)
+                moving_status = ("Yes", PRIME_CYAN) if motor0.get("moving") else ("No", TEXT_GRAY)
+
+                m0_rows = [
+                    ["Velocity", f"{motor0.get('velocity_steps', 0):,} steps/s ({motor0.get('velocity_in_s', 0):.3f} in/s)"],
+                    ["Torque", f"{motor0.get('torque_percent', 'N/A')}% ({motor0.get('torque_nm', 0):.3f} Nm)"],
+                    ["Position", f"{motor0.get('position', 0):,} steps"],
+                    ["Enabled", enabled_status],
+                    ["Moving", moving_status],
+                    ["Direction", motor0.get("direction", "Unknown")],
+                    ["Fault Status", fault_status],
+                ]
+                draw_table(pdf, ["Parameter", "Value"], m0_rows, [60, 130])
+
+            # Motor 1 details
+            motor1 = motor_status.get("motor1", {})
+            if motor1:
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.set_text_color(*PRIME_CYAN)
+                pdf.cell(0, 8, motor1.get("name", "Motor 1"), ln=True)
+                pdf.set_text_color(*TEXT_DARK)
+
+                fault_status = ("FAULT", RED) if motor1.get("fault") else ("OK", GREEN)
+                enabled_status = ("Yes", GREEN) if motor1.get("enabled") else ("No", TEXT_GRAY)
+                moving_status = ("Yes", PRIME_CYAN) if motor1.get("moving") else ("No", TEXT_GRAY)
+
+                m1_rows = [
+                    ["Velocity", f"{motor1.get('velocity_steps', 0):,} steps/s ({motor1.get('velocity_in_s', 0):.3f} in/s)"],
+                    ["Torque", f"{motor1.get('torque_percent', 'N/A')}% ({motor1.get('torque_nm', 0):.3f} Nm)"],
+                    ["Position", f"{motor1.get('position', 0):,} steps"],
+                    ["Enabled", enabled_status],
+                    ["Moving", moving_status],
+                    ["Direction", motor1.get("direction", "Unknown")],
+                    ["Fault Status", fault_status],
+                ]
+                draw_table(pdf, ["Parameter", "Value"], m1_rows, [60, 130])
+
+            # Command history
+            cmd_history = motor_status.get("command_history", [])
+            if cmd_history:
+                pdf.set_font("Helvetica", "B", 10)
+                pdf.set_text_color(*PRIME_CYAN)
+                pdf.cell(0, 8, "Recent Command History", ln=True)
+                pdf.set_text_color(*TEXT_DARK)
+
+                cmd_rows = []
+                for cmd in cmd_history[:8]:
+                    ts = cmd.get("timestamp", "")[:19]
+                    command = cmd.get("command", "")
+                    speed = f"{cmd.get('speed_in_s', 0):.2f} in/s"
+                    result_text = cmd.get("result", "unknown")
+                    result = (result_text, GREEN) if "success" in result_text.lower() else (result_text, RED)
+                    cmd_rows.append([ts, command, speed, result])
+                draw_table(pdf, ["Timestamp", "Command", "Speed", "Result"], cmd_rows, [50, 50, 40, 50])
+
+            # Historical graphs
+            historical_data = motor_status.get("historical_data", [])
+            if historical_data and len(historical_data) > 10:
+                pdf.add_page()
+                draw_section_header(pdf, "Motor Performance Graphs (Past Hour)")
+
+                # Generate graphs
+                try:
+                    # Import graph generator
+                    import sys
+                    sys.path.insert(0, "/home/craig/ros2_ws/src/pipe_crawler_control/scripts/network")
+                    from report_graphs import generate_velocity_graph, generate_torque_graph, generate_temperature_graph, generate_position_graph
+
+                    graph_files = []
+
+                    # Velocity graph
+                    vel_graph = generate_velocity_graph(historical_data)
+                    if vel_graph and os.path.exists(vel_graph):
+                        graph_files.append(vel_graph)
+                        pdf.image(vel_graph, x=10, w=190)
+                        pdf.ln(5)
+
+                    # Torque graph
+                    torque_graph = generate_torque_graph(historical_data)
+                    if torque_graph and os.path.exists(torque_graph):
+                        graph_files.append(torque_graph)
+                        pdf.image(torque_graph, x=10, w=190)
+                        pdf.ln(5)
+
+                    # Temperature graph
+                    temp_graph = generate_temperature_graph(historical_data)
+                    if temp_graph and os.path.exists(temp_graph):
+                        graph_files.append(temp_graph)
+                        pdf.add_page()
+                        draw_section_header(pdf, "System Temperature")
+                        pdf.image(temp_graph, x=10, w=190)
+                        pdf.ln(5)
+
+                    # Position graph
+                    pos_graph = generate_position_graph(historical_data)
+                    if pos_graph and os.path.exists(pos_graph):
+                        graph_files.append(pos_graph)
+                        pdf.image(pos_graph, x=10, w=190)
+                        pdf.ln(5)
+
+                    # Cleanup temp files after PDF is generated
+                    for gf in graph_files:
+                        try:
+                            os.remove(gf)
+                        except:
+                            pass
+
+                except Exception as e:
+                    pdf.set_font("Helvetica", "", 9)
+                    pdf.set_text_color(*TEXT_GRAY)
+                    pdf.cell(0, 6, f"Graph generation error: {str(e)[:80]}", ln=True)
+            else:
+                pdf.set_font("Helvetica", "", 9)
+                pdf.set_text_color(*TEXT_GRAY)
+                pdf.cell(0, 6, f"Historical data: {motor_status.get('historical_count', 0)} samples available", ln=True)
+                if "historical_error" in motor_status:
+                    pdf.cell(0, 5, f"Note: {motor_status['historical_error'][:60]}", ln=True)
+
+            # Motor-related logs
+            motor_logs = motor_status.get("motor_logs", "")
+            if motor_logs:
+                pdf.add_page()
+                draw_section_header(pdf, "Motor-Related Log Entries")
                 pdf.set_font("Courier", "", 7)
                 pdf.set_text_color(*TEXT_GRAY)
-                for line in str(status).split("\n")[:18]:
+                for line in motor_logs.split("\n")[:35]:
+                    if len(line) > 105:
+                        line = line[:105] + "..."
+                    pdf.cell(0, 4, sanitize_text(line), ln=True)
+                pdf.ln(4)
+
+            # Raw status (if no structured data)
+            if "clearlink_raw" in motor_status and not motor_status.get("motor0"):
+                pdf.set_font("Helvetica", "B", 10)
+                pdf.set_text_color(*TEXT_DARK)
+                pdf.cell(0, 6, "Raw ClearLink Status:", ln=True)
+                pdf.set_font("Courier", "", 7)
+                pdf.set_text_color(*TEXT_GRAY)
+                for line in str(motor_status["clearlink_raw"]).split("\n")[:25]:
                     if len(line) > 100:
                         line = line[:100] + "..."
                     pdf.cell(0, 4, sanitize_text(line), ln=True)
                 pdf.ln(4)
+
             pdf.set_text_color(*TEXT_DARK)
 
         # ==================== SENSOR STATUS ====================

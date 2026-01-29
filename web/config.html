@@ -4,16 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crawler Configuration</title>
+    <link rel="stylesheet" href="/css/theme.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             min-height: 100vh;
             padding: 20px;
         }
         .container {
-            background: #ffffff;
+            background: var(--bg-primary);
             border-radius: 16px;
             padding: 30px;
             max-width: 500px;
@@ -21,13 +22,13 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
         h1 {
-            color: #1d1d1f;
+            color: var(--text-primary);
             margin-bottom: 8px;
             font-size: 22px;
             text-align: center;
         }
         .subtitle {
-            color: #86868b;
+            color: var(--text-tertiary);
             margin-bottom: 25px;
             font-size: 13px;
             text-align: center;
@@ -36,29 +37,88 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            color: #007aff;
+            color: var(--status-info);
             text-decoration: none;
             font-size: 14px;
             margin-bottom: 20px;
         }
         .back-link:hover { text-decoration: underline; }
         .section {
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
         }
         .section:last-child {
-            border-bottom: none;
             margin-bottom: 0;
-            padding-bottom: 0;
         }
         .section-title {
             font-size: 12px;
             font-weight: 600;
-            color: #86868b;
+            color: var(--text-tertiary);
             margin-bottom: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+        /* Device Bindings Table */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        .device-table {
+            width: 100%;
+            min-width: 400px;
+            border-collapse: collapse;
+            background: var(--bg-primary);
+            font-size: 12px;
+        }
+        .device-table thead tr {
+            background: var(--bg-secondary);
+        }
+        .device-table th {
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        .device-table th:nth-child(4),
+        .device-table th:nth-child(5) {
+            text-align: center;
+        }
+        .device-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+        .device-table td:nth-child(4),
+        .device-table td:nth-child(5) {
+            text-align: center;
+        }
+        .device-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .device-table tbody tr:nth-child(even) {
+            background: var(--bg-secondary);
+        }
+        .device-table tbody tr:hover {
+            background: var(--button-secondary-hover);
+        }
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .device-table {
+                font-size: 11px;
+            }
+            .device-table th,
+            .device-table td {
+                padding: 6px 8px;
+            }
         }
         .network-info {
             display: grid;
@@ -69,13 +129,13 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px 12px;
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             border-radius: 8px;
             font-size: 13px;
         }
-        .network-item .label { color: #86868b; }
+        .network-item .label { color: var(--text-tertiary); }
         .network-item .value {
-            color: #1d1d1f;
+            color: var(--text-primary);
             font-weight: 500;
             font-family: -apple-system, monospace;
         }
@@ -90,7 +150,7 @@
         }
         .crawler-option {
             padding: 12px 15px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 10px;
             cursor: pointer;
             display: flex;
@@ -98,50 +158,50 @@
             justify-content: center;
             transition: all 0.2s;
         }
-        .crawler-option:hover { border-color: #007aff; }
+        .crawler-option:hover { border-color: var(--status-info); }
         .crawler-option.selected {
-            border-color: #007aff;
+            border-color: var(--status-info);
             background: #f0f7ff;
         }
         .crawler-option.current {
-            border-color: #34c759;
+            border-color: var(--status-ok);
             background: #e8f5e9;
         }
         .crawler-option input[type="radio"] { display: none; }
         .crawler-name {
             font-size: 14px;
             font-weight: 600;
-            color: #1d1d1f;
+            color: var(--text-primary);
         }
         .crawler-id {
             font-size: 12px;
-            color: #86868b;
+            color: var(--text-tertiary);
             font-family: monospace;
         }
         .form-group { margin-bottom: 12px; }
         .form-label {
             display: block;
             font-size: 12px;
-            color: #86868b;
+            color: var(--text-tertiary);
             margin-bottom: 5px;
         }
         .form-input {
             width: 100%;
             padding: 10px 12px;
             font-size: 14px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            background: #f5f5f7;
-            color: #1d1d1f;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
         }
         .form-input:focus {
             outline: none;
-            border-color: #007aff;
+            border-color: var(--status-info);
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
         }
         .form-hint {
             font-size: 10px;
-            color: #86868b;
+            color: var(--text-tertiary);
             margin-top: 3px;
         }
         .btn {
@@ -156,11 +216,11 @@
         .btn-primary {
             width: 100%;
             color: #ffffff;
-            background: #007aff;
+            background: var(--button-primary-bg);
         }
-        .btn-primary:hover { background: #0056b3; }
+        .btn-primary:hover { background: var(--button-primary-hover); }
         .btn-secondary {
-            color: #007aff;
+            color: var(--status-info);
             background: #f0f7ff;
         }
         .btn-secondary:hover { background: #e0efff; }
@@ -171,9 +231,9 @@
         .btn-danger {
             width: 100%;
             color: #ffffff;
-            background: #ff3b30;
+            background: var(--button-danger-bg);
         }
-        .btn-danger:hover { background: #d63028; }
+        .btn-danger:hover { background: var(--button-danger-hover); }
         .reboot-notice {
             background: #fff3e0;
             color: #e65100;
@@ -184,20 +244,20 @@
             line-height: 1.4;
         }
         .hotspot-info {
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             padding: 12px;
             border-radius: 8px;
             font-size: 13px;
         }
-        .hotspot-info .label { color: #86868b; }
+        .hotspot-info .label { color: var(--text-tertiary); }
         .hotspot-info .value {
-            color: #1d1d1f;
+            color: var(--text-primary);
             font-weight: 500;
             margin-left: 8px;
         }
         .access-denied {
-            background: #ffebee;
-            color: #c62828;
+            background: var(--status-error-bg);
+            color: var(--status-error);
             padding: 10px;
             border-radius: 6px;
             margin-top: 10px;
@@ -205,8 +265,8 @@
             display: none;
         }
         .error {
-            background: #ffebee;
-            color: #c62828;
+            background: var(--status-error-bg);
+            color: var(--status-error);
             padding: 10px 12px;
             border-radius: 8px;
             margin-bottom: 15px;
@@ -235,21 +295,21 @@
             padding: 10px 12px;
             border-radius: 8px;
             margin-bottom: 6px;
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             cursor: pointer;
             transition: background 0.2s;
         }
-        .wifi-network:hover { background: #e8e8ed; }
+        .wifi-network:hover { background: var(--button-secondary-hover); }
         .wifi-network.connected { background: #e8f5e9; }
         .wifi-info { flex: 1; }
         .wifi-ssid {
             font-size: 14px;
             font-weight: 500;
-            color: #1d1d1f;
+            color: var(--text-primary);
         }
         .wifi-details {
             font-size: 11px;
-            color: #86868b;
+            color: var(--text-tertiary);
             margin-top: 2px;
         }
         .wifi-signal {
@@ -268,7 +328,7 @@
             background: #c0c0c0;
             border-radius: 1px;
         }
-        .signal-bar.active { background: #34c759; }
+        .signal-bar.active { background: var(--button-success-bg); }
         .signal-bar:nth-child(1) { height: 4px; }
         .signal-bar:nth-child(2) { height: 8px; }
         .signal-bar:nth-child(3) { height: 12px; }
@@ -281,14 +341,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: var(--modal-overlay);
             justify-content: center;
             align-items: center;
             z-index: 100;
         }
         .modal.show { display: flex; }
         .modal-content {
-            background: white;
+            background: var(--bg-primary);
             padding: 25px;
             border-radius: 16px;
             width: 90%;
@@ -308,16 +368,30 @@
         .loading {
             text-align: center;
             padding: 20px;
-            color: #86868b;
+            color: var(--text-tertiary);
         }
     </style>
 </head>
 <body>
+    <!-- Inline theme initialization to apply saved theme - Default is LIGHT -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('crawler-theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                if (!savedTheme) localStorage.setItem('crawler-theme', 'light');
+            }
+        })();
+    </script>
     <div class="container">
-        <a href="/" class="back-link">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            Back to Control
-        </a>
+        <div style="margin-bottom: 15px;">
+            <a href="/" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                Back to Control
+            </a>
+        </div>
 
         <h1>Crawler Configuration</h1>
         <p class="subtitle">Network and system settings</p>
@@ -331,57 +405,59 @@
 
             <!-- No Master Password Warning -->
             <div id="noMasterPassword" style="display: none; text-align: center; margin-bottom: 15px;">
-                <p style="color: #86868b; font-size: 13px;">
+                <p style="color: var(--text-tertiary); font-size: 13px;">
                     Master password not set. Run setup script first:
                 </p>
-                <p style="font-family: monospace; font-size: 12px; color: #1d1d1f; margin-top: 8px;">
+                <p style="font-family: monospace; font-size: 12px; color: var(--text-primary); margin-top: 8px;">
                     sudo /opt/crawler/set_master_password.sh
                 </p>
             </div>
 
             <!-- Device Bindings Table -->
             <div id="deviceBindingsSection">
-                <div style="font-size: 12px; color: #86868b; margin-bottom: 8px;">Device Bindings:</div>
-                <table id="deviceBindingsTable" style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px;">
-                    <thead>
-                        <tr style="background: #f5f5f7;">
-                            <th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #86868b;">Device</th>
-                            <th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #86868b;">Connected</th>
-                            <th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #86868b;">Locked To</th>
-                            <th style="padding: 8px 10px; text-align: center; font-weight: 600; color: #86868b;">Status</th>
-                            <th style="padding: 8px 10px; text-align: center; font-weight: 600; color: #86868b;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="deviceBindingsBody">
-                        <tr><td colspan="5" style="padding: 15px; text-align: center; color: #86868b;">Loading...</td></tr>
-                    </tbody>
-                </table>
-                <div id="deviceBindingsNote" style="display: none; font-size: 11px; color: #86868b; font-style: italic;">
+                <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 8px;">Device Bindings:</div>
+                <div class="table-responsive">
+                    <table id="deviceBindingsTable" class="device-table">
+                        <thead>
+                            <tr>
+                                <th>Device</th>
+                                <th>Connected</th>
+                                <th>Locked To</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deviceBindingsBody">
+                            <tr><td colspan="5" style="padding: 15px; text-align: center; color: var(--text-tertiary);">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="deviceBindingsNote" style="display: none; font-size: 11px; color: var(--text-tertiary); font-style: italic;">
                     Note: Devices must be connected before they can be locked.
                 </div>
             </div>
         </div>
 
         <!-- Device Lock/Unlock Modal -->
-        <div id="deviceActionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-            <div style="background: white; border-radius: 16px; padding: 24px; max-width: 320px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.2);">
-                <h3 id="modalTitle" style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #1d1d1f;">Lock Device</h3>
+        <div id="deviceActionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-overlay); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: var(--bg-primary); border-radius: 16px; padding: 24px; max-width: 320px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.2);">
+                <h3 id="modalTitle" style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">Lock Device</h3>
                 <input type="hidden" id="modalDevice" value="">
                 <input type="hidden" id="modalAction" value="">
 
                 <div style="margin-bottom: 12px;">
-                    <label style="font-size: 12px; color: #86868b; display: block; margin-bottom: 4px;">Master Password:</label>
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Master Password:</label>
                     <input type="password" id="modalPassword" class="form-input" placeholder="Enter master password"
                            style="width: 100%; padding: 10px 12px; font-size: 14px; box-sizing: border-box;">
                 </div>
 
                 <div id="lockConfirmSection" style="margin-bottom: 12px;">
-                    <label style="font-size: 12px; color: #86868b; display: block; margin-bottom: 4px;">Type "LOCK" to confirm:</label>
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Type "LOCK" to confirm:</label>
                     <input type="text" id="modalLockConfirm" class="form-input" placeholder="LOCK"
                            style="width: 100%; padding: 10px 12px; font-size: 14px; text-transform: uppercase; text-align: center; box-sizing: border-box;">
                 </div>
 
-                <div id="modalNote" style="font-size: 11px; color: #86868b; margin-bottom: 16px; padding: 8px; background: #f5f5f7; border-radius: 6px;"></div>
+                <div id="modalNote" style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 16px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;"></div>
 
                 <div style="display: flex; gap: 10px;">
                     <button type="button" class="btn btn-secondary" onclick="closeDeviceModal()" style="flex: 1; padding: 10px;">Cancel</button>
@@ -391,24 +467,24 @@
         </div>
 
         <!-- Program RoboClaw ID Modal -->
-        <div id="programRoboclawModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-            <div style="background: white; border-radius: 16px; padding: 24px; max-width: 340px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.2);">
-                <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #1d1d1f;">Program RoboClaw ID</h3>
+        <div id="programRoboclawModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-overlay); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: var(--bg-primary); border-radius: 16px; padding: 24px; max-width: 340px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.2);">
+                <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">Program RoboClaw ID</h3>
 
                 <div style="margin-bottom: 12px;">
-                    <label style="font-size: 12px; color: #86868b; display: block; margin-bottom: 4px;">Custom ID (6-12 hex characters) or leave blank to auto-generate:</label>
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Custom ID (6-12 hex characters) or leave blank to auto-generate:</label>
                     <input type="text" id="programIdInput" class="form-input" placeholder="e.g., CRAWLER01 or leave blank"
                            style="width: 100%; padding: 10px 12px; font-size: 14px; text-transform: uppercase; box-sizing: border-box;"
                            maxlength="12">
                 </div>
 
-                <div style="font-size: 11px; color: #86868b; margin-bottom: 16px; padding: 8px; background: #fff3cd; border-radius: 6px; border: 1px solid #ffc107;">
+                <div style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 16px; padding: 8px; background: #fff3cd; border-radius: 6px; border: 1px solid #ffc107;">
                     This ID will be permanently written to the RoboClaw EEPROM and will persist across power cycles.
                 </div>
 
                 <div style="display: flex; gap: 10px;">
                     <button type="button" class="btn btn-secondary" onclick="closeProgramModal()" style="flex: 1; padding: 10px;">Cancel</button>
-                    <button type="button" id="programConfirmBtn" class="btn btn-primary" onclick="executeProgramRoboclaw()" style="flex: 1; padding: 10px; background: #007aff;">Program</button>
+                    <button type="button" id="programConfirmBtn" class="btn btn-primary" onclick="executeProgramRoboclaw()" style="flex: 1; padding: 10px; background: var(--button-primary-bg);">Program</button>
                 </div>
             </div>
         </div>
@@ -488,7 +564,7 @@
                 <select id="crawlerSelect" class="form-input" style="cursor: pointer;" onchange="onCrawlerSelectChange()">
                     <option value="">Loading...</option>
                 </select>
-                <div style="font-size: 11px; color: #86868b; margin-top: 6px;">
+                <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 6px;">
                     Current: <span id="currentCrawlerName" style="font-weight: 500;">--</span>
                 </div>
             </div>
@@ -497,37 +573,37 @@
             <div style="margin-bottom: 20px;">
                 <div class="section-title" style="margin-bottom: 10px;">Page Preview (Debug)</div>
                 <div style="background: #f9f9f9; border-radius: 10px; padding: 12px; max-height: 300px; overflow-y: auto;">
-                    <p style="font-size: 11px; color: #86868b; margin-bottom: 10px;">Test pages in debug mode:</p>
+                    <p style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 10px;">Test pages in debug mode:</p>
                     <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <a href="/boot_splash.html?debug=true" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                        <a href="/boot_splash.html?debug=true" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                             Boot Splash Screen
                         </a>
-                        <a href="/device_mismatch.html?debug=true" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                        <a href="/device_mismatch.html?debug=true" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                             Device Mismatch Page
                         </a>
-                        <a href="/config.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                        <a href="/config.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                             Config Page
                         </a>
-                        <a href="/index.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                        <a href="/index.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                             Index (Home)
                         </a>
-                        <a href="/magnetic_phased_array.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                        <a href="/magnetic_phased_array.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                             Magnetic Phased Array
                         </a>
-                        <a href="/new_xpress_scan.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                        <a href="/new_xpress_scan.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                             XPressCan
                         </a>
-                        <a href="/edgeflex.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                        <a href="/edgeflex.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                             EdgeFlex RoboClaw
                         </a>
-                        <a href="/edgeflex_clearlink.html" style="display: flex; align-items: center; gap: 8px; color: #007aff; font-size: 12px; text-decoration: none; padding: 8px 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                        <a href="/edgeflex_clearlink.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                             EdgeFlex ClearLink
                         </a>
@@ -594,8 +670,8 @@
 
         function loadConfig() {
             fetch('/api/config')
-                .then(r => r.json())
-                .then(data => {
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
                     currentConfig = data;
                     selectedCrawler = data.crawler_id;
                     pendingHotspotSsid = data.ssid;
@@ -606,17 +682,18 @@
                     document.getElementById('hotspotSsid').value = data.ssid || '';
                     document.getElementById('hotspotPassword').value = data.password || '';
 
-                    // Network info
-                    document.getElementById('hostnameDisplay').textContent = data.network?.hostname || '--';
-                    var wifi = data.network?.wifi;
-                    if (wifi?.ip) {
+                    // Network info (Safari-compatible - no optional chaining)
+                    var hostname = (data.network && data.network.hostname) ? data.network.hostname : '--';
+                    document.getElementById('hostnameDisplay').textContent = hostname;
+                    var wifi = (data.network && data.network.wifi) ? data.network.wifi : null;
+                    if (wifi && wifi.ip) {
                         document.getElementById('wifiDisplay').textContent = wifi.ip + (wifi.ssid ? ' (' + wifi.ssid + ')' : '');
                     } else {
                         document.getElementById('wifiDisplay').textContent = 'Not connected';
                         document.getElementById('wifiDisplay').classList.add('none');
                     }
-                    var eth = data.network?.ethernet;
-                    if (eth?.ip) {
+                    var eth = (data.network && data.network.ethernet) ? data.network.ethernet : null;
+                    if (eth && eth.ip) {
                         document.getElementById('ethernetDisplay').textContent = eth.ip;
                     } else {
                         document.getElementById('ethernetDisplay').textContent = 'Not connected';
@@ -626,7 +703,7 @@
                     // Render crawler options
                     renderCrawlerOptions();
                 })
-                .catch(err => {
+                .catch(function(err) {
                     showError('Failed to load configuration');
                     console.error(err);
                 });
@@ -655,7 +732,7 @@
         }
 
         function selectCrawler(id, element) {
-            document.querySelectorAll('.crawler-option').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.crawler-option').forEach(function(el) { el.classList.remove('selected'); });
             element.classList.add('selected');
             element.querySelector('input[type="radio"]').checked = true;
             selectedCrawler = id;
@@ -681,27 +758,27 @@
                     password: pendingHotspotPassword
                 })
             })
-            .then(r => r.json())
-            .then(data => {
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
                 if (data.success) {
                     // Now reboot
                     fetch('/api/reboot', { method: 'POST' })
-                        .then(r => r.json())
-                        .then(rebootData => {
+                        .then(function(r) { return r.json(); })
+                        .then(function(rebootData) {
                             if (rebootData.success) {
                                 document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><div style="text-align:center;"><h2>Rebooting...</h2><p>Configuration saved. The crawler is restarting.</p><p>Please wait and reconnect.</p></div></div>';
                             } else {
                                 showError('Configuration saved but reboot failed: ' + (rebootData.error || 'Unknown error'));
                             }
                         })
-                        .catch(err => {
+                        .catch(function(err) {
                             showError('Configuration saved but reboot failed');
                         });
                 } else {
                     showError(data.error || 'Failed to save configuration');
                 }
             })
-            .catch(err => {
+            .catch(function(err) {
                 showError('Failed to save configuration');
                 console.error(err);
             });
@@ -809,8 +886,9 @@
                 select.appendChild(opt);
             }
 
-            // Show current crawler name
-            currentName.textContent = CRAWLERS[currentConfig.crawler_id]?.name || currentConfig.crawler_id || '--';
+            // Show current crawler name (Safari-compatible - no optional chaining)
+            var crawlerEntry = CRAWLERS[currentConfig.crawler_id];
+            currentName.textContent = (crawlerEntry && crawlerEntry.name) ? crawlerEntry.name : (currentConfig.crawler_id || '--');
 
             // Reset state
             configToolsSelectedCrawler = currentConfig.crawler_id;
@@ -878,7 +956,7 @@
                     if (!data.master_password_set) {
                         noMasterPw.style.display = 'block';
                         document.getElementById('deviceBindingsBody').innerHTML =
-                            '<tr><td colspan="5" style="padding: 15px; text-align: center; color: #86868b;">Master password not configured</td></tr>';
+                            '<tr><td colspan="5" style="padding: 15px; text-align: center; color: var(--text-tertiary);">Master password not configured</td></tr>';
                         document.getElementById('deviceBindingsNote').style.display = 'none';
                         return;
                     }
@@ -948,33 +1026,33 @@
                     if (!detected) {
                         statusHtml = '<span style="color: #ff9500;">&#8212; Not detected</span>';
                     } else if (match) {
-                        statusHtml = '<span style="color: #34c759;">&#128274; Locked</span>';
+                        statusHtml = '<span style="color: var(--status-ok);">&#128274; Locked</span>';
                     } else {
-                        statusHtml = '<span style="color: #ff3b30;">&#10007; MISMATCH</span>';
+                        statusHtml = '<span style="color: var(--status-error);">&#10007; MISMATCH</span>';
                     }
                     // Locked: show Unlock button (always enabled - need to unlock even if not detected)
                     actionHtml = '<button type="button" class="btn btn-secondary" onclick="openDeviceModal(\'' + device + '\', \'unlock\')" style="padding: 4px 12px; font-size: 11px;">Unlock</button>';
                 } else {
-                    statusHtml = '<span style="color: #86868b;">&#128275; Unlocked</span>';
+                    statusHtml = '<span style="color: var(--text-tertiary);">&#128275; Unlocked</span>';
 
                     // Special case: RoboClaw detected but not programmed - show Program ID button
                     if (device === 'roboclaw' && isRoboclawNotProgrammed) {
-                        actionHtml = '<button type="button" class="btn btn-primary" onclick="openProgramModal()" style="padding: 4px 12px; font-size: 11px; background: #007aff;">Program ID</button>';
+                        actionHtml = '<button type="button" class="btn btn-primary" onclick="openProgramModal()" style="padding: 4px 12px; font-size: 11px; background: var(--button-primary-bg);">Program ID</button>';
                     } else if (detected) {
                         // Normal case: show Lock button
-                        actionHtml = '<button type="button" class="btn btn-primary" onclick="openDeviceModal(\'' + device + '\', \'lock\')" style="padding: 4px 12px; font-size: 11px; background: #ff9500;">Lock</button>';
+                        actionHtml = '<button type="button" class="btn btn-primary" onclick="openDeviceModal(\'' + device + '\', \'lock\')" style="padding: 4px 12px; font-size: 11px; background: var(--status-warning);">Lock</button>';
                     } else {
                         // Not detected: show disabled Lock button
                         actionHtml = '<button type="button" class="btn btn-secondary" disabled style="padding: 4px 12px; font-size: 11px; opacity: 0.5; cursor: not-allowed;">Lock</button>';
                     }
                 }
 
-                html += '<tr style="border-bottom: 1px solid #f0f0f0;">';
-                html += '<td style="padding: 8px 10px; font-weight: 500;">' + deviceNames[device] + '</td>';
-                html += '<td style="padding: 8px 10px; font-family: monospace; font-size: 11px; color: ' + (detected && !isRoboclawNotProgrammed ? '#1d1d1f' : '#c0c0c0') + ';">' + connectedVal + '</td>';
-                html += '<td style="padding: 8px 10px; font-family: monospace; font-size: 11px; color: ' + (locked ? '#1d1d1f' : '#c0c0c0') + ';">' + lockedVal + '</td>';
-                html += '<td style="padding: 8px 10px; text-align: center;">' + statusHtml + '</td>';
-                html += '<td style="padding: 8px 10px; text-align: center;">' + actionHtml + '</td>';
+                html += '<tr>';
+                html += '<td style="font-weight: 500;">' + deviceNames[device] + '</td>';
+                html += '<td style="font-family: monospace; font-size: 11px; color: ' + (detected && !isRoboclawNotProgrammed ? 'var(--text-primary)' : 'var(--text-tertiary)') + ';">' + connectedVal + '</td>';
+                html += '<td style="font-family: monospace; font-size: 11px; color: ' + (locked ? 'var(--text-primary)' : 'var(--text-tertiary)') + ';">' + lockedVal + '</td>';
+                html += '<td>' + statusHtml + '</td>';
+                html += '<td>' + actionHtml + '</td>';
                 html += '</tr>';
             });
 
@@ -1217,5 +1295,6 @@
             loadSecurityStatus();
         });
     </script>
+    <script src="/js/theme.js"></script>
 </body>
 </html>

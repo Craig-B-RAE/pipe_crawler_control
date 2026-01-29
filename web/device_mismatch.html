@@ -5,20 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="refresh" content="30" id="autoRefresh">
     <title>Device Mismatch - System Blocked</title>
+    <link rel="stylesheet" href="/css/theme.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            color: #1d1d1f;
+            color: var(--text-primary);
         }
         .container {
-            background: #ffffff;
+            background: var(--bg-primary);
             border-radius: 16px;
             padding: 40px;
             max-width: 600px;
@@ -27,8 +28,8 @@
             text-align: center;
         }
         .debug-banner {
-            background: #ff9500;
-            color: #1d1d1f;
+            background: var(--status-warning);
+            color: var(--text-primary);
             padding: 10px 20px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -36,7 +37,7 @@
             font-size: 13px;
         }
         .debug-banner a {
-            color: #1d1d1f;
+            color: var(--text-primary);
             margin-left: 15px;
         }
         .warning-icon {
@@ -44,92 +45,99 @@
             margin-bottom: 20px;
         }
         h1 {
-            color: #ff3b30;
+            color: var(--status-error);
             font-size: 22px;
             font-weight: 600;
             margin-bottom: 8px;
             letter-spacing: -0.5px;
         }
         .subtitle {
-            color: #86868b;
+            color: var(--text-tertiary);
             font-size: 14px;
             margin-bottom: 30px;
         }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 25px 0;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
         .device-table {
             width: 100%;
+            min-width: 420px;
             border-collapse: collapse;
-            margin: 25px 0;
             text-align: left;
         }
         .device-table th {
-            background: #f5f5f7;
-            color: #86868b;
+            background: var(--bg-secondary);
+            color: var(--text-tertiary);
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            padding: 12px 15px;
-        }
-        .device-table th:first-child {
-            border-radius: 8px 0 0 0;
-        }
-        .device-table th:last-child {
-            border-radius: 0 8px 0 0;
+            padding: 10px 12px;
+            white-space: nowrap;
         }
         .device-table td {
-            padding: 14px 15px;
-            border-bottom: 1px solid #f0f0f0;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-light);
             font-size: 13px;
             font-family: -apple-system, monospace;
-            color: #1d1d1f;
+            color: var(--text-primary);
+            white-space: nowrap;
         }
         .device-table tr:last-child td {
             border-bottom: none;
         }
-        .device-table tr:last-child td:first-child {
-            border-radius: 0 0 0 8px;
-        }
-        .device-table tr:last-child td:last-child {
-            border-radius: 0 0 8px 0;
-        }
         .device-table tbody tr:hover {
-            background: #f9f9f9;
+            background: var(--bg-secondary);
+        }
+        @media (max-width: 480px) {
+            .device-table {
+                font-size: 11px;
+            }
+            .device-table th,
+            .device-table td {
+                padding: 8px 10px;
+            }
         }
         .device-name {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
             font-weight: 500;
-            color: #1d1d1f;
+            color: var(--text-primary);
         }
         .serial {
-            color: #86868b;
+            color: var(--text-tertiary);
             word-break: break-all;
             max-width: 150px;
         }
         .status-ok {
-            color: #34c759;
+            color: var(--status-ok);
             font-weight: 600;
         }
         .status-mismatch {
-            color: #ff3b30;
+            color: var(--status-error);
             font-weight: 600;
         }
         .status-skipped {
-            color: #ff9500;
+            color: var(--status-warning);
             font-weight: 500;
         }
         .contact-info {
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             border-radius: 12px;
             padding: 20px;
             margin-top: 25px;
         }
         .contact-info p {
-            color: #86868b;
+            color: var(--text-tertiary);
             font-size: 13px;
             margin-bottom: 8px;
         }
         .contact-email {
-            color: #007aff;
+            color: var(--status-info);
             font-size: 16px;
             font-weight: 500;
             text-decoration: none;
@@ -138,12 +146,12 @@
             text-decoration: underline;
         }
         .refresh-notice {
-            color: #86868b;
+            color: var(--text-tertiary);
             font-size: 12px;
             margin-top: 20px;
         }
         .loading {
-            color: #86868b;
+            color: var(--text-tertiary);
             font-size: 14px;
             padding: 40px;
         }
@@ -151,11 +159,11 @@
         /* Administrator section */
         .admin-section {
             margin-top: 30px;
-            border-top: 1px solid #f0f0f0;
+            border-top: 1px solid var(--border-light);
             padding-top: 20px;
         }
         .admin-toggle {
-            color: #86868b;
+            color: var(--text-tertiary);
             font-size: 12px;
             cursor: pointer;
             display: inline-flex;
@@ -164,7 +172,7 @@
             transition: color 0.2s;
         }
         .admin-toggle:hover {
-            color: #1d1d1f;
+            color: var(--text-primary);
         }
         .admin-toggle .arrow {
             font-size: 10px;
@@ -187,29 +195,29 @@
             justify-content: center;
         }
         .admin-input {
-            background: #f5f5f7;
-            border: 1px solid #e0e0e0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 10px 14px;
-            color: #1d1d1f;
+            color: var(--text-primary);
             font-size: 14px;
             width: 200px;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
         .admin-input:focus {
-            border-color: #007aff;
+            border-color: var(--status-info);
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
         }
         .admin-input::placeholder {
-            color: #86868b;
+            color: var(--text-tertiary);
         }
         .admin-btn {
             background: #f0f7ff;
             border: none;
             border-radius: 8px;
             padding: 10px 16px;
-            color: #007aff;
+            color: var(--status-info);
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
@@ -223,7 +231,7 @@
             cursor: not-allowed;
         }
         .admin-error {
-            color: #ff3b30;
+            color: var(--status-error);
             font-size: 12px;
             margin-top: 10px;
             display: none;
@@ -234,6 +242,18 @@
     </style>
 </head>
 <body>
+    <!-- Inline theme initialization to apply saved theme - Default is LIGHT -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('crawler-theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                if (!savedTheme) localStorage.setItem('crawler-theme', 'light');
+            }
+        })();
+    </script>
     <div class="container">
         <!-- Debug mode banner (hidden by default) -->
         <div class="debug-banner" id="debugBanner" style="display: none;">
@@ -245,7 +265,7 @@
         <h1>DEVICE MISMATCH - CANNOT START</h1>
         <p class="subtitle">Hardware binding verification failed</p>
 
-        <div id="deviceTable">
+        <div id="deviceTable" class="table-responsive">
             <div class="loading">Loading device status...</div>
         </div>
 
@@ -428,5 +448,6 @@
         // Load on page load
         document.addEventListener('DOMContentLoaded', loadMismatchData);
     </script>
+    <script src="/js/theme.js"></script>
 </body>
 </html>

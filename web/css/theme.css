@@ -1,0 +1,92 @@
+/**
+ * Theme CSS Variables
+ * Light theme is default (:root), Dark theme uses [data-theme="dark"]
+ */
+
+/* Light Theme (Default) */
+:root {
+    /* Backgrounds */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f7;
+
+    /* Text */
+    --text-primary: #1d1d1f;
+    --text-tertiary: #86868b;
+
+    /* Borders */
+    --border-color: #d2d2d7;
+
+    /* Shadows */
+    --card-shadow: rgba(0, 0, 0, 0.08);
+    --popup-shadow: rgba(0, 0, 0, 0.15);
+    --modal-overlay: rgba(0, 0, 0, 0.4);
+
+    /* Status Colors */
+    --status-ok: #34c759;
+    --status-error: #ff3b30;
+    --status-warning: #ff9500;
+    --status-info: #007aff;
+
+    /* Motor Status */
+    --motor-running: #34c759;
+    --motor-stopped: #8e8e93;
+
+    /* Buttons - Primary (Blue) */
+    --button-primary-bg: #007aff;
+    --button-primary-hover: #0066d6;
+
+    /* Buttons - Secondary */
+    --button-secondary-hover: #e8e8ed;
+
+    /* Buttons - Success (Green) */
+    --button-success-bg: #34c759;
+    --button-success-hover: #2db350;
+
+    /* Buttons - Danger (Red) */
+    --button-danger-bg: #ff3b30;
+    --button-danger-hover: #e6352b;
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+    /* Backgrounds */
+    --bg-primary: #1c1c1e;
+    --bg-secondary: #2c2c2e;
+
+    /* Text */
+    --text-primary: #ffffff;
+    --text-tertiary: #8e8e93;
+
+    /* Borders */
+    --border-color: #3a3a3c;
+
+    /* Shadows */
+    --card-shadow: rgba(0, 0, 0, 0.3);
+    --popup-shadow: rgba(0, 0, 0, 0.5);
+    --modal-overlay: rgba(0, 0, 0, 0.6);
+
+    /* Status Colors - same in both themes */
+    --status-ok: #34c759;
+    --status-error: #ff3b30;
+    --status-warning: #ff9500;
+    --status-info: #007aff;
+
+    /* Motor Status */
+    --motor-running: #34c759;
+    --motor-stopped: #8e8e93;
+
+    /* Buttons - Primary (Blue) */
+    --button-primary-bg: #007aff;
+    --button-primary-hover: #0066d6;
+
+    /* Buttons - Secondary */
+    --button-secondary-hover: #3a3a3c;
+
+    /* Buttons - Success (Green) */
+    --button-success-bg: #34c759;
+    --button-success-hover: #2db350;
+
+    /* Buttons - Danger (Red) */
+    --button-danger-bg: #ff3b30;
+    --button-danger-hover: #e6352b;
+}

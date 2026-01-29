@@ -4,17 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Starting Up...</title>
+    <link rel="stylesheet" href="/css/theme.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            color: #1d1d1f;
+            color: var(--text-primary);
         }
         .container {
             text-align: center;
@@ -32,13 +33,16 @@
             font-weight: 600;
             margin-bottom: 35px;
             letter-spacing: -0.5px;
-            color: #1d1d1f;
+            color: var(--text-primary);
+        }
+        .status-text.ready {
+            color: var(--status-ok);
         }
 
         /* Progress bar container */
         .progress-container {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         .progress-bar-wrapper {
             display: flex;
@@ -48,7 +52,7 @@
         .progress-bar-outer {
             flex: 1;
             height: 12px;
-            background: #e5e5e7;
+            background: var(--border-color);
             border-radius: 6px;
             overflow: hidden;
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -58,106 +62,55 @@
             width: 0%;
             background: linear-gradient(90deg, #00C8D4 0%, #00B8C4 100%);
             border-radius: 6px;
-            transition: width 0.5s ease-out;
+            transition: width 0.3s ease-out;
             box-shadow: 0 1px 3px rgba(0, 200, 212, 0.4);
         }
         .progress-percent {
             font-size: 16px;
             font-weight: 600;
-            color: #00C8D4;
+            color: var(--accent-cyan);
             min-width: 45px;
             text-align: right;
         }
 
-        /* Status message */
+        /* Status message below progress bar */
         .status-message {
             font-size: 15px;
-            color: #86868b;
-            margin-top: 15px;
+            color: var(--text-tertiary);
+            margin-top: 20px;
             min-height: 20px;
         }
 
-        /* Step indicators */
-        .step-indicators {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 25px;
-            padding: 0 5px;
-        }
-        .step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
-        .step-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #e5e5e7;
-            transition: all 0.3s ease;
-        }
-        .step-dot.complete {
-            background: #00C8D4;
-            box-shadow: 0 0 8px rgba(0, 200, 212, 0.5);
-        }
-        .step-dot.active {
-            background: #00C8D4;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        .step-label {
-            font-size: 10px;
-            color: #86868b;
-            white-space: nowrap;
-        }
-        .step-label.active {
-            color: #00C8D4;
-            font-weight: 500;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-                transform: scale(1);
-                box-shadow: 0 0 8px rgba(0, 200, 212, 0.5);
-            }
-            50% {
-                opacity: 0.7;
-                transform: scale(1.2);
-                box-shadow: 0 0 15px rgba(0, 200, 212, 0.8);
-            }
-        }
-
-        /* Error state */
-        .error-state {
+        /* Continue button - hidden initially */
+        .continue-button {
             display: none;
-            margin-top: 25px;
+            background: #00C8D4;
+            color: #FFFFFF;
+            border: none;
+            padding: 14px 50px;
+            font-size: 17px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 30px;
+            font-family: inherit;
+            letter-spacing: -0.3px;
         }
-        .error-state.show {
-            display: block;
+        .continue-button:hover {
+            background: #00B0BA;
+            transform: scale(1.02);
         }
-        .error-text {
-            color: #ff3b30;
-            font-size: 15px;
-            font-weight: 500;
+        .continue-button:active {
+            background: #009AA3;
+            transform: scale(0.98);
         }
-        .error-hint {
-            color: #86868b;
-            font-size: 13px;
-            margin-top: 8px;
+        .continue-button.show {
+            display: inline-block;
         }
-
-        /* Ready state */
-        .ready-state {
-            display: none;
-        }
-        .ready-state.show {
-            display: block;
-        }
-        .ready-check {
-            font-size: 48px;
-            color: #34c759;
-            margin-bottom: 10px;
+        .continue-button:disabled {
+            background: var(--border-color);
+            cursor: wait;
         }
 
         /* Debug banner */
@@ -166,7 +119,7 @@
             top: 0;
             left: 0;
             right: 0;
-            background: #ff9500;
+            background: var(--status-warning);
             color: #000;
             padding: 10px;
             text-align: center;
@@ -179,9 +132,32 @@
             color: #000;
             margin-left: 15px;
         }
+
+        /* Error state */
+        .error-message {
+            color: var(--status-error);
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
+    <!-- Inline theme initialization to apply saved theme - Default is LIGHT -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('crawler-theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                if (!savedTheme) localStorage.setItem('crawler-theme', 'light');
+            }
+        })();
+    </script>
     <div class="debug-banner" id="debugBanner">
         DEBUG MODE - Boot Splash Preview
         <a href="/config.html">Back to Config</a>
@@ -192,7 +168,7 @@
 
         <div class="status-text" id="statusText">Starting up...</div>
 
-        <div class="progress-container" id="progressContainer">
+        <div class="progress-container">
             <div class="progress-bar-wrapper">
                 <div class="progress-bar-outer">
                     <div class="progress-bar-inner" id="progressBar"></div>
@@ -201,234 +177,333 @@
             </div>
 
             <div class="status-message" id="statusMessage">Starting system services...</div>
-
-            <div class="step-indicators">
-                <div class="step">
-                    <div class="step-dot" id="step1"></div>
-                    <div class="step-label" id="stepLabel1">Services</div>
-                </div>
-                <div class="step">
-                    <div class="step-dot" id="step2"></div>
-                    <div class="step-label" id="stepLabel2">Config</div>
-                </div>
-                <div class="step">
-                    <div class="step-dot" id="step3"></div>
-                    <div class="step-label" id="stepLabel3">Devices</div>
-                </div>
-                <div class="step">
-                    <div class="step-dot" id="step4"></div>
-                    <div class="step-label" id="stepLabel4">Security</div>
-                </div>
-                <div class="step">
-                    <div class="step-dot" id="step5"></div>
-                    <div class="step-label" id="stepLabel5">Ready</div>
-                </div>
-            </div>
         </div>
 
-        <div class="ready-state" id="readyState">
-            <div class="ready-check">&#10003;</div>
-        </div>
+        <button class="continue-button" id="continueButton" onclick="handleContinue()">
+            Continue
+        </button>
 
-        <div class="error-state" id="errorState">
-            <div class="error-text" id="errorText">Boot check timed out</div>
-            <div class="error-hint">Please reboot the system</div>
-        </div>
+        <div class="error-message" id="errorMessage"></div>
     </div>
 
     <script>
-        var isDebugMode = window.location.search.indexOf('debug=true') !== -1;
-        var startTime = Date.now();
-        var timeoutMs = 45000; // 45 second timeout
-        var pollInterval = null;
-        var currentProgress = 0;
-        var targetProgress = 0;
+        // Global error handler for debugging Safari issues
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('JS Error: ' + msg + ' at line ' + line);
+            return false;
+        };
 
-        // Progress steps with their percentages and messages
-        var progressSteps = [
-            { percent: 0,   message: "Starting system services...", step: 0 },
-            { percent: 15,  message: "Loading configuration...", step: 1 },
-            { percent: 30,  message: "Checking CM5 CPU...", step: 2 },
-            { percent: 45,  message: "Checking RoboClaw...", step: 2 },
-            { percent: 60,  message: "Checking ClearLink...", step: 2 },
-            { percent: 75,  message: "Performing security checks...", step: 3 },
-            { percent: 90,  message: "Verifying device locks...", step: 3 },
-            { percent: 100, message: "Ready!", step: 4 }
+        // Check if splash was already shown this session (skip if already completed)
+        // sessionStorage clears when browser closes or device reboots - perfect for boot splash
+        (function() {
+            var isDebug = window.location.search.indexOf('debug=true') !== -1;
+            if (!isDebug) {
+                try {
+                    if (sessionStorage.getItem('splashComplete') === 'true') {
+                        // Already shown this session, skip to main page
+                        window.location.replace('/');
+                        return;
+                    }
+                } catch (e) {
+                    console.log('sessionStorage not available');
+                }
+            }
+        })();
+
+        // Configuration
+        var STARTUP_DURATION = 30000; // 30 seconds
+        var UPDATE_INTERVAL = 100;    // Update every 100ms for smooth progress
+        var MESSAGE_INTERVAL = 2500;  // Show new message every 2.5 seconds
+        var isDebugMode = window.location.search.indexOf('debug=true') !== -1;
+
+        // State
+        var startTime = Date.now();
+        var timerComplete = false;
+        var securityCheckResult = null;
+        var currentMessageIndex = 0;
+        var lastMessageTime = 0;
+
+        // Real messages (always include some of these)
+        var realMessages = [
+            "Starting system services...",
+            "Initializing components...",
+            "Connecting to network...",
+            "Loading configuration...",
+            "Preparing motors...",
+            "Calibrating sensors...",
+            "Checking connections...",
+            "Loading drivers...",
+            "Starting ROS2 nodes...",
+            "Initializing web interface...",
+            "Verifying hardware...",
+            "Loading motor parameters...",
+            "Establishing communication...",
+            "Running diagnostics..."
         ];
 
-        // Debug mode - show banner and simulate progress
+        // Funny messages (randomly mixed in)
+        var funnyMessages = [
+            // Classic tech humor
+            "Connecting to Mars...",
+            "Consulting with aliens...",
+            "Reticulating splines...",
+            "Charging flux capacitor...",
+            "Warming up the hamster wheel...",
+            "Asking ChatGPT for advice...",
+            "Bribing the electrons...",
+            "Negotiating with the cloud...",
+            "Teaching robots to dance...",
+            "Convincing bits to become bytes...",
+            "Downloading more RAM...",
+            "Polishing the pixels...",
+            "Untangling the cables...",
+            "Feeding the code monkeys...",
+            "Waking up the server gnomes...",
+            "Aligning the warp coils...",
+            "Summoning the WiFi spirits...",
+            "Brewing digital coffee...",
+            "Herding the cats...",
+            "Looking for the any key...",
+            "Spinning up the hyperdrive...",
+            "Reversing the polarity...",
+            "Deploying the magic smoke...",
+            "Adjusting the gravitons...",
+            "Calibrating the turbo encabulator...",
+            "Warming up the warp core...",
+            "Synchronizing the flux matrices...",
+            "Initializing sarcasm module...",
+            "Loading witty remarks...",
+            "Googling the answer...",
+            "Pretending to work...",
+            "Doing important stuff...",
+            "Making things happen...",
+            "Working very hard...",
+            "Almost there, promise...",
+            "Just a few more seconds...",
+            "Any moment now...",
+            "Counting to infinity...",
+            "Dividing by zero...",
+            "Compiling excuses...",
+            "Generating random numbers... 4...",
+            "Convincing the CPU to cooperate...",
+            "Waiting for the intern...",
+            "Performing interpretive dance...",
+            // Dark humor / existential
+            "Questioning existence...",
+            "Contemplating the void...",
+            "Staring into the abyss...",
+            "The abyss is staring back...",
+            "Existential crisis loading...",
+            "Finding meaning in life...",
+            "Reassessing life choices...",
+            "Wondering why we're here...",
+            "Pondering mortality...",
+            "Accepting our robot overlords...",
+            "Preparing for the singularity...",
+            "Deleting your browser history...",
+            "Reading your emails...",
+            "Judging your code silently...",
+            "Regretting past decisions...",
+            "Blaming the previous developer...",
+            "It's not a bug, it's a feature...",
+            "Have you tried turning it off and on?",
+            "This might take a while...",
+            "Don't panic...",
+            "Everything is fine...",
+            "Nothing to see here...",
+            "This is fine...",
+            "We're all doomed anyway...",
+            "At least it's not Monday...",
+            "Could be worse...",
+            "Send help...",
+            "Why is it always DNS?",
+            "Praying to the demo gods...",
+            "Hope nobody's watching...",
+            "Crossing fingers...",
+            "What could possibly go wrong?",
+            "Famous last words...",
+            // Sarcastic / sardonic
+            "Loading loading screen...",
+            "Spinning wheels meaningfully...",
+            "Progress bar doing its best...",
+            "Faking productivity...",
+            "Looking busy...",
+            "Updating unnecessarily...",
+            "Installing updates nobody asked for...",
+            "Ignoring your preferences...",
+            "Collecting your data... kidding!",
+            "Mining cryptocurrency... just kidding...",
+            "Selling your soul to the cloud...",
+            "Terms and conditions apply...",
+            "Results may vary...",
+            "No refunds...",
+            "Warranty void if opened...",
+            "Instructions unclear...",
+            "Task failed successfully...",
+            "Error: Success...",
+            "Works on my machine...",
+            "Should've used Python...",
+            "Blaming JavaScript...",
+            "It was like this when I got here...",
+            // Absurdist
+            "Teaching fish to code...",
+            "Befriending the server hamsters...",
+            "Sacrificing a rubber duck...",
+            "Consulting the magic 8-ball...",
+            "Rolling for initiative...",
+            "Spinning prayer wheels...",
+            "Appeasing the machine spirits...",
+            "Performing ancient rituals...",
+            "Reading tea leaves...",
+            "Checking horoscope...",
+            "Mercury is in retrograde...",
+            "The stars are not aligned...",
+            "Waiting for a sign...",
+            "Hoping for the best...",
+            "Expecting the worst...",
+            "Lowering expectations...",
+            "Managing disappointment...",
+            "Preparing excuses in advance..."
+        ];
+
+        // Shuffle array using Fisher-Yates algorithm
+        function shuffleArray(array) {
+            var shuffled = array.slice();
+            for (var i = shuffled.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = shuffled[i];
+                shuffled[i] = shuffled[j];
+                shuffled[j] = temp;
+            }
+            return shuffled;
+        }
+
+        // Generate randomized messages for this boot (40% real, 60% funny)
+        function getRandomMessages(count) {
+            var shuffledReal = shuffleArray(realMessages);
+            var shuffledFunny = shuffleArray(funnyMessages);
+
+            var realCount = Math.ceil(count * 0.4);
+            var funnyCount = count - realCount;
+
+            var selected = shuffledReal.slice(0, realCount).concat(shuffledFunny.slice(0, funnyCount));
+            return shuffleArray(selected);
+        }
+
+        // Generate 12 messages for the 30-second boot (one every ~2.5 seconds)
+        var bootMessages = getRandomMessages(12);
+
+        // Debug mode
         if (isDebugMode) {
             document.getElementById('debugBanner').style.display = 'block';
-            simulateDebugMode();
-        } else {
-            // Start polling for boot status
-            checkBootStatus();
-            pollInterval = setInterval(checkBootStatus, 1500);
         }
 
-        function simulateDebugMode() {
-            var debugStep = 0;
-            setInterval(function() {
-                if (debugStep < progressSteps.length - 1) {
-                    debugStep++;
-                }
-                updateProgressUI(progressSteps[debugStep].percent, progressSteps[debugStep].message, progressSteps[debugStep].step);
-            }, 2000);
+        // Set the first message immediately
+        if (bootMessages.length > 0) {
+            document.getElementById('statusMessage').textContent = bootMessages[0];
+            currentMessageIndex = 1;
         }
 
-        function mapBootStateToProgress(data) {
-            // Map API response to progress percentage and message
-            if (!data.in_progress) {
-                return { percent: 100, message: "Ready!", step: 4 };
-            }
+        // Start the timer-based progress
+        var progressInterval = setInterval(updateProgress, UPDATE_INTERVAL);
 
-            var checksComplete = data.checks_complete || 0;
-            var currentCheck = data.current_check || "";
+        // Also poll for security status in background (but don't affect progress)
+        var securityPollInterval = setInterval(checkSecurityStatus, 2000);
+        checkSecurityStatus(); // Check immediately
 
-            // Initial state
-            if (checksComplete === 0 && currentCheck === "Initializing") {
-                return { percent: 10, message: "Starting system services...", step: 0 };
-            }
+        function updateProgress() {
+            var elapsed = Date.now() - startTime;
+            var progress = Math.min((elapsed / STARTUP_DURATION) * 100, 100);
 
-            // Loading configuration
-            if (checksComplete === 0 && currentCheck !== "Initializing") {
-                return { percent: 20, message: "Loading configuration...", step: 1 };
-            }
+            // Update progress bar
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
 
-            // Device checks
-            if (currentCheck === "CM5 CPU") {
-                return { percent: 35, message: "Checking CM5 CPU...", step: 2 };
-            }
-            if (currentCheck === "RoboClaw") {
-                return { percent: 50, message: "Checking RoboClaw...", step: 2 };
-            }
-            if (currentCheck === "ClearLink") {
-                return { percent: 65, message: "Checking ClearLink...", step: 2 };
-            }
-
-            // Security verification
-            if (currentCheck === "Verifying locks") {
-                return { percent: 85, message: "Verifying device locks...", step: 3 };
-            }
-
-            // Fallback based on checks complete
-            if (checksComplete === 1) {
-                return { percent: 40, message: "Device check in progress...", step: 2 };
-            }
-            if (checksComplete === 2) {
-                return { percent: 55, message: "Device check in progress...", step: 2 };
-            }
-            if (checksComplete === 3) {
-                return { percent: 75, message: "Performing security checks...", step: 3 };
-            }
-
-            return { percent: 15, message: "Loading...", step: 1 };
-        }
-
-        function updateProgressUI(percent, message, activeStep) {
-            // Smooth progress animation
-            targetProgress = percent;
-            animateProgress();
-
-            // Update message
-            document.getElementById('statusMessage').textContent = message;
-
-            // Update step indicators
-            for (var i = 1; i <= 5; i++) {
-                var dot = document.getElementById('step' + i);
-                var label = document.getElementById('stepLabel' + i);
-
-                dot.classList.remove('complete', 'active');
-                label.classList.remove('active');
-
-                if (i - 1 < activeStep) {
-                    dot.classList.add('complete');
-                } else if (i - 1 === activeStep) {
-                    dot.classList.add('active');
-                    label.classList.add('active');
+            // Update status message at regular intervals
+            if (elapsed - lastMessageTime >= MESSAGE_INTERVAL) {
+                lastMessageTime = elapsed;
+                if (currentMessageIndex < bootMessages.length) {
+                    document.getElementById('statusMessage').textContent = bootMessages[currentMessageIndex];
+                    currentMessageIndex++;
                 }
             }
 
-            // Ready state
-            if (percent >= 100) {
-                document.getElementById('statusText').textContent = 'Ready!';
-                document.getElementById('statusText').style.color = '#34c759';
-                document.getElementById('readyState').classList.add('show');
-
-                // Mark all steps complete
-                for (var j = 1; j <= 5; j++) {
-                    document.getElementById('step' + j).classList.remove('active');
-                    document.getElementById('step' + j).classList.add('complete');
-                }
+            // Check if timer is complete (30 seconds)
+            if (elapsed >= STARTUP_DURATION && !timerComplete) {
+                timerComplete = true;
+                clearInterval(progressInterval);
+                onTimerComplete();
             }
         }
 
-        function animateProgress() {
-            if (currentProgress < targetProgress) {
-                currentProgress = Math.min(currentProgress + 2, targetProgress);
-                document.getElementById('progressBar').style.width = currentProgress + '%';
-                document.getElementById('progressPercent').textContent = Math.round(currentProgress) + '%';
+        function onTimerComplete() {
+            // Update UI to ready state
+            document.getElementById('statusText').textContent = 'Ready!';
+            document.getElementById('statusText').classList.add('ready');
+            document.getElementById('statusMessage').textContent = 'Ready!';
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('progressPercent').textContent = '100%';
 
-                if (currentProgress < targetProgress) {
-                    requestAnimationFrame(animateProgress);
-                }
-            }
+            // Show the continue button
+            document.getElementById('continueButton').classList.add('show');
         }
 
-        function showError(message) {
-            if (pollInterval) clearInterval(pollInterval);
-
-            document.getElementById('progressContainer').style.opacity = '0.5';
-            document.getElementById('statusText').textContent = 'Error';
-            document.getElementById('statusText').style.color = '#ff3b30';
-            document.getElementById('errorText').textContent = message;
-            document.getElementById('errorState').classList.add('show');
-        }
-
-        function checkBootStatus() {
+        function checkSecurityStatus() {
             fetch('/api/security/boot_status')
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    if (data.error) {
-                        // API not ready yet, show initial progress
-                        updateProgressUI(5, "Waiting for system...", 0);
-                        return;
-                    }
+                    // Store the result for when user clicks continue
+                    securityCheckResult = data;
 
-                    // Map boot state to progress
-                    var progress = mapBootStateToProgress(data);
-                    updateProgressUI(progress.percent, progress.message, progress.step);
+                    // If mismatch detected during timer, still wait for timer
+                    // but store the result for redirect
+                })
+                .catch(function(err) {
+                    // Server not ready yet, will retry
+                    console.log('Security check pending...');
+                });
+        }
 
-                    // Check if boot is complete
-                    if (!data.in_progress) {
-                        if (pollInterval) clearInterval(pollInterval);
+        function handleContinue() {
+            var btn = document.getElementById('continueButton');
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
 
-                        // Brief delay to show 100% before redirect
-                        setTimeout(function() {
-                            if (data.redirect) {
-                                window.location.href = data.redirect;
-                            } else {
-                                window.location.href = '/';
-                            }
-                        }, 800);
-                        return;
-                    }
+            // Mark splash as complete for this session (survives page refresh, clears on browser close/reboot)
+            try {
+                sessionStorage.setItem('splashComplete', 'true');
+            } catch (e) {
+                console.log('sessionStorage not available');
+            }
 
-                    // Check for timeout
-                    if (Date.now() - startTime > timeoutMs) {
-                        showError('Boot check timed out');
+            // Final security check before redirect
+            fetch('/api/security/boot_status')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.mismatch_detected) {
+                        // Redirect to mismatch page
+                        window.location.href = '/device_mismatch.html';
+                    } else {
+                        // All good - redirect to main page
+                        window.location.href = '/';
                     }
                 })
                 .catch(function(err) {
-                    // Server not ready, show waiting state
-                    updateProgressUI(3, "Waiting for server...", 0);
-
-                    // Check for overall timeout
-                    if (Date.now() - startTime > timeoutMs) {
-                        showError('Could not connect to server');
-                    }
+                    // On error, try to go to main page anyway
+                    // (the server will redirect to mismatch if needed)
+                    showError('Could not verify security status. Redirecting...');
+                    setTimeout(function() {
+                        window.location.href = '/';
+                    }, 1500);
                 });
         }
+
+        function showError(message) {
+            var errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+        }
     </script>
+    <script src="/js/theme.js"></script>
 </body>
 </html>

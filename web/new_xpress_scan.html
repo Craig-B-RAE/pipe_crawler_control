@@ -222,7 +222,8 @@
         }
         input[type=number] { -moz-appearance: textfield; }
         .settings-unit { color: var(--text-tertiary); font-size: 13px; margin-left: 4px; }
-        .save-defaults-btn { width: 100%; margin-top: 16px; padding: 10px; border: none; border-radius: 8px; background: var(--accent-cyan); color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.2s ease; }
+        .save-defaults-btn { width: 100%; margin-top: 16px; padding: 10px; border: none; border-radius: 8px; background: var(--accent-cyan); color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.2s ease; display: none; }
+        .save-defaults-btn.show { display: block; }
         .save-defaults-btn:hover { opacity: 0.9; }
         .save-defaults-btn:active { transform: scale(0.98); }
         .save-defaults-btn.saved { background: var(--status-ok); }
@@ -1151,6 +1152,22 @@
         var distanceMode = 'encoder';
         var prevRelPitch = null;
         var lastUpdateTime = Date.now();
+        var savedDefaults = null;
+
+        function checkDefaultsMatch() {
+            if (!savedDefaults) return;
+            var btn = document.querySelector('.save-defaults-btn');
+            var currentSpeed = parseFloat(document.getElementById('speedInput').value);
+            var currentRamp = parseInt(document.getElementById('rampInput').value);
+            if (pipeDiameter !== savedDefaults.pipeDiameter ||
+                distanceMode !== savedDefaults.distanceMode ||
+                currentSpeed !== savedDefaults.speed ||
+                currentRamp !== savedDefaults.ramp) {
+                btn.classList.add('show');
+            } else {
+                btn.classList.remove('show');
+            }
+        }
 
         document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
         document.getElementById('footerVersion').textContent = CURRENT_VERSION;
@@ -1310,6 +1327,7 @@
             document.getElementById('pipeDiameterDisplay').textContent = val + '"';
             updatePositionFromDistance();
             if (save !== false) savePipeDiameter(val);
+            checkDefaultsMatch();
         }
 
         // Motor parameters (protected settings)
@@ -1364,6 +1382,12 @@
                     if (settings.distanceMode) {
                         setDistanceMode(settings.distanceMode);
                     }
+                    savedDefaults = {
+                        pipeDiameter: pipeDiameter,
+                        distanceMode: distanceMode,
+                        speed: parseFloat(document.getElementById('speedInput').value),
+                        ramp: parseInt(document.getElementById('rampInput').value)
+                    };
                 })
                 .catch(function(e) { console.error('Failed to load settings:', e); });
         }
@@ -1397,12 +1421,14 @@
         // Save all current settings as defaults
         function saveAllDefaults() {
             var btn = document.querySelector('.save-defaults-btn');
+            var currentSpeed = parseFloat(document.getElementById('speedInput').value);
+            var currentRamp = parseInt(document.getElementById('rampInput').value);
             var allSettings = {
                 motorParams: motorParams,
                 pipeDiameter: pipeDiameter,
                 distanceMode: distanceMode,
-                speed: parseFloat(document.getElementById('speedInput').value),
-                ramp: parseInt(document.getElementById('rampInput').value)
+                speed: currentSpeed,
+                ramp: currentRamp
             };
             fetch('/api/settings', {
                 method: 'POST',
@@ -1411,12 +1437,26 @@
             }).then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success) {
-                    btn.textContent = 'Saved';
+                    savedDefaults = {
+                        pipeDiameter: pipeDiameter,
+                        distanceMode: distanceMode,
+                        speed: currentSpeed,
+                        ramp: currentRamp
+                    };
                     btn.classList.add('saved');
-                    setTimeout(function() {
-                        btn.textContent = 'Save as Defaults';
-                        btn.classList.remove('saved');
-                    }, 2000);
+                    var count = 5;
+                    btn.textContent = 'Saving...' + count;
+                    var countdown = setInterval(function() {
+                        count--;
+                        if (count <= 0) {
+                            clearInterval(countdown);
+                            btn.textContent = 'Save as Defaults';
+                            btn.classList.remove('saved');
+                            btn.classList.remove('show');
+                        } else {
+                            btn.textContent = 'Saving...' + count;
+                        }
+                    }, 1000);
                 }
             }).catch(function(e) {
                 btn.textContent = 'Error';
@@ -1514,12 +1554,14 @@
             document.getElementById('speedInput').value = val.toFixed(1);
             var percentage = Math.round((val / MAX_SPEED_IPS) * 100);
             speedPublisher.publish(new ROSLIB.Message({ data: percentage.toString() }));
+            checkDefaultsMatch();
         }
 
         function updateRamp(val) {
             val = Math.max(0, Math.min(100, parseInt(val) || 50));
             document.getElementById('rampInput').value = val;
             rampPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+            checkDefaultsMatch();
         }
 
         // Helper function to create smooth bezier curve path
@@ -1940,6 +1982,7 @@
             btns[0].className = mode === 'encoder' ? 'active' : '';
             btns[1].className = mode === 'degrees' ? 'active' : '';
             saveSettings({ distanceMode: mode });
+            checkDefaultsMatch();
         }
 
         function togglePipeView() {

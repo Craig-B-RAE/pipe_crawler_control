@@ -419,7 +419,8 @@
         }
         input[type=number] { -moz-appearance: textfield; }
         .settings-unit { color: var(--text-tertiary); font-size: 13px; margin-left: 4px; }
-        .save-defaults-btn { width: 100%; margin-top: 16px; padding: 10px; border: none; border-radius: 8px; background: var(--accent-cyan); color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.2s ease; }
+        .save-defaults-btn { width: 100%; margin-top: 16px; padding: 10px; border: none; border-radius: 8px; background: var(--accent-cyan); color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.2s ease; display: none; }
+        .save-defaults-btn.show { display: block; }
         .save-defaults-btn:hover { opacity: 0.9; }
         .save-defaults-btn:active { transform: scale(0.98); }
         .save-defaults-btn.saved { background: var(--status-ok); }
@@ -1439,6 +1440,7 @@
             document.getElementById('pipeDiameterDisplay').textContent = val + '"';
             updatePositionFromDistance();
             if (save !== false) savePipeDiameter(val);
+            checkDefaultsMatch();
         }
 
         // Motor parameters (protected settings)
@@ -1607,6 +1609,12 @@
                         document.getElementById('rampInput').value = rampPercent.toFixed(0);
                     }
                     console.log('Settings loaded: jogSpeedInSec=' + jogSpeedInSec + ', rampPercent=' + rampPercent + ', stepsPerInch=' + stepsPerInch + ', maxStepsPerSec=' + maxStepsPerSec);
+                    savedDefaults = {
+                        pipeDiameter: pipeDiameter,
+                        distanceMode: distanceMode,
+                        jogSpeedInSec: jogSpeedInSec,
+                        rampPercent: rampPercent
+                    };
                 })
                 .catch(function(e) { console.error('Failed to load settings:', e); });
         }
@@ -1649,12 +1657,26 @@
             }).then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success) {
-                    btn.textContent = 'Saved';
+                    savedDefaults = {
+                        pipeDiameter: pipeDiameter,
+                        distanceMode: distanceMode,
+                        jogSpeedInSec: jogSpeedInSec,
+                        rampPercent: rampPercent
+                    };
                     btn.classList.add('saved');
-                    setTimeout(function() {
-                        btn.textContent = 'Save as Defaults';
-                        btn.classList.remove('saved');
-                    }, 2000);
+                    var count = 5;
+                    btn.textContent = 'Saving...' + count;
+                    var countdown = setInterval(function() {
+                        count--;
+                        if (count <= 0) {
+                            clearInterval(countdown);
+                            btn.textContent = 'Save as Defaults';
+                            btn.classList.remove('saved');
+                            btn.classList.remove('show');
+                        } else {
+                            btn.textContent = 'Saving...' + count;
+                        }
+                    }, 1000);
                 }
             }).catch(function(e) {
                 btn.textContent = 'Error';
@@ -1769,6 +1791,20 @@
         // Jog speed and ramp settings for ClearLink (user-facing units)
         var jogSpeedInSec = 0.5;   // in/sec (user setting)
         var rampPercent = 50;      // % of max (user setting)
+        var savedDefaults = null;
+
+        function checkDefaultsMatch() {
+            if (!savedDefaults) return;
+            var btn = document.querySelector('.save-defaults-btn');
+            if (pipeDiameter !== savedDefaults.pipeDiameter ||
+                distanceMode !== savedDefaults.distanceMode ||
+                jogSpeedInSec !== savedDefaults.jogSpeedInSec ||
+                rampPercent !== savedDefaults.rampPercent) {
+                btn.classList.add('show');
+            } else {
+                btn.classList.remove('show');
+            }
+        }
         var isJogging = false;
 
         // Get jog speed in steps/sec for ROS communication
@@ -1790,6 +1826,7 @@
             // Save in user-facing units (in/sec) - speed used when jog button pressed
             saveSettings({ jogSpeedInSec: val });
             console.log('Jog speed updated: ' + val + ' in/s = ' + getJogSpeedSteps() + ' steps/s');
+            checkDefaultsMatch();
         }
 
         function updateRamp(val) {
@@ -1800,6 +1837,7 @@
             // Save in user-facing units (%) - ramp used when jog button pressed
             saveSettings({ rampPercent: val });
             console.log('Ramp updated: ' + val + '% = ' + getRampSteps() + ' steps/s²');
+            checkDefaultsMatch();
         }
 
         function startJog(direction) {
@@ -2580,6 +2618,7 @@
             btns[0].className = mode === 'encoder' ? 'active' : '';
             btns[1].className = mode === 'degrees' ? 'active' : '';
             saveSettings({ distanceMode: mode });
+            checkDefaultsMatch();
         }
 
         function loadUsbDevices() {

@@ -32,6 +32,7 @@ setup(
             'update_manager = pipe_crawler_control.update_manager:main',
             'network_info_publisher = pipe_crawler_control.network_info_publisher:main',
             'wt901_imu = pipe_crawler_control.wt901_imu_node:main',
+            'motor_data_logger = pipe_crawler_control.motor_data_logger:main',
         ],
     },
     scripts=[],
