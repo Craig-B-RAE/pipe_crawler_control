@@ -4,11 +4,208 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EdgeFlex ClearLink Controller</title>
+    <!-- EMERGENCY: Inline CSS variables as fallback before external theme.css -->
+    <style id="theme-fallback">
+        :root {
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F5F5F7;
+            --bg-tertiary: #FAFAFA;
+            --text-primary: #1d1d1f;
+            --text-secondary: #666666;
+            --text-tertiary: #86868b;
+            --text-muted: #999999;
+            --accent-cyan: #00C8D4;
+            --accent-cyan-hover: #00A8B4;
+            --border-color: #e5e5e7;
+            --border-light: #EEEEEE;
+            --card-bg: #FFFFFF;
+            --card-shadow: rgba(0, 0, 0, 0.08);
+            --card-border: #e5e5e7;
+            --input-bg: #FFFFFF;
+            --input-border: #d0d0d0;
+            --button-primary-bg: #00C8D4;
+            --button-primary-text: #FFFFFF;
+            --button-secondary-bg: #F5F5F7;
+            --button-secondary-text: #1d1d1f;
+            --button-secondary-hover: #E5E5E7;
+            --status-ok: #34c759;
+            --status-warning: #ff9500;
+            --status-error: #ff3b30;
+            --status-info: #007aff;
+            --status-error-bg: rgba(255, 59, 48, 0.1);
+            --motor-running: #34c759;
+            --motor-stopped: #86868b;
+            --modal-bg: #FFFFFF;
+            --modal-overlay: rgba(0, 0, 0, 0.5);
+            --popup-bg: #FFFFFF;
+            --popup-shadow: rgba(0, 0, 0, 0.15);
+        }
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2a2a2a;
+            --bg-tertiary: #333333;
+            --text-primary: #E0E0E0;
+            --text-secondary: #B0B0B0;
+            --text-tertiary: #909090;
+            --text-muted: #707070;
+            --accent-cyan: #00D4E0;
+            --accent-cyan-hover: #00E8F4;
+            --border-color: #404040;
+            --border-light: #353535;
+            --card-bg: #2a2a2a;
+            --card-shadow: rgba(0, 0, 0, 0.4);
+            --card-border: #404040;
+            --input-bg: #333333;
+            --input-border: #505050;
+            --button-primary-bg: #00D4E0;
+            --button-primary-text: #1a1a1a;
+            --button-secondary-bg: #3a3a3a;
+            --button-secondary-text: #E0E0E0;
+            --button-secondary-hover: #4a4a4a;
+            --status-ok: #30d158;
+            --status-warning: #ff9f0a;
+            --status-error: #ff453a;
+            --status-info: #0a84ff;
+            --status-error-bg: rgba(255, 69, 58, 0.15);
+            --motor-running: #30d158;
+            --motor-stopped: #707070;
+            --modal-bg: #2a2a2a;
+            --modal-overlay: rgba(0, 0, 0, 0.7);
+            --popup-bg: #2a2a2a;
+            --popup-shadow: rgba(0, 0, 0, 0.5);
+        }
+        /* Icon button styling - square, no border */
+        .icon-button {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            padding: 0;
+            line-height: 1;
+            color: var(--text-primary);
+        }
+        .icon-button:hover {
+            background-color: var(--bg-secondary);
+            transform: scale(1.1);
+        }
+        .icon-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Row 1: Control buttons - centered */
+        .top-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            margin-bottom: 5px;
+        }
+        /* Row 2: Status indicators - centered */
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-bottom: 10px;
+        }
+        .status-bar .status-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .status-bar .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--status-error);
+        }
+        .status-bar .status-dot.ok {
+            background: var(--status-ok);
+        }
+        /* Theme slider */
+        .theme-slider {
+            display: inline-flex;
+            align-items: center;
+            width: 52px;
+            height: 26px;
+            cursor: pointer;
+        }
+        .theme-slider input {
+            display: none;
+        }
+        .slider-track {
+            position: relative;
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 26px;
+            transition: all 0.3s ease;
+        }
+        .theme-slider:hover .slider-track {
+            border-color: var(--text-tertiary);
+        }
+        .slider-icon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            z-index: 1;
+            transition: opacity 0.3s ease;
+        }
+        .slider-icon.moon {
+            left: 5px;
+        }
+        .slider-icon.sun {
+            right: 5px;
+        }
+        .slider-thumb {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: var(--text-primary);
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+        .theme-slider input:checked + .slider-track .slider-thumb {
+            transform: translateX(26px);
+        }
+        /* INVERTED: Show opposite icon to indicate what you switch TO */
+        .theme-slider input:not(:checked) + .slider-track .moon {
+            opacity: 0.3;
+        }
+        .theme-slider input:not(:checked) + .slider-track .sun {
+            opacity: 1;
+        }
+        .theme-slider input:checked + .slider-track .moon {
+            opacity: 1;
+        }
+        .theme-slider input:checked + .slider-track .sun {
+            opacity: 0.3;
+        }
+    </style>
+    <link rel="stylesheet" href="/css/theme.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -16,17 +213,17 @@
             padding: 2vw;
         }
         .container {
-            background: #ffffff;
+            background: var(--bg-primary);
             border-radius: 20px;
             padding: clamp(20px, 5vw, 40px);
             width: 90vw;
             max-width: 500px;
             min-width: 280px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 30px var(--card-shadow);
         }
         h1 {
             text-align: center;
-            color: #1d1d1f;
+            color: var(--text-primary);
             margin-bottom: 20px;
             font-size: clamp(22px, 5vw, 28px);
             font-weight: 600;
@@ -38,7 +235,7 @@
         }
         .system-badge span {
             background: none;
-            color: #86868b;
+            color: var(--text-tertiary);
             padding: 4px 12px;
             border-radius: 12px;
             font-size: 13px;
@@ -49,20 +246,21 @@
         .info-toolbar {
             display: flex;
             justify-content: space-around;
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             border-radius: 12px;
             padding: 12px 8px;
             margin-bottom: 15px;
             font-size: 12px;
         }
         .info-item { text-align: center; flex: 1; }
-        .info-label { color: #86868b; font-size: 11px; margin-right: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .info-value { font-weight: 600; color: #1d1d1f; font-size: 13px; }
-        .info-value .current { color: #1d1d1f; }
-        .info-value .rpm { color: #007aff; font-size: 11px; }
+        .info-label { color: var(--text-tertiary); font-size: 11px; margin-right: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-weight: 600; color: var(--text-primary); font-size: 13px; }
+        .info-value .current { color: var(--text-primary); }
+        .info-value .rpm { color: var(--status-info); font-size: 11px; }
         .motor-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
-        .motor-status.running { background: #2e7d32; }
-        .motor-status.stopped { background: #c62828; }
+        .motor-status.running { background: var(--status-ok); }
+        .motor-status.stopped { background: var(--status-warning); }
+        .motor-status.fault { background: var(--status-error); }
         .status-row {
             display: flex;
             justify-content: space-between;
@@ -70,8 +268,8 @@
             margin-bottom: 20px;
         }
         .stats-button {
-            background: #f5f5f7;
-            color: #1d1d1f;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             padding: 8px 16px;
             border-radius: 20px;
             cursor: pointer;
@@ -82,14 +280,14 @@
             border: none;
             transition: background 0.2s;
         }
-        .stats-button:hover { background: #e8e8ed; }
+        .stats-button:hover { background: var(--button-secondary-hover); }
         .stats-popup {
             display: none;
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: #ffffff;
+            background: var(--popup-bg);
             border-radius: 14px;
             padding: 0;
             min-width: 240px;
@@ -97,9 +295,9 @@
             max-height: 80vh;
             overflow: hidden;
             z-index: 200;
-            color: #1d1d1f;
+            color: var(--text-primary);
             text-align: left;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 40px var(--popup-shadow);
         }
         .stats-popup.show { display: block; }
         .stats-popup.dragging { transition: none; }
@@ -108,8 +306,8 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 16px;
-            background: #f5f5f7;
-            border-bottom: 1px solid #e0e0e0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
             cursor: grab;
             user-select: none;
         }
@@ -117,15 +315,15 @@
         .popup-title {
             font-size: 14px;
             font-weight: 600;
-            color: #1d1d1f;
+            color: var(--text-primary);
         }
         .popup-close {
             width: 24px;
             height: 24px;
             border-radius: 50%;
             border: none;
-            background: #e0e0e0;
-            color: #86868b;
+            background: var(--border-color);
+            color: var(--text-tertiary);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -133,7 +331,7 @@
             transition: all 0.2s;
             flex-shrink: 0;
         }
-        .popup-close:hover { background: #ff3b30; color: #ffffff; }
+        .popup-close:hover { background: var(--status-error); color: var(--bg-primary); }
         .popup-close:active { transform: scale(0.9); }
         .popup-content {
             padding: 12px 16px 16px;
@@ -145,21 +343,21 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px 0;
-            border-bottom: 1px solid #f5f5f7;
+            border-bottom: 1px solid var(--border-light);
             font-size: 14px;
         }
         .stats-row-item:last-child { border-bottom: none; }
-        .stats-label { color: #86868b; }
-        .stats-value { font-weight: 600; color: #1d1d1f; }
-        .stats-value.warning { color: #ff9500; }
-        .stats-value.alarm { color: #ff3b30; }
+        .stats-label { color: var(--text-tertiary); }
+        .stats-value { font-weight: 600; color: var(--text-primary); }
+        .stats-value.warning { color: var(--status-warning); }
+        .stats-value.alarm { color: var(--status-error); }
         .stats-value-group { display: flex; align-items: center; gap: 6px; }
         .icon-btn {
             background: none;
             border: none;
             cursor: pointer;
             padding: 2px;
-            color: #86868b;
+            color: var(--text-tertiary);
             line-height: 1;
             border-radius: 4px;
             transition: all 0.2s;
@@ -167,7 +365,7 @@
             align-items: center;
             justify-content: center;
         }
-        .icon-btn:hover { background: #f5f5f7; color: #1d1d1f; }
+        .icon-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
         .icon-btn:active { transform: scale(0.9); }
         .settings-popup {
             display: none;
@@ -175,7 +373,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: #ffffff;
+            background: var(--popup-bg);
             border-radius: 14px;
             padding: 0;
             min-width: 240px;
@@ -183,9 +381,9 @@
             max-height: 80vh;
             overflow: hidden;
             z-index: 200;
-            color: #1d1d1f;
+            color: var(--text-primary);
             text-align: left;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 40px var(--popup-shadow);
         }
         .settings-popup.show { display: block; }
         .settings-popup.dragging { transition: none; }
@@ -194,25 +392,25 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 0;
-            border-bottom: 1px solid #f5f5f7;
+            border-bottom: 1px solid var(--border-light);
         }
         .settings-row:last-child { border-bottom: none; }
-        .settings-label { color: #1d1d1f; font-weight: 500; font-size: 14px; }
+        .settings-label { color: var(--text-primary); font-weight: 500; font-size: 14px; }
         .settings-input {
             width: 70px;
             padding: 8px 10px;
             font-size: 14px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             text-align: center;
-            background: #f5f5f7;
-            color: #1d1d1f;
+            background: var(--input-bg);
+            color: var(--input-text);
             font-weight: 600;
         }
         .settings-input:focus {
             outline: none;
-            border-color: #007aff;
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 0 3px var(--status-info-bg);
         }
         input[type=number]::-webkit-outer-spin-button,
         input[type=number]::-webkit-inner-spin-button {
@@ -220,11 +418,18 @@
             margin: 0;
         }
         input[type=number] { -moz-appearance: textfield; }
-        .settings-unit { color: #86868b; font-size: 13px; margin-left: 4px; }
+        .settings-unit { color: var(--text-tertiary); font-size: 13px; margin-left: 4px; }
+        .save-defaults-btn { width: 100%; margin-top: 16px; padding: 10px; border: none; border-radius: 8px; background: var(--accent-cyan); color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.2s ease; }
+        .save-defaults-btn:hover { opacity: 0.9; }
+        .save-defaults-btn:active { transform: scale(0.98); }
+        .save-defaults-btn.saved { background: var(--status-ok); }
+        .seg-toggle { display: flex; background: var(--border-color); border-radius: 8px; padding: 2px; }
+        .seg-toggle button { border: none; background: transparent; color: var(--text-secondary); font-size: 12px; font-weight: 500; padding: 5px 10px; cursor: pointer; font-family: inherit; transition: all 0.2s ease; border-radius: 7px; }
+        .seg-toggle button.active { background: var(--bg-primary); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08); }
         .protected-section {
             margin-top: 12px;
             padding-top: 12px;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid var(--border-color);
         }
         .protected-header {
             display: flex;
@@ -235,7 +440,7 @@
         .protected-title {
             font-size: 12px;
             font-weight: 600;
-            color: #86868b;
+            color: var(--text-tertiary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -244,24 +449,24 @@
             border: none;
             cursor: pointer;
             padding: 4px;
-            color: #86868b;
+            color: var(--text-tertiary);
             transition: all 0.2s;
             display: flex;
             align-items: center;
             gap: 4px;
             font-size: 11px;
         }
-        .lock-btn:hover { color: #007aff; }
-        .lock-btn.unlocked { color: #34c759; }
+        .lock-btn:hover { color: var(--status-info); }
+        .lock-btn.unlocked { color: var(--status-ok); }
         .protected-input {
             width: 85px;
             padding: 8px 10px;
             font-size: 14px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             text-align: center;
-            background: #f5f5f7;
-            color: #1d1d1f;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             font-weight: 600;
         }
         .protected-input::-webkit-outer-spin-button,
@@ -271,50 +476,52 @@
         }
         .protected-input[type=number] { -moz-appearance: textfield; }
         .protected-input:disabled {
-            background: #e8e8ed;
-            color: #86868b;
+            background: var(--bg-tertiary);
+            color: var(--text-tertiary);
             cursor: not-allowed;
         }
         .protected-input:focus {
             outline: none;
-            border-color: #007aff;
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+            border-color: var(--status-info);
+            box-shadow: 0 0 0 3px var(--status-info-bg);
         }
         .password-modal {
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: var(--modal-overlay);
             z-index: 300;
             justify-content: center;
             align-items: center;
         }
         .password-modal.show { display: flex; }
         .password-dialog {
-            background: #ffffff;
+            background: var(--popup-bg);
             border-radius: 14px;
             padding: 20px;
             width: 280px;
             text-align: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 40px var(--popup-shadow);
         }
         .password-dialog h3 {
             margin: 0 0 16px 0;
             font-size: 16px;
-            color: #1d1d1f;
+            color: var(--text-primary);
         }
         .password-dialog input {
             width: 100%;
             padding: 12px;
             font-size: 16px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             text-align: center;
             margin-bottom: 12px;
+            background: var(--input-bg);
+            color: var(--input-text);
         }
         .password-dialog input:focus {
             outline: none;
-            border-color: #007aff;
+            border-color: var(--status-info);
         }
         .password-dialog .btn-row {
             display: flex;
@@ -331,17 +538,17 @@
             transition: all 0.2s;
         }
         .password-dialog .btn-cancel {
-            background: #f5f5f7;
-            color: #1d1d1f;
+            background: var(--button-secondary-bg);
+            color: var(--text-primary);
         }
         .password-dialog .btn-unlock {
-            background: #007aff;
-            color: #ffffff;
+            background: var(--button-primary-bg);
+            color: var(--button-primary-text);
         }
-        .password-dialog .btn-cancel:hover { background: #e8e8ed; }
-        .password-dialog .btn-unlock:hover { background: #0056b3; }
+        .password-dialog .btn-cancel:hover { background: var(--button-secondary-hover); }
+        .password-dialog .btn-unlock:hover { background: var(--button-primary-hover); }
         .password-error {
-            color: #ff3b30;
+            color: var(--status-error);
             font-size: 12px;
             margin-bottom: 8px;
             display: none;
@@ -350,7 +557,7 @@
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: var(--modal-overlay);
             z-index: 200;
             justify-content: center;
             align-items: center;
@@ -358,14 +565,14 @@
         }
         .modal-overlay.show { display: flex; }
         .modal {
-            background: #ffffff;
+            background: var(--modal-bg);
             border-radius: 20px;
             padding: 24px;
             width: 100%;
             max-width: 500px;
             max-height: 90vh;
             overflow: auto;
-            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 50px var(--popup-shadow);
         }
         .modal-header {
             display: flex;
@@ -373,9 +580,9 @@
             align-items: center;
             margin-bottom: 20px;
         }
-        .modal-title { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .modal-title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
         .modal-close {
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             border: none;
             width: 32px; height: 32px;
             border-radius: 50%;
@@ -383,24 +590,24 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #86868b;
+            color: var(--text-tertiary);
             transition: all 0.2s;
         }
-        .modal-close:hover { background: #e8e8ed; color: #1d1d1f; }
-        .graph-container { background: #f5f5f7; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .modal-close:hover { background: var(--button-secondary-hover); color: var(--text-primary); }
+        .graph-container { background: var(--bg-secondary); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
         .graph-svg { width: 100%; height: 220px; }
-        .graph-stats { display: flex; justify-content: space-around; align-items: flex-end; padding-top: 16px; border-top: 1px solid #e0e0e0; }
+        .graph-stats { display: flex; justify-content: space-around; align-items: flex-end; padding-top: 16px; border-top: 1px solid var(--border-color); }
         .graph-stat { text-align: center; }
-        .graph-stat-label { font-size: 12px; color: #86868b; margin-bottom: 4px; }
-        .graph-stat-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
-        .graph-stat-value.low { color: #ff3b30; }
-        .graph-stat-value.high { color: #34c759; }
+        .graph-stat-label { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; }
+        .graph-stat-value { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+        .graph-stat-value.low { color: var(--status-error); }
+        .graph-stat-value.high { color: var(--status-ok); }
         .reset-btn-large {
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             border: none;
             cursor: pointer;
             padding: 8px 12px;
-            color: #86868b;
+            color: var(--text-tertiary);
             font-size: 12px;
             border-radius: 8px;
             transition: all 0.2s;
@@ -408,11 +615,11 @@
             align-items: center;
             gap: 6px;
         }
-        .reset-btn-large:hover { background: #e8e8ed; color: #1d1d1f; }
+        .reset-btn-large:hover { background: var(--button-secondary-hover); color: var(--text-primary); }
         .reset-btn-large:active { transform: scale(0.95); }
         .update-banner {
             display: none;
-            background: #007aff;
+            background: var(--status-info);
             color: white;
             padding: 12px 16px;
             border-radius: 12px;
@@ -423,23 +630,25 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-        .update-banner:hover { background: #0056b3; }
+        .update-banner:hover { background: var(--button-primary-hover); }
         .update-banner.show { display: block; }
-        .update-banner.updating { background: #ff9500; cursor: wait; }
-        .update-banner.success { background: #34c759; }
-        .update-banner.error { background: #ff3b30; }
+        .update-banner.updating { background: var(--status-warning); cursor: wait; }
+        .update-banner.success { background: var(--status-ok); }
+        .update-banner.error { background: var(--status-error); }
         .pipe-section {
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             padding: clamp(15px, 3vw, 25px);
             border-radius: 16px;
             margin-bottom: 20px;
             text-align: center;
         }
-        .pipe-title { font-weight: 600; color: #1d1d1f; margin-bottom: 15px; font-size: 15px; }
+        .pipe-title { font-weight: 600; color: var(--text-primary); margin-bottom: 15px; font-size: 15px; }
         .pipe-container {
             position: relative;
-            width: clamp(180px, 45vw, 260px);
-            height: clamp(180px, 45vw, 260px);
+            width: clamp(200px, 50vw, 280px);
+            height: clamp(200px, 50vw, 280px);
+            min-width: 200px;
+            min-height: 200px;
             margin: 0 auto 15px;
         }
         .pipe-circle {
@@ -447,7 +656,7 @@
             top: 20%; left: 20%;
             width: 60%; height: 60%;
             border-radius: 50%;
-            border: 3px solid #86868b;
+            border: 3px solid var(--text-tertiary);
             background: transparent;
         }
         .degree-display {
@@ -457,12 +666,12 @@
             text-align: center;
             font-size: clamp(28px, 7vw, 36px);
             font-weight: 600;
-            color: #1d1d1f;
+            color: var(--text-primary);
         }
         .degree-display .distance {
             font-size: clamp(12px, 3vw, 14px);
             font-weight: 500;
-            color: #86868b;
+            color: var(--text-tertiary);
             display: block;
         }
         .walle { position: absolute; display: flex; align-items: center; justify-content: center; width: clamp(32px, 9vw, 45px); height: clamp(32px, 9vw, 45px); top: 6%; left: 50%; transform: translateX(-50%); }
@@ -470,7 +679,7 @@
         .xray-source { position: absolute; display: flex; align-items: center; justify-content: center; width: clamp(22px, 6vw, 30px); height: clamp(22px, 6vw, 30px); bottom: 6%; left: 50%; transform: translateX(-50%); }
         .xray-source svg { width: 100%; height: 100%; }
         .xray-beam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .xray-beam line { stroke: #1d1d1f; stroke-width: 0.5; stroke-dasharray: 0.5, 3; stroke-linecap: round; opacity: 0.4; }
+        .xray-beam line { stroke: var(--text-primary); stroke-width: 0.5; stroke-dasharray: 0.5, 3; stroke-linecap: round; opacity: 0.4; }
         .degree-input-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; }
         .reset-btn {
             padding: 8px 16px;
@@ -479,11 +688,11 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            background: #e0e0e0;
-            color: #1d1d1f;
+            background: var(--border-color);
+            color: var(--text-primary);
             transition: all 0.2s;
         }
-        .reset-btn:hover { background: #d0d0d0; }
+        .reset-btn:hover { background: var(--border-medium); }
         .reset-btn:active { transform: scale(0.95); }
         .secondary-btn {
             padding: 10px 16px;
@@ -492,25 +701,32 @@
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            background: #f5f5f7;
-            color: #1d1d1f;
+            background: var(--button-secondary-bg);
+            color: var(--text-primary);
             transition: all 0.2s;
         }
-        .secondary-btn:hover { background: #e8e8ed; }
+        .secondary-btn:hover { background: var(--button-secondary-hover); }
         .secondary-btn:active { transform: scale(0.98); }
-        .pipe-calc-row { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
+        .pipe-calc-row { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
         .pipe-calc-item { text-align: center; }
-        .pipe-calc-label { font-size: 12px; color: #86868b; display: block; margin-bottom: 5px; }
-        .pipe-calc-value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+        .pipe-calc-label { font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 5px; }
+        .pipe-calc-value { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+        .pipe-toggle-bar { display: flex; justify-content: center; padding: 4px 0 2px 0; cursor: pointer; }
+        .pipe-toggle-bar svg { color: var(--text-tertiary); transition: transform 0.3s ease; }
+        .pipe-toggle-bar:hover svg { color: var(--text-secondary); }
+        .pipe-toggle-bar svg { transform: rotate(180deg); }
+        .pipe-toggle-bar.collapsed svg { transform: rotate(0deg); }
+        .pipe-collapsible { overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; max-height: 500px; opacity: 1; }
+        .pipe-collapsible.collapsed { max-height: 0; opacity: 0; }
         .pipe-with-shots { display: flex; align-items: center; justify-content: center; gap: 8px; }
         .shots-column { display: flex; flex-direction: column; gap: 4px; min-width: 50px; }
-        .shot-item { font-size: 10px; color: #1d1d1f; text-align: center; }
-        .shot-item .shot-label { color: #86868b; font-weight: 500; }
+        .shot-item { font-size: 10px; color: var(--text-primary); text-align: center; }
+        .shot-item .shot-label { color: var(--text-tertiary); font-weight: 500; }
         .shot-item .shot-value { font-weight: 600; }
         .controls { display: grid; gap: 12px; margin-bottom: 20px; }
         .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .camera-section {
-            background: #f5f5f7;
+            background: var(--bg-secondary);
             border-radius: 16px;
             margin-bottom: 20px;
             overflow: hidden;
@@ -518,7 +734,7 @@
         .camera-frame {
             width: 100%;
             aspect-ratio: 16 / 9;
-            background: #1d1d1f;
+            background: var(--text-primary);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -528,7 +744,7 @@
             flex-direction: column;
             align-items: center;
             gap: 8px;
-            color: #86868b;
+            color: var(--text-tertiary);
             font-size: 14px;
         }
         button.control-btn {
@@ -538,51 +754,133 @@
             border: none;
             border-radius: 14px;
             cursor: pointer;
-            color: #ffffff;
-            background: #007aff;
+            color: var(--button-primary-text);
+            background: var(--button-primary-bg);
             transition: all 0.2s;
         }
-        button.control-btn:hover { background: #0056b3; transform: scale(1.02); }
+        button.control-btn:hover { background: var(--button-primary-hover); transform: scale(1.02); }
         button.control-btn:active { transform: scale(0.98); }
-        button.control-btn.btn-stop { grid-column: 1 / -1; background: #ff3b30; }
-        button.control-btn.btn-stop:hover { background: #d63027; }
-        button.control-btn.btn-auto { grid-column: 1 / -1; background: #34c759; }
-        button.control-btn.btn-auto:hover { background: #2da44e; }
-        .header { text-align: center; color: #86868b; font-size: 12px; margin-bottom: 15px; }
-        .footer { text-align: center; color: #86868b; font-size: 11px; margin-top: 15px; }
+        button.control-btn.btn-stop { grid-column: 1 / -1; background: var(--button-danger-bg); }
+        button.control-btn.btn-stop:hover { background: var(--button-danger-hover); }
+        button.control-btn.btn-auto { grid-column: 1 / -1; background: var(--button-success-bg); }
+        button.control-btn.btn-auto:hover { background: var(--button-success-hover); }
+        .header { text-align: center; color: var(--text-tertiary); font-size: 12px; margin-bottom: 15px; }
+        .footer { text-align: center; color: var(--text-tertiary); font-size: 11px; margin-top: 15px; }
         @media (max-width: 400px) { .control-row { grid-template-columns: 1fr; } }
-        .driver-toggle { display: flex; gap: 4px; background: #f5f5f7; border-radius: 8px; padding: 2px; }
-        .driver-btn { padding: 6px 12px; font-size: 12px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: #86868b; transition: all 0.2s; }
-        .driver-btn.active { background: #007aff; color: #ffffff; }
-        .driver-btn:hover:not(.active):not(:disabled) { background: #e8e8ed; }
+        .driver-toggle { display: flex; gap: 4px; background: var(--bg-secondary); border-radius: 8px; padding: 2px; }
+        .driver-btn { padding: 6px 12px; font-size: 12px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-tertiary); transition: all 0.2s; }
+        .driver-btn.active { background: var(--button-primary-bg); color: var(--button-primary-text); }
+        .driver-btn:hover:not(.active):not(:disabled) { background: var(--button-secondary-hover); }
         .driver-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .restart-banner { background: #ff9500; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; text-align: center; margin-top: 8px; }
+        .restart-banner { background: var(--status-warning); color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; text-align: center; margin-top: 8px; }
         /* Support Button and Modal */
-        .support-section { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
-        .support-btn { background: #f5f5f7; color: #1d1d1f; border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-        .support-btn:hover { background: #e8e8ed; transform: scale(1.02); }
+        .support-section { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); }
+        .support-btn { background: var(--button-secondary-bg); color: var(--text-primary); border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .support-btn:hover { background: var(--button-secondary-hover); transform: scale(1.02); }
         .support-btn:active { transform: scale(0.98); }
         .support-btn svg { width: 16px; height: 16px; }
     </style>
 </head>
 <body>
+    <!-- Global error handler for debugging -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('JS Error: ' + msg + ' at line ' + line);
+            return false;
+        };
+    </script>
+    <!-- Check if boot is still in progress (server-side state) -->
+    <script>
+        (function() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/security/boot_status', false); // synchronous
+            try {
+                xhr.send();
+                if (xhr.status === 200) {
+                    var status = JSON.parse(xhr.responseText);
+                    if (status.in_progress) {
+                        // Boot still in progress, show splash
+                        window.location.replace('/boot_splash.html');
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log('Could not check boot status');
+            }
+        })();
+    </script>
+    <!-- Inline theme initialization to prevent flash - Default is LIGHT -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('crawler-theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                // Default to light if no saved preference
+                document.documentElement.setAttribute('data-theme', 'light');
+                if (!savedTheme) localStorage.setItem('crawler-theme', 'light');
+            }
+        })();
+
+        // Theme toggle handler - Light is default, Dark sets data-theme="dark"
+        function handleThemeChange(checkbox) {
+            var newTheme = checkbox.checked ? 'dark' : 'light';
+            if (newTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            localStorage.setItem('crawler-theme', newTheme);
+        }
+
+        // Apply saved theme immediately and set checkbox state after DOM loads
+        (function() {
+            var savedTheme = localStorage.getItem('crawler-theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+        document.addEventListener('DOMContentLoaded', function() {
+            var cb = document.getElementById('theme-checkbox');
+            if (cb) {
+                cb.checked = (localStorage.getItem('crawler-theme') === 'dark');
+            }
+        });
+    </script>
+
     <div class="container">
-        <div id="connectionStatus" style="display: flex; justify-content: center; align-items: center; font-size: 12px; margin-bottom: 8px; color: #86868b; position: relative; gap: 16px;">
-            <span style="display: flex; align-items: center;">
-                <svg id="internetIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                <span id="internetText">Offline</span>
-            </span>
-            <span style="display: flex; align-items: center; cursor: pointer;" onclick="openWifiModal()" title="WiFi Settings">
-                <svg id="wifiIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-                <span id="wifiText">No WiFi</span>
-            </span>
-            <span style="display: flex; align-items: center;">
-                <span id="clearlinkDot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #c62828; margin-right: 6px;"></span>
-                <span id="clearlinkText">ClearLink</span>
-            </span>
-            <button onclick="location.reload()" style="position: absolute; right: 0; background: #f5f5f7; border: none; border-radius: 6px; padding: 6px; cursor: pointer;" title="Refresh page">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        <!-- Row 1: Control buttons - centered -->
+        <div class="top-controls">
+            <label class="theme-slider" title="Toggle Light/Dark Mode" for="theme-checkbox">
+                <input type="checkbox" id="theme-checkbox" onchange="handleThemeChange(this)">
+                <span class="slider-track">
+                    <span class="slider-icon moon">🌙</span>
+                    <span class="slider-icon sun">☀️</span>
+                    <span class="slider-thumb"></span>
+                </span>
+            </label>
+            <button class="icon-button" onclick="togglePopup('systemPopup', event)" title="System Settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
+            <button class="icon-button" onclick="location.reload()" title="Refresh page">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+        </div>
+
+        <!-- Row 2: Status indicators - centered -->
+        <div class="status-bar" id="connectionStatus">
+            <div class="status-item">
+                <svg id="internetIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--status-error);"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span id="internetText">Offline</span>
+            </div>
+            <div class="status-item" style="cursor: pointer;" onclick="openWifiModal()" title="WiFi Settings">
+                <svg id="wifiIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--status-error);"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                <span id="wifiText">No WiFi</span>
+            </div>
+            <div class="status-item">
+                <span id="clearlinkDot" class="status-dot"></span>
+                <span id="clearlinkText">ClearLink</span>
+            </div>
         </div>
         <div class="system-badge"><span>EdgeFlex ClearLink</span></div>
         <div class="update-banner" id="updateBanner" onclick="installUpdate()">Update available! Click to install (v<span id="newVersion"></span>)</div>
@@ -595,8 +893,8 @@
                         <span class="motor-status stopped" id="m1Status"></span>
                         <span class="info-label">Motor 1</span>
                     </span>
-                    <span id="m1VelocityDisplay" style="font-size: 12px; font-weight: 600; color: #1d1d1f;">0.00 in/s</span>
-                    <span id="m1FaultBar" style="font-size: 10px; color: #34c759;">OK</span>
+                    <span id="m1VelocityDisplay" style="font-size: 12px; font-weight: 600; color: var(--text-primary);">0.00 in/s</span>
+                    <span id="m1TorqueBar" style="font-size: 10px; color: var(--text-tertiary);">0.00 Nm</span>
                 </span>
             </div>
             <div class="info-item">
@@ -605,14 +903,17 @@
                         <span class="motor-status stopped" id="m2Status"></span>
                         <span class="info-label">Motor 2</span>
                     </span>
-                    <span id="m2VelocityDisplay" style="font-size: 12px; font-weight: 600; color: #1d1d1f;">0.00 in/s</span>
-                    <span id="m2FaultBar" style="font-size: 10px; color: #34c759;">OK</span>
+                    <span id="m2VelocityDisplay" style="font-size: 12px; font-weight: 600; color: var(--text-primary);">0.00 in/s</span>
+                    <span id="m2TorqueBar" style="font-size: 10px; color: var(--text-tertiary);">0.00 Nm</span>
                 </span>
             </div>
             <div class="info-item">
                 <span class="info-value" style="display: flex; flex-direction: column; align-items: center;">
-                    <span style="font-size: 10px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Pipe Diameter</span>
-                    <span id="pipeDiameterDisplay" style="font-weight: 600; color: #1d1d1f;">12"</span>
+                    <span style="display: flex; align-items: center; margin-bottom: 4px;">
+                        <span class="info-label">Pipe Dia.</span>
+                    </span>
+                    <span id="pipeDiameterDisplay" style="font-size: 12px; font-weight: 600; color: var(--text-primary);">12"</span>
+                    <span style="font-size: 10px; color: var(--text-tertiary);">&nbsp;</span>
                 </span>
             </div>
         </div>
@@ -621,30 +922,30 @@
             <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
                 <div class="stats-button" onclick="togglePopup('statsPopup', event)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Stats
-                    <div class="stats-popup" id="statsPopup" onclick="event.stopPropagation()">
+                    <div class="stats-popup" id="statsPopup" onclick="event.stopPropagation()" style="background-color: var(--popup-bg); border: 1px solid var(--border-color);">
                         <div class="popup-header" onmousedown="startDrag(event, 'statsPopup')" ontouchstart="startDragTouch(event, 'statsPopup')">
                             <span class="popup-title">Stats</span>
                             <button class="popup-close" onclick="closePopup('statsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                         </div>
                         <div class="popup-content">
                             <div class="stats-row-item" style="padding-top: 4px;"><span class="stats-label" style="font-weight: 600;">ClearLink</span><span class="stats-value" id="clearlinkConnStatus" style="font-size: 11px;">--</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Motor 1 Fault</span><span class="stats-value" id="motor1FaultStatus" style="color: #34c759;">OK</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Motor 2 Fault</span><span class="stats-value" id="motor2FaultStatus" style="color: #34c759;">OK</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Motor 1 Torque</span><span class="stats-value" id="motor1Torque">N/A</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Motor 2 Torque</span><span class="stats-value" id="motor2Torque">N/A</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 1 Fault</span><span class="stats-value" id="motor1FaultStatus" style="color: var(--status-ok);">OK</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 2 Fault</span><span class="stats-value" id="motor2FaultStatus" style="color: var(--status-ok);">OK</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 1 Encoder</span><span class="stats-value" id="motor1Position">0</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 2 Encoder</span><span class="stats-value" id="motor2Position">0</span></div>
                             <div class="stats-row-item"><span class="stats-label"></span><button class="secondary-btn" id="resetFaultBtn" onclick="resetFaults(event)" style="display: none; font-size: 12px; padding: 6px 12px;">Reset Faults</button></div>
-                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value-group"><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span><button class="icon-btn" onclick="zeroIMU(event)" title="Zero IMU"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></button></span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value-group"><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span><button class="icon-btn" onclick="zeroIMU(event)" title="Zero IMU"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
-                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: #86868b;">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label" style="color: #86868b;">Rel. Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
-                            <div class="stats-row-item" style="border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 8px;"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.1</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label" style="color: var(--text-tertiary);">Rel. Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.1</span></div>
                         </div>
                     </div>
                 </div>
                 <div class="stats-button" id="settingsButton" onclick="togglePopup('settingsPopup', event)" style="position: relative;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings
-                    <div class="settings-popup" id="settingsPopup" onclick="event.stopPropagation()">
+                    <div class="settings-popup" id="settingsPopup" onclick="event.stopPropagation()" style="background-color: var(--popup-bg); border: 1px solid var(--border-color);">
                         <div class="popup-header" onmousedown="startDrag(event, 'settingsPopup')" ontouchstart="startDragTouch(event, 'settingsPopup')">
                             <span class="popup-title">Settings</span>
                             <button class="popup-close" onclick="closePopup('settingsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -665,6 +966,13 @@
                                 </div>
                             </div>
                             <div class="settings-row">
+                                <span class="settings-label">Distance Mode</span>
+                                <div class="seg-toggle" id="distanceModeToggle">
+                                    <button class="active" onclick="setDistanceMode('encoder')">Encoder</button>
+                                    <button onclick="setDistanceMode('degrees')">Degrees</button>
+                                </div>
+                            </div>
+                            <div class="settings-row">
                                 <span class="settings-label">Jog Speed</span>
                                 <div style="display: flex; align-items: center; justify-content: flex-end;">
                                     <span class="settings-unit" style="margin-right: 6px;">in/s</span>
@@ -678,12 +986,13 @@
                                     <input type="number" class="settings-input" id="rampInput" min="1" max="100" step="1" value="50" onchange="updateRamp(this.value)" style="width: 70px;">
                                 </div>
                             </div>
+                            <button class="save-defaults-btn" onclick="saveAllDefaults()">Save as Defaults</button>
                         </div>
                     </div>
                 </div>
                 <div class="stats-button" onclick="togglePopup('motorParamsPopup', event)" style="position: relative;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Motors
-                    <div class="settings-popup" id="motorParamsPopup" onclick="event.stopPropagation()">
+                    <div class="settings-popup" id="motorParamsPopup" onclick="event.stopPropagation()" style="background-color: var(--popup-bg); border: 1px solid var(--border-color);">
                         <div class="popup-header" onmousedown="startDrag(event, 'motorParamsPopup')" ontouchstart="startDragTouch(event, 'motorParamsPopup')">
                             <span class="popup-title">Motor Parameters</span>
                             <button class="popup-close" onclick="closePopup('motorParamsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -745,60 +1054,58 @@
                             </div>
                         </div>
                         <div class="settings-row" style="padding-top: 4px;">
-                            <span class="settings-label" style="color: #86868b;">Max Speed</span>
+                            <span class="settings-label" style="color: var(--text-tertiary);">Max Speed</span>
                             <div style="display: flex; align-items: center; justify-content: flex-end;">
                                 <span class="settings-unit" style="margin-left: 0; margin-right: 4px;">"/s</span>
-                                <span id="maxSpeedDisplay" style="font-weight: 600; color: #86868b; width: 85px; text-align: center;">8.3</span>
+                                <span id="maxSpeedDisplay" style="font-weight: 600; color: var(--text-tertiary); width: 85px; text-align: center;">8.3</span>
                             </div>
                         </div>
                         <div class="settings-row" style="padding-top: 4px;">
-                            <span class="settings-label" style="color: #86868b;">Total Torque Nm</span>
+                            <span class="settings-label" style="color: var(--text-tertiary);">Total Torque Nm</span>
                             <div style="display: flex; align-items: center; justify-content: flex-end;">
                                 <span class="settings-unit" style="margin-left: 0; margin-right: 4px; visibility: hidden;">"/s</span>
-                                <span id="crawlerTorqueDisplay" style="font-weight: 600; color: #86868b; width: 85px; text-align: center;">1.0</span>
+                                <span id="crawlerTorqueDisplay" style="font-weight: 600; color: var(--text-tertiary); width: 85px; text-align: center;">1.0</span>
                             </div>
                         </div>
                         </div>
                     </div>
                 </div>
-                <div class="stats-button" onclick="togglePopup('systemPopup', event)" style="position: relative;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>System
-                    <div class="stats-popup" id="systemPopup" onclick="event.stopPropagation()">
-                        <div class="popup-header" onmousedown="startDrag(event, 'systemPopup')" ontouchstart="startDragTouch(event, 'systemPopup')">
-                            <span class="popup-title">System</span>
-                            <button class="popup-close" onclick="closePopup('systemPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <!-- System popup (opened by gear button in top-controls) -->
+                <div class="stats-popup" id="systemPopup" onclick="event.stopPropagation()" style="background-color: var(--popup-bg); border: 1px solid var(--border-color);">
+                    <div class="popup-header" onmousedown="startDrag(event, 'systemPopup')" ontouchstart="startDragTouch(event, 'systemPopup')">
+                        <span class="popup-title">System</span>
+                        <button class="popup-close" onclick="closePopup('systemPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                    </div>
+                    <div class="popup-content">
+                        <div class="stats-row-item"><span class="stats-label">CPU Usage</span><span class="stats-value" id="cpuUsage">--%</span></div>
+                        <div class="stats-row-item"><span class="stats-label">RAM</span><span class="stats-value" id="ramUsage">--</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Storage</span><span class="stats-value" id="diskUsage">--</span></div>
+                        <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value-group"><span class="stats-value" id="cpuTemp">--°C</span><button class="icon-btn" onclick="showGraph(event,'temp')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                        <div class="stats-row-item"><span class="stats-label">Fan</span><span class="stats-value-group"><span class="stats-value" id="fanSpeed">--</span><button class="icon-btn" onclick="showGraph(event,'fan')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
+                        <div class="stats-row-item" onclick="openWifiModal()" style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
+                            <span class="stats-label">Connected WiFi</span>
+                            <span class="stats-value" id="wifiSsidDisplay" style="display: flex; align-items: center; gap: 6px;">--<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-tertiary);"><polyline points="9 18 15 12 9 6"/></svg></span>
                         </div>
-                        <div class="popup-content">
-                            <div class="stats-row-item"><span class="stats-label">CPU Usage</span><span class="stats-value" id="cpuUsage">--%</span></div>
-                            <div class="stats-row-item"><span class="stats-label">RAM</span><span class="stats-value" id="ramUsage">--</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Storage</span><span class="stats-value" id="diskUsage">--</span></div>
-                            <div class="stats-row-item"><span class="stats-label">CPU Temp</span><span class="stats-value-group"><span class="stats-value" id="cpuTemp">--°C</span><button class="icon-btn" onclick="showGraph(event,'temp')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                            <div class="stats-row-item"><span class="stats-label">Fan</span><span class="stats-value-group"><span class="stats-value" id="fanSpeed">--</span><button class="icon-btn" onclick="showGraph(event,'fan')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                            <div class="stats-row-item" onclick="openWifiModal()" style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f0f0f5'" onmouseout="this.style.background='transparent'">
-                                <span class="stats-label">Connected WiFi</span>
-                                <span class="stats-value" id="wifiSsidDisplay" style="display: flex; align-items: center; gap: 6px;">--<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
-                            </div>
-                            <div class="stats-row-item" onclick="openWifiModal()" style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f0f0f5'" onmouseout="this.style.background='transparent'">
-                                <span class="stats-label">WiFi IP</span>
-                                <span class="stats-value" id="systemWifiIp">--</span>
-                            </div>
-                            <div class="stats-row-item">
-                                <span class="stats-label">Wired IP</span>
-                                <span class="stats-value" id="systemEthIp">--</span>
-                            </div>
-                            <div class="stats-row-item">
-                                <span class="stats-label">USB 1</span>
-                                <span class="stats-value" id="usb1Device">--</span>
-                            </div>
-                            <div class="stats-row-item">
-                                <span class="stats-label">USB 2</span>
-                                <span class="stats-value" id="usb2Device">--</span>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
-                                <button class="secondary-btn" onclick="openConfiguration()">Configuration</button>
-                                <button class="secondary-btn" onclick="forgetWifi()">Forget WiFi</button>
-                                <button class="secondary-btn" onclick="rebootSystem()">Reboot</button>
-                            </div>
+                        <div class="stats-row-item" onclick="openWifiModal()" style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
+                            <span class="stats-label">WiFi IP</span>
+                            <span class="stats-value" id="systemWifiIp">--</span>
+                        </div>
+                        <div class="stats-row-item">
+                            <span class="stats-label">Wired IP</span>
+                            <span class="stats-value" id="systemEthIp">--</span>
+                        </div>
+                        <div class="stats-row-item">
+                            <span class="stats-label">USB 1</span>
+                            <span class="stats-value" id="usb1Device">--</span>
+                        </div>
+                        <div class="stats-row-item">
+                            <span class="stats-label">USB 2</span>
+                            <span class="stats-value" id="usb2Device">--</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+                            <button class="secondary-btn" onclick="openConfiguration()">Configuration</button>
+                            <button class="secondary-btn" onclick="forgetWifi()">Forget WiFi</button>
+                            <button class="secondary-btn" onclick="rebootSystem()">Reboot</button>
                         </div>
                     </div>
                 </div>
@@ -806,11 +1113,15 @@
         </div>
 
         <div class="pipe-section">
-            <div class="pipe-calc-row" style="margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0;">
+            <div class="pipe-calc-row" style="margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Speed</span><span class="pipe-calc-value" id="pipeSpeedDisplay">0.0"/s</span></div>
                 <div class="pipe-calc-item"><span class="pipe-calc-label">Distance</span><span class="pipe-calc-value" id="distanceTraveled">0.0 in</span></div>
-                <div class="pipe-calc-item"><span class="pipe-calc-label">Angle</span><input type="number" class="pipe-calc-value" id="pipeRelAngleDisplay" value="0.0" step="0.1" style="width: 60px; border: 1px solid #e0e0e0; border-radius: 6px; text-align: center; background: white;" onchange="setTestAngle(this.value)">°</div>
+                <div class="pipe-calc-item"><span class="pipe-calc-label">Angle</span><input type="number" class="pipe-calc-value" id="pipeRelAngleDisplay" value="0.0" step="0.1" style="width: 60px; border: 1px solid var(--border-color); border-radius: 6px; text-align: center; background: var(--bg-primary);" onchange="setTestAngle(this.value)">°</div>
             </div>
+            <div class="pipe-toggle-bar" id="pipeToggleBtn" onclick="togglePipeView()">
+                <svg width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 10 10 18 2"/></svg>
+            </div>
+            <div id="pipeCollapsible" class="pipe-collapsible">
             <div class="pipe-with-shots">
                 <div class="shots-column" id="shotsLeft"></div>
                 <div class="pipe-container" id="pipeContainer">
@@ -826,22 +1137,23 @@
                     <!-- Wall-E at top -->
                     <div class="walle" id="walle"><img src="https://freepngimg.com/save/23298-wall-e/918x990" alt="Wall-E"></div>
                     <!-- Radiation trefoil symbol at bottom (no fill, outline only) -->
-                    <div class="xray-source" id="xraySource"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="12" fill="none" stroke="#1d1d1f" stroke-width="3"/><path d="M50 38 L50 8 A42 42 0 0 1 86.4 71 L61 56 A12 12 0 0 0 50 38" fill="none" stroke="#1d1d1f" stroke-width="3"/><path d="M61 56 L86.4 71 A42 42 0 0 1 13.6 71 L39 56 A12 12 0 0 0 61 56" fill="none" stroke="#1d1d1f" stroke-width="3"/><path d="M39 56 L13.6 71 A42 42 0 0 1 50 8 L50 38 A12 12 0 0 0 39 56" fill="none" stroke="#1d1d1f" stroke-width="3"/></svg></div>
+                    <div class="xray-source" id="xraySource" style="color: var(--text-primary);"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="12" fill="none" stroke="currentColor" stroke-width="3"/><path d="M50 38 L50 8 A42 42 0 0 1 86.4 71 L61 56 A12 12 0 0 0 50 38" fill="none" stroke="currentColor" stroke-width="3"/><path d="M61 56 L86.4 71 A42 42 0 0 1 13.6 71 L39 56 A12 12 0 0 0 61 56" fill="none" stroke="currentColor" stroke-width="3"/><path d="M39 56 L13.6 71 A42 42 0 0 1 50 8 L50 38 A12 12 0 0 0 39 56" fill="none" stroke="currentColor" stroke-width="3"/></svg></div>
                 </div>
                 <div class="shots-column" id="shotsRight"></div>
             </div>
             <button class="secondary-btn" style="margin-top: 12px; font-size: 12px; padding: 6px 12px;" onclick="clearShots()">Clear Shots</button>
+            </div>
         </div>
 
         <div class="controls">
             <div class="control-row">
-                <button class="control-btn" style="font-size: 13px;"
+                <button class="control-btn" style="font-size: 13px; background-color: #00C8D4 !important; color: white !important;"
                     onclick="startJog(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Jog Forward</button>
-                <button class="control-btn" style="font-size: 13px;"
+                <button class="control-btn" style="font-size: 13px; background-color: #00C8D4 !important; color: white !important;"
                     onclick="startJog(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>Jog Backward</button>
             </div>
-            <button class="control-btn btn-auto" onclick="autoMove()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>Auto Move</button>
-            <button class="control-btn btn-stop" onclick="stopJog()"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
+            <button class="control-btn btn-auto" onclick="autoMove()" style="background-color: #34c759 !important; color: white !important; display: block !important; visibility: visible !important;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>Auto Move</button>
+            <button class="control-btn btn-stop" onclick="stopJog()" style="background-color: #ff3b30 !important; color: white !important; display: block !important; visibility: visible !important;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
         </div>
 
         <div class="camera-section">
@@ -872,9 +1184,9 @@
                 <button class="modal-close" onclick="closeConfigAuth()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div style="padding: 20px;">
-                <p style="color: #86868b; font-size: 13px; margin-bottom: 15px;">Enter admin password to access configuration.</p>
-                <input type="password" id="configAuthPassword" class="settings-input" placeholder="Password" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px;">
-                <p id="configAuthError" style="color: #ff3b30; font-size: 12px; margin-bottom: 10px; display: none;">Incorrect password</p>
+                <p style="color: var(--text-tertiary); font-size: 13px; margin-bottom: 15px;">Enter admin password to access configuration.</p>
+                <input type="password" id="configAuthPassword" class="settings-input" placeholder="Password" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px;">
+                <p id="configAuthError" style="color: var(--status-error); font-size: 12px; margin-bottom: 10px; display: none;">Incorrect password</p>
                 <div style="display: flex; gap: 10px;">
                     <button class="secondary-btn" onclick="closeConfigAuth()" style="flex: 1;">Cancel</button>
                     <button class="control-btn" onclick="checkConfigAuth()" style="flex: 1; padding: 10px;">Continue</button>
@@ -899,32 +1211,32 @@
                 <button class="modal-close" onclick="closeWifiModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div style="padding: 20px;">
-                <div style="background: #f5f5f7; border-radius: 10px; padding: 12px 15px; margin-bottom: 15px;">
+                <div style="background: var(--bg-secondary); border-radius: 10px; padding: 12px 15px; margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Current Connection</span>
-                        <span id="wifiCurrentStatus" style="font-size: 13px; font-weight: 500; color: #34c759;">Connected</span>
+                        <span style="font-size: 12px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Current Connection</span>
+                        <span id="wifiCurrentStatus" style="font-size: 13px; font-weight: 500; color: var(--status-ok);">Connected</span>
                     </div>
-                    <div style="font-size: 16px; font-weight: 600; color: #1d1d1f; margin-top: 6px;" id="wifiCurrentSsid">--</div>
-                    <div style="font-size: 12px; color: #86868b; margin-top: 4px;" id="wifiCurrentIp">IP: --</div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-top: 6px;" id="wifiCurrentSsid">--</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px;" id="wifiCurrentIp">IP: --</div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <span style="font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;">Available Networks</span>
-                    <button onclick="scanWifiNetworks()" style="background: #007aff; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer;">Scan</button>
+                    <span style="font-size: 12px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Available Networks</span>
+                    <button onclick="scanWifiNetworks()" style="background: var(--button-primary-bg); color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer;">Scan</button>
                 </div>
-                <div id="wifiNetworkList" style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 10px;">
-                    <div style="padding: 30px; text-align: center; color: #86868b; font-size: 13px;">Click Scan to find networks</div>
+                <div id="wifiNetworkList" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
+                    <div style="padding: 30px; text-align: center; color: var(--text-tertiary); font-size: 13px;">Click Scan to find networks</div>
                 </div>
-                <div id="wifiConnectForm" style="display: none; margin-top: 15px; padding: 15px; background: #f5f5f7; border-radius: 10px;">
-                    <div style="font-size: 13px; font-weight: 500; color: #1d1d1f; margin-bottom: 10px;">Connect to: <span id="wifiConnectSsid"></span></div>
-                    <input type="password" id="wifiConnectPassword" placeholder="Enter password" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box;">
-                    <div id="wifiConnectError" style="color: #ff3b30; font-size: 12px; margin-bottom: 10px; display: none;"></div>
+                <div id="wifiConnectForm" style="display: none; margin-top: 15px; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
+                    <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 10px;">Connect to: <span id="wifiConnectSsid"></span></div>
+                    <input type="password" id="wifiConnectPassword" placeholder="Enter password" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; box-sizing: border-box;">
+                    <div id="wifiConnectError" style="color: var(--status-error); font-size: 12px; margin-bottom: 10px; display: none;"></div>
                     <div style="display: flex; gap: 10px;">
-                        <button onclick="cancelWifiConnect()" style="flex: 1; padding: 10px; background: #e8e8ed; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Cancel</button>
-                        <button onclick="connectToWifi()" id="wifiConnectBtn" style="flex: 1; padding: 10px; background: #007aff; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Connect</button>
+                        <button onclick="cancelWifiConnect()" style="flex: 1; padding: 10px; background: var(--button-secondary-hover); border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Cancel</button>
+                        <button onclick="connectToWifi()" id="wifiConnectBtn" style="flex: 1; padding: 10px; background: var(--button-primary-bg); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Connect</button>
                     </div>
                 </div>
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
-                    <button onclick="forgetWifiFromModal()" style="width: 100%; padding: 10px; background: #ff3b30; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Forget WiFi & Enable Hotspot</button>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <button onclick="forgetWifiFromModal()" style="width: 100%; padding: 10px; background: var(--button-danger-bg); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Forget WiFi & Enable Hotspot</button>
                 </div>
             </div>
         </div>
@@ -938,18 +1250,18 @@
                 <button class="modal-close" onclick="closeSupportModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div style="padding: 20px;">
-                <p style="color: #86868b; font-size: 13px; margin-bottom: 15px;">Describe your issue and download a diagnostic report to send to support.</p>
-                <label style="font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">Issue Description</label>
-                <textarea id="supportIssueDescription" placeholder="Describe the problem you're experiencing..." style="width: 100%; height: 100px; padding: 12px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 8px; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
-                <div id="supportStatus" style="display: none; margin-top: 10px; padding: 10px; background: #f5f5f7; border-radius: 8px; font-size: 12px; text-align: center;"></div>
+                <p style="color: var(--text-tertiary); font-size: 13px; margin-bottom: 15px;">Describe your issue and download a diagnostic report to send to support.</p>
+                <label style="font-size: 12px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">Issue Description</label>
+                <textarea id="supportIssueDescription" placeholder="Describe the problem you're experiencing..." style="width: 100%; height: 100px; padding: 12px; font-size: 14px; border: 1px solid var(--border-color); border-radius: 8px; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
+                <div id="supportStatus" style="display: none; margin-top: 10px; padding: 10px; background: var(--bg-secondary); border-radius: 8px; font-size: 12px; text-align: center;"></div>
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button onclick="downloadSupportReport()" style="flex: 1; padding: 12px; background: #007aff; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <button onclick="downloadSupportReport()" style="flex: 1; padding: 12px; background: var(--button-primary-bg); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         Download Report
                     </button>
                 </div>
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; text-align: center;">
-                    <a id="supportEmailLink" href="mailto:c.burke@rae.com?subject=Crawler%20Support%20Request" style="color: #007aff; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: center;">
+                    <a id="supportEmailLink" href="mailto:c.burke@rae.com?subject=Crawler%20Support%20Request" style="color: var(--status-info); text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                         Email: c.burke@rae.com
                     </a>
@@ -967,6 +1279,9 @@
         var isUpdating = false;
         var pipeDiameter = 12;
         var totalDistance = 0;
+        var distanceMode = 'encoder';
+        var prevMotorPosition = null;
+        var prevRelPitch = null;
         var lastUpdateTime = Date.now();
 
         document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
@@ -1141,6 +1456,16 @@
         var LOCK_TIMEOUT_MS = 120000;  // Auto-lock after 2 minutes
         var SETTINGS_PASSWORD = 'Prime';
 
+        // Motor torque constants (CPM-SDHP-2311S-ELN @ 60V)
+        var MOTOR_PEAK_TORQUE_NM = 2.0;  // Peak torque rating in Nm
+
+        // Convert torque percentage to Newton-meters
+        // ClearLink returns torque as percentage of PEAK torque
+        // Negative values indicate direction (use abs for magnitude)
+        function torquePercentToNm(percent) {
+            return Math.abs(percent) / 100.0 * MOTOR_PEAK_TORQUE_NM;
+        }
+
         // Dynamic conversion values (recalculated when motor params change)
         var stepsPerInch = 1000;      // Steps per inch of travel
         var maxStepsPerSec = 66667;   // Max steps/sec from motor RPM
@@ -1252,6 +1577,10 @@
                     if (settings.pipeDiameter) {
                         updatePipeDiameter(settings.pipeDiameter, false);
                     }
+                    // Load distance mode
+                    if (settings.distanceMode) {
+                        setDistanceMode(settings.distanceMode);
+                    }
                     // Load motor driver setting
                     if (settings.motorDriver) {
                         currentDriver = settings.motorDriver;
@@ -1301,6 +1630,36 @@
         // Save motor parameters
         function saveMotorParams() {
             saveSettings({ motorParams: motorParams });
+        }
+
+        // Save all current settings as defaults
+        function saveAllDefaults() {
+            var btn = document.querySelector('.save-defaults-btn');
+            var allSettings = {
+                motorParams: motorParams,
+                pipeDiameter: pipeDiameter,
+                distanceMode: distanceMode,
+                jogSpeedInSec: jogSpeedInSec,
+                rampPercent: rampPercent
+            };
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(allSettings)
+            }).then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    btn.textContent = 'Saved';
+                    btn.classList.add('saved');
+                    setTimeout(function() {
+                        btn.textContent = 'Save as Defaults';
+                        btn.classList.remove('saved');
+                    }, 2000);
+                }
+            }).catch(function(e) {
+                btn.textContent = 'Error';
+                setTimeout(function() { btn.textContent = 'Save as Defaults'; }, 2000);
+            });
         }
 
         // Save pipe diameter
@@ -1471,7 +1830,8 @@
         }
 
         function stopJog() {
-            if (!isJogging) return;
+            // Always send stop command regardless of isJogging state
+            // (state may be out of sync after page refresh)
             isJogging = false;
             // Publish zero velocity MotorCommand to stop
             var jogMsg = new ROSLIB.Message({
@@ -1521,7 +1881,7 @@
 
             var statsRow = document.getElementById('graphStats');
             if (config.dual) {
-                statsRow.innerHTML = '<div style="display:flex;gap:20px;align-items:center;width:100%;justify-content:center;"><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:' + config.color + '"></div><span style="font-size:14px;color:#1d1d1f;">' + config.label1 + '</span></div><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:' + config.color2 + '"></div><span style="font-size:14px;color:#1d1d1f;">' + config.label2 + '</span></div></div>';
+                statsRow.innerHTML = '<div style="display:flex;gap:20px;align-items:center;width:100%;justify-content:center;"><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:' + config.color + '"></div><span style="font-size:14px;color:var(--text-primary);">' + config.label1 + '</span></div><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:' + config.color2 + '"></div><span style="font-size:14px;color:var(--text-primary);">' + config.label2 + '</span></div></div>';
             } else {
                 var minDisplay = (allTimeMin && allTimeMin < 900) ? allTimeMin.toFixed(1) + config.unit : '--';
                 var avgDisplay = hasRealData ? avg.toFixed(1) + config.unit : '--';
@@ -1540,8 +1900,8 @@
             var steps = 5, stepValue = (config.maxScale - config.minScale) / steps;
             for (var i = 0; i <= steps; i++) {
                 var v = config.minScale + i * stepValue, y = yScale(v);
-                svgContent += '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (width - padding.right) + '" y2="' + y + '" stroke="#e0e0e0" stroke-width="1"/>';
-                svgContent += '<text x="' + (padding.left - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#86868b">' + v.toFixed(0) + '</text>';
+                svgContent += '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (width - padding.right) + '" y2="' + y + '" stroke="var(--border-color)" stroke-width="1"/>';
+                svgContent += '<text x="' + (padding.left - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="var(--text-tertiary)">' + v.toFixed(0) + '</text>';
             }
 
             // Draw warning zones
@@ -1578,7 +1938,7 @@
                 labelIndices.forEach(function(idx) {
                     if (data[idx] && data[idx].time) {
                         var timeLabel = formatTime(data[idx].time);
-                        svgContent += '<text x="' + xScale(idx) + '" y="' + (height - padding.bottom + 25) + '" text-anchor="middle" font-size="11" font-weight="500" fill="#1d1d1f">' + timeLabel + '</text>';
+                        svgContent += '<text x="' + xScale(idx) + '" y="' + (height - padding.bottom + 25) + '" text-anchor="middle" font-size="11" font-weight="500" fill="var(--text-primary)">' + timeLabel + '</text>';
                     }
                 });
             }
@@ -1605,31 +1965,89 @@
 
         var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
         var rosbridgeConnected = false;
+
+        // Auto-reconnect on stale data (fixes multi-client rosbridge issue)
+        var lastDataReceived = 0;
+        var connectionTime = 0;
+        var staleThreshold = 5000; // 5 seconds without data = stale
+        var reconnecting = false;
+        var reconnectAttempts = 0;
+        var maxReconnectAttempts = 3;
+
+        function updateLastDataTime() {
+            lastDataReceived = Date.now();
+            reconnectAttempts = 0; // Reset on successful data
+        }
+
+        function forceReconnect() {
+            if (reconnecting) return;
+            if (reconnectAttempts >= maxReconnectAttempts) {
+                console.log('Max reconnect attempts reached, reloading page...');
+                window.location.reload();
+                return;
+            }
+            console.log('Reconnecting (attempt ' + (reconnectAttempts + 1) + ')...');
+            reconnecting = true;
+            reconnectAttempts++;
+            ros.close();
+            setTimeout(function() {
+                ros.connect('ws://' + window.location.hostname + ':9090');
+                reconnecting = false;
+            }, 1000);
+        }
+
+        function checkForStaleConnection() {
+            if (!rosbridgeConnected || reconnecting) return;
+            var now = Date.now();
+            // Check if we connected but never received data
+            if (lastDataReceived === 0 && connectionTime > 0 && (now - connectionTime) > staleThreshold) {
+                console.log('Connected but no data received');
+                forceReconnect();
+                return;
+            }
+            // Check if data stopped flowing
+            if (lastDataReceived > 0 && (now - lastDataReceived) > staleThreshold) {
+                console.log('Data stopped flowing');
+                forceReconnect();
+            }
+        }
+        setInterval(checkForStaleConnection, 2000);
+
+        // Helper to get current theme colors from CSS variables
+        function getThemeColor(varName) {
+            return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        }
         function updateClearlinkStatus(connected) {
             var dot = document.getElementById('clearlinkDot');
             var text = document.getElementById('clearlinkText');
+            var okColor = getThemeColor('--status-ok');
+            var errorColor = getThemeColor('--status-error');
             if (!rosbridgeConnected) {
-                dot.style.background = '#c62828';
+                dot.style.background = errorColor;
                 text.textContent = 'ClearLink';
             } else if (connected) {
-                dot.style.background = '#2e7d32';
+                dot.style.background = okColor;
                 text.textContent = 'ClearLink';
             } else {
-                dot.style.background = '#c62828';
+                dot.style.background = errorColor;
                 text.textContent = 'ClearLink';
             }
         }
         function updateInternetStatus(online) {
             var icon = document.getElementById('internetIcon');
             var text = document.getElementById('internetText');
-            icon.style.stroke = online ? '#2e7d32' : '#c62828';
+            var okColor = getThemeColor('--status-ok');
+            var errorColor = getThemeColor('--status-error');
+            icon.style.stroke = online ? okColor : errorColor;
             text.textContent = online ? 'Online' : 'Offline';
         }
         function updateWifiStatus(ssid) {
             var icon = document.getElementById('wifiIcon');
             var text = document.getElementById('wifiText');
+            var okColor = getThemeColor('--status-ok');
+            var errorColor = getThemeColor('--status-error');
             var connected = ssid && ssid !== '--' && ssid !== '';
-            icon.style.stroke = connected ? '#2e7d32' : '#c62828';
+            icon.style.stroke = connected ? okColor : errorColor;
             text.textContent = connected ? ssid : 'No WiFi';
         }
         function checkInternet() {
@@ -1640,11 +2058,13 @@
         checkInternet(); setInterval(checkInternet, 10000);
         ros.on('connection', function() {
             rosbridgeConnected = true;
+            connectionTime = Date.now();
+            lastDataReceived = 0; // Reset - wait for actual data
             updateClearlinkStatus(false);
-            console.log('ROS connected. Jog speed: ' + jogSpeedInSec + ' in/s, Ramp: ' + rampPercent + '%');
+            console.log('ROS connected');
         });
-        ros.on('error', function() { rosbridgeConnected = false; updateClearlinkStatus(false); });
-        ros.on('close', function() { rosbridgeConnected = false; updateClearlinkStatus(false); });
+        ros.on('error', function() { rosbridgeConnected = false; connectionTime = 0; updateClearlinkStatus(false); });
+        ros.on('close', function() { rosbridgeConnected = false; connectionTime = 0; updateClearlinkStatus(false); });
 
         // ClearLink motor command publisher (sends MotorCommand messages)
         var clearlinkCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/clearlink/command', messageType: 'clearlink_interfaces/MotorCommand' });
@@ -1669,74 +2089,103 @@
             updateClearlinkStatus(isConnected);
             // Update connection status in stats
             var connEl = document.getElementById('clearlinkConnStatus');
+            var okColor = getThemeColor('--status-ok');
+            var errorColor = getThemeColor('--status-error');
             if (isConnected) {
                 connEl.textContent = 'Connected';
-                connEl.style.color = '#34c759';
+                connEl.style.color = okColor;
             } else {
                 connEl.textContent = 'Not Connected';
-                connEl.style.color = '#ff3b30';
+                connEl.style.color = errorColor;
             }
-            // Update per-motor fault status
+            // Update per-motor fault status in stats popup
             var m1FaultEl = document.getElementById('motor1FaultStatus');
             var m2FaultEl = document.getElementById('motor2FaultStatus');
-            var m1FaultBar = document.getElementById('m1FaultBar');
-            var m2FaultBar = document.getElementById('m2FaultBar');
             var resetBtn = document.getElementById('resetFaultBtn');
 
-            // Motor 1 (M0)
+            // Motor 1 (M0) fault status
             if (m0Fault) {
                 m1FaultEl.textContent = 'FAULT';
-                m1FaultEl.style.color = '#ff3b30';
-                m1FaultBar.textContent = 'FAULT';
-                m1FaultBar.style.color = '#ff3b30';
+                m1FaultEl.style.color = errorColor;
             } else {
                 m1FaultEl.textContent = 'OK';
-                m1FaultEl.style.color = '#34c759';
-                m1FaultBar.textContent = 'OK';
-                m1FaultBar.style.color = '#34c759';
+                m1FaultEl.style.color = okColor;
             }
 
-            // Motor 2 (M1)
+            // Motor 2 (M1) fault status
             if (m1Fault) {
                 m2FaultEl.textContent = 'FAULT';
-                m2FaultEl.style.color = '#ff3b30';
-                m2FaultBar.textContent = 'FAULT';
-                m2FaultBar.style.color = '#ff3b30';
+                m2FaultEl.style.color = errorColor;
             } else {
                 m2FaultEl.textContent = 'OK';
-                m2FaultEl.style.color = '#34c759';
-                m2FaultBar.textContent = 'OK';
-                m2FaultBar.style.color = '#34c759';
+                m2FaultEl.style.color = okColor;
             }
 
             // Show reset button if any motor has fault
             var hasFault = m0Fault || m1Fault;
             resetBtn.style.display = hasFault ? 'block' : 'none';
 
-            // Update motor status indicators (moving)
-            document.getElementById('m1Status').className = 'motor-status ' + (m0Moving ? 'running' : 'stopped');
-            document.getElementById('m2Status').className = 'motor-status ' + (m1Moving ? 'running' : 'stopped');
+            // Update motor status indicators (fault=red, running=green, stopped=yellow)
+            var m1StatusClass = 'stopped';  // default yellow
+            if (m0Fault) {
+                m1StatusClass = 'fault';    // red
+            } else if (m0Moving) {
+                m1StatusClass = 'running';  // green
+            }
+            document.getElementById('m1Status').className = 'motor-status ' + m1StatusClass;
+
+            var m2StatusClass = 'stopped';  // default yellow
+            if (m1Fault) {
+                m2StatusClass = 'fault';    // red
+            } else if (m1Moving) {
+                m2StatusClass = 'running';  // green
+            }
+            document.getElementById('m2Status').className = 'motor-status ' + m2StatusClass;
 
             // Update live velocity displays (convert steps/sec to in/sec)
-            var m0Velocity = msg.m0_velocity !== undefined ? msg.m0_velocity : 0;
-            var m1Velocity = msg.m1_velocity !== undefined ? msg.m1_velocity : 0;
+            var m0Velocity = msg.axis1_velocity !== undefined ? msg.axis1_velocity : 0;
+            var m1Velocity = msg.axis2_velocity !== undefined ? msg.axis2_velocity : 0;
             var m0VelInSec = Math.abs(stepsToInPerSec(m0Velocity));
             var m1VelInSec = Math.abs(stepsToInPerSec(m1Velocity));
             document.getElementById('m1VelocityDisplay').textContent = m0VelInSec.toFixed(2) + ' in/s';
             document.getElementById('m2VelocityDisplay').textContent = m1VelInSec.toFixed(2) + ' in/s';
 
-            // Update torque readings
-            var m1TorqueEl = document.getElementById('motor1Torque');
-            var m2TorqueEl = document.getElementById('motor2Torque');
-            if (msg.m0_torque !== undefined && msg.m0_torque !== -9999) {
-                m1TorqueEl.textContent = Math.round(msg.m0_torque) + '%';
+            // Update average speed display
+            var avgSpeed = (m0VelInSec + m1VelInSec) / 2;
+            document.getElementById('pipeSpeedDisplay').textContent = avgSpeed.toFixed(1) + '"/s';
+
+            // Update torque displays in toolbar (convert percentage to Nm)
+            var m1TorqueBar = document.getElementById('m1TorqueBar');
+            var m2TorqueBar = document.getElementById('m2TorqueBar');
+            if (msg.axis1_torque !== undefined && msg.axis1_torque !== -9999) {
+                var torqueNm = torquePercentToNm(msg.axis1_torque);
+                m1TorqueBar.textContent = torqueNm.toFixed(2) + ' Nm';
             } else {
-                m1TorqueEl.textContent = 'N/A';
+                m1TorqueBar.textContent = '-- Nm';
             }
-            if (msg.m1_torque !== undefined && msg.m1_torque !== -9999) {
-                m2TorqueEl.textContent = Math.round(msg.m1_torque) + '%';
+            if (msg.axis2_torque !== undefined && msg.axis2_torque !== -9999) {
+                var torqueNm = torquePercentToNm(msg.axis2_torque);
+                m2TorqueBar.textContent = torqueNm.toFixed(2) + ' Nm';
             } else {
-                m2TorqueEl.textContent = 'N/A';
+                m2TorqueBar.textContent = '-- Nm';
+            }
+
+            // Update motor positions in stats popup (with comma formatting)
+            var m0Position = msg.m0_position !== undefined ? msg.m0_position : (msg.axis1_position !== undefined ? msg.axis1_position : 0);
+            var m1Position = msg.m1_position !== undefined ? msg.m1_position : (msg.axis2_position !== undefined ? msg.axis2_position : 0);
+            document.getElementById('motor1Position').textContent = m0Position.toLocaleString();
+            document.getElementById('motor2Position').textContent = m1Position.toLocaleString();
+
+            // Encoder-based distance tracking (motor 1 position delta)
+            if (distanceMode === 'encoder') {
+                if (prevMotorPosition !== null) {
+                    var deltaSteps = m0Position - prevMotorPosition;
+                    if (deltaSteps !== 0) {
+                        totalDistance += deltaSteps / stepsPerInch;
+                        updatePositionFromDistance();
+                    }
+                }
+                prevMotorPosition = m0Position;
             }
         });
         updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = 'Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = 'Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
@@ -1751,8 +2200,7 @@
             document.getElementById('lastUpdated').textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         }
 
-        // Note: ClearLink doesn't provide motor feedback (position/velocity/current)
-        // Motor status (moving/stopped) is now handled by clearlinkStatusSubscriber
+        // Motor status, velocity, torque, and position are handled by clearlinkStatusSubscriber
 
         cpuTempSubscriber.subscribe(function(msg) {
             var t = msg.data;
@@ -1827,13 +2275,14 @@
         }
 
         imuRollSubscriber.subscribe(function(msg) {
+            updateLastDataTime();
             imuDataReceived = true;
             imuLastUpdate = Date.now();
             imuCurrentRoll = msg.data;
             document.getElementById('imuRoll').textContent = msg.data.toFixed(1);
             document.getElementById('imuRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
             document.getElementById('imuStatus').textContent = 'Connected';
-            document.getElementById('imuStatus').style.color = '#34c759';
+            document.getElementById('imuStatus').style.color = getThemeColor('--status-ok');
         });
         imuPitchSubscriber.subscribe(function(msg) {
             imuCurrentPitch = msg.data;
@@ -1842,16 +2291,28 @@
             document.getElementById('imuRelPitch').textContent = relPitch.toFixed(1);
             document.getElementById('pipeRelAngleDisplay').textContent = relPitch.toFixed(1) + '°';
             document.getElementById('pipeContainer').style.transform = 'rotate(' + relPitch + 'deg)';
+
+            // Degrees-based distance tracking
+            if (distanceMode === 'degrees') {
+                if (prevRelPitch !== null) {
+                    var deltaDeg = relPitch - prevRelPitch;
+                    var circumference = Math.PI * pipeDiameter;
+                    var deltaInches = (deltaDeg / 360) * circumference;
+                    totalDistance += deltaInches;
+                    updatePositionFromDistance();
+                }
+                prevRelPitch = relPitch;
+            }
         });
 
         // Check IMU connection status periodically
         setInterval(function() {
             if (imuDataReceived && Date.now() - imuLastUpdate > 3000) {
                 document.getElementById('imuStatus').textContent = 'No Data';
-                document.getElementById('imuStatus').style.color = '#ff9500';
+                document.getElementById('imuStatus').style.color = getThemeColor('--status-warning');
             } else if (!imuDataReceived) {
                 document.getElementById('imuStatus').textContent = 'Not Connected';
-                document.getElementById('imuStatus').style.color = '#ff3b30';
+                document.getElementById('imuStatus').style.color = getThemeColor('--status-error');
             }
         }, 2000);
 
@@ -1911,22 +2372,22 @@
             document.getElementById('wifiCurrentIp').textContent = 'IP: ' + (ip || '--');
             if (ssid && ssid !== '--') {
                 document.getElementById('wifiCurrentStatus').textContent = 'Connected';
-                document.getElementById('wifiCurrentStatus').style.color = '#34c759';
+                document.getElementById('wifiCurrentStatus').style.color = getThemeColor('--status-ok');
             } else {
                 document.getElementById('wifiCurrentStatus').textContent = 'Not Connected';
-                document.getElementById('wifiCurrentStatus').style.color = '#ff9500';
+                document.getElementById('wifiCurrentStatus').style.color = getThemeColor('--status-warning');
             }
         }
 
         function scanWifiNetworks() {
             var list = document.getElementById('wifiNetworkList');
-            list.innerHTML = '<div style="padding: 30px; text-align: center; color: #86868b; font-size: 13px;"><div style="width: 24px; height: 24px; border: 2px solid #007aff; border-top-color: transparent; border-radius: 50%; margin: 0 auto 10px; animation: spin 1s linear infinite;"></div>Scanning...</div>';
+            list.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--text-tertiary); font-size: 13px;"><div style="width: 24px; height: 24px; border: 2px solid var(--accent-cyan); border-top-color: transparent; border-radius: 50%; margin: 0 auto 10px; animation: spin 1s linear infinite;"></div>Scanning...</div>';
 
             fetch('/api/wifi/scan')
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     if (!data.networks || data.networks.length === 0) {
-                        list.innerHTML = '<div style="padding: 30px; text-align: center; color: #86868b; font-size: 13px;">No networks found</div>';
+                        list.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--text-tertiary); font-size: 13px;">No networks found</div>';
                         return;
                     }
 
@@ -1935,18 +2396,18 @@
                         var signalBars = Math.ceil(net.signal / 25);
                         var barsHtml = '';
                         for (var i = 1; i <= 4; i++) {
-                            var active = i <= signalBars ? 'background: #007aff;' : 'background: #d0d0d0;';
+                            var active = i <= signalBars ? 'background: var(--button-primary-bg);' : 'background: var(--border-medium);';
                             barsHtml += '<div style="width: 4px; height: ' + (4 + i * 3) + 'px; border-radius: 1px; ' + active + '"></div>';
                         }
 
-                        var connected = net.connected ? '<span style="color: #34c759; font-size: 11px; font-weight: 500;">Connected</span>' : '<button onclick="selectWifiNetwork(\'' + net.ssid.replace(/'/g, "\\'") + '\', \'' + net.security + '\')" style="background: #007aff; color: white; border: none; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer;">Connect</button>';
+                        var connected = net.connected ? '<span style="color: var(--status-ok); font-size: 11px; font-weight: 500;">Connected</span>' : '<button onclick="selectWifiNetwork(\'' + net.ssid.replace(/'/g, "\\'") + '\', \'' + net.security + '\')" style="background: var(--button-primary-bg); color: white; border: none; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer;">Connect</button>';
 
-                        html += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #f0f0f0;">';
+                        html += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid var(--border-light);">';
                         html += '<div style="display: flex; align-items: center; gap: 10px;">';
                         html += '<div style="display: flex; align-items: flex-end; gap: 2px; height: 16px;">' + barsHtml + '</div>';
                         html += '<div>';
-                        html += '<div style="font-size: 14px; font-weight: 500; color: #1d1d1f;">' + net.ssid + '</div>';
-                        html += '<div style="font-size: 11px; color: #86868b;">' + (net.security || 'Open') + '</div>';
+                        html += '<div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">' + net.ssid + '</div>';
+                        html += '<div style="font-size: 11px; color: var(--text-tertiary);">' + (net.security || 'Open') + '</div>';
                         html += '</div></div>';
                         html += connected;
                         html += '</div>';
@@ -1955,7 +2416,7 @@
                     list.innerHTML = html;
                 })
                 .catch(function(err) {
-                    list.innerHTML = '<div style="padding: 30px; text-align: center; color: #ff3b30; font-size: 13px;">Error scanning networks</div>';
+                    list.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--status-error); font-size: 13px;">Error scanning networks</div>';
                 });
         }
 
@@ -2006,7 +2467,7 @@
                     cancelWifiConnect();
                     document.getElementById('wifiCurrentSsid').textContent = selectedWifiSsid;
                     document.getElementById('wifiCurrentStatus').textContent = 'Connected';
-                    document.getElementById('wifiCurrentStatus').style.color = '#34c759';
+                    document.getElementById('wifiCurrentStatus').style.color = getThemeColor('--status-ok');
                     setTimeout(function() { closeWifiModal(); }, 2000);
                     scanWifiNetworks();
                 } else {
@@ -2075,6 +2536,23 @@
             document.getElementById('shotsRight').innerHTML = '';
         }
 
+        function togglePipeView() {
+            var collapsible = document.getElementById('pipeCollapsible');
+            var btn = document.getElementById('pipeToggleBtn');
+            collapsible.classList.toggle('collapsed');
+            btn.classList.toggle('collapsed');
+            // Save preference
+            localStorage.setItem('pipeViewCollapsed', collapsible.classList.contains('collapsed'));
+        }
+
+        // Restore pipe view state on load
+        (function() {
+            if (localStorage.getItem('pipeViewCollapsed') === 'true') {
+                document.getElementById('pipeCollapsible').classList.add('collapsed');
+                document.getElementById('pipeToggleBtn').classList.add('collapsed');
+            }
+        })();
+
         function setTestAngle(value) {
             var angle = parseFloat(value) || 0;
             document.getElementById('pipeContainer').style.transform = 'rotate(' + angle + 'deg)';
@@ -2087,7 +2565,21 @@
 
         function resetPosition() {
             totalDistance = 0;
+            prevMotorPosition = null;
+            prevRelPitch = null;
             document.getElementById('distanceTraveled').textContent = '0.0 in';
+        }
+
+        function setDistanceMode(mode) {
+            distanceMode = mode;
+            totalDistance = 0;
+            prevMotorPosition = null;
+            prevRelPitch = null;
+            document.getElementById('distanceTraveled').textContent = '0.0 in';
+            var btns = document.getElementById('distanceModeToggle').querySelectorAll('button');
+            btns[0].className = mode === 'encoder' ? 'active' : '';
+            btns[1].className = mode === 'degrees' ? 'active' : '';
+            saveSettings({ distanceMode: mode });
         }
 
         function loadUsbDevices() {
@@ -2162,7 +2654,7 @@
             var issueDesc = document.getElementById('supportIssueDescription').value.trim() || 'No description provided';
 
             statusEl.style.display = 'block';
-            statusEl.style.color = '#007aff';
+            statusEl.style.color = getThemeColor('--status-info');
             statusEl.textContent = 'Generating report...';
 
             var url = '/api/support/download_report?issue=' + encodeURIComponent(issueDesc);
@@ -2183,7 +2675,7 @@
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(downloadUrl);
 
-                    statusEl.style.color = '#34c759';
+                    statusEl.style.color = getThemeColor('--status-ok');
                     statusEl.textContent = 'Report downloaded! Attach it to your email to c.burke@rae.com';
 
                     // Update email link with subject
@@ -2194,7 +2686,7 @@
                     if (emailLink) emailLink.href = 'mailto:c.burke@rae.com?subject=' + emailSubject + '&body=' + emailBody;
                 })
                 .catch(function(err) {
-                    statusEl.style.color = '#ff3b30';
+                    statusEl.style.color = getThemeColor('--status-error');
                     statusEl.textContent = 'Download failed: ' + err.message;
                 });
         }
@@ -2217,5 +2709,6 @@
             </div>
         </div>
     </div>
+    <script src="/js/theme.js"></script>
 </body>
 </html>
