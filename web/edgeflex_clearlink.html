@@ -1129,10 +1129,6 @@
                                     <input type="number" class="settings-input" id="rampInput" min="1" max="100" step="1" value="50" onchange="updateRamp(this.value)" style="width: 70px;">
                                 </div>
                             </div>
-                            <div class="settings-row">
-                                <span class="settings-label">Invert Angle</span>
-                                <label class="toggle-switch"><input type="checkbox" id="invertAngleToggleSettings" onchange="setInvertAngle(this.checked)"><span class="toggle-slider"></span></label>
-                            </div>
                             <button class="save-defaults-btn" onclick="saveAllDefaults()">Save as Defaults</button>
                         </div>
                     </div>
@@ -1965,7 +1961,6 @@
                     if (settings.imuInvertAngle !== undefined) {
                         imuInvertAngle = settings.imuInvertAngle;
                         document.getElementById('invertAngleToggleStats').checked = imuInvertAngle;
-                        document.getElementById('invertAngleToggleSettings').checked = imuInvertAngle;
                     }
                     // Load IMU calibration offsets
                     if (settings.imuRollOffset !== undefined) {
@@ -2685,7 +2680,6 @@
         function setInvertAngle(checked) {
             imuInvertAngle = checked;
             document.getElementById('invertAngleToggleStats').checked = checked;
-            document.getElementById('invertAngleToggleSettings').checked = checked;
             saveSettings({ imuInvertAngle: checked });
             checkDefaultsMatch();
         }
