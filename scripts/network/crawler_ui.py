@@ -17,6 +17,7 @@ import json
 import time
 import logging
 import threading
+import secrets
 import io
 import cv2
 import numpy as np
@@ -100,6 +101,24 @@ boot_state = {
     "redirect": None
 }
 boot_state_lock = threading.Lock()
+
+# Operator lock — only one browser client can control motors at a time
+_operator_lock = {
+    "session_token": None,
+    "client_ip": None,
+    "acquired_at": None,
+    "last_heartbeat": None,
+}
+_operator_lock_mutex = threading.Lock()
+OPERATOR_LOCK_TIMEOUT = 10  # seconds without heartbeat before auto-release
+
+
+def _is_operator_lock_expired():
+    if _operator_lock["session_token"] is None:
+        return True
+    if _operator_lock["last_heartbeat"] is None:
+        return True
+    return (time.time() - _operator_lock["last_heartbeat"]) > OPERATOR_LOCK_TIMEOUT
 
 CONFIG_FILE = "/etc/xpresscan/network.conf"
 HTML_DIR = "/opt/xpresscan/html"
@@ -553,7 +572,9 @@ def index():
         if os.path.exists(html_path):
             try:
                 with open(html_path, "r") as f:
-                    return f.read()
+                    response = make_response(f.read())
+                    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+                    return response
             except Exception:
                 pass
 
@@ -3607,6 +3628,70 @@ def api_support_download_report():
         return jsonify({"error": "fpdf2 library not installed"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/operator/acquire', methods=['POST'])
+def operator_acquire():
+    data = request.get_json(silent=True) or {}
+    token = data.get("token")
+    client_ip = request.remote_addr
+    with _operator_lock_mutex:
+        # If lock is free or expired, grant it
+        if _is_operator_lock_expired():
+            new_token = token or secrets.token_hex(16)
+            _operator_lock["session_token"] = new_token
+            _operator_lock["client_ip"] = client_ip
+            _operator_lock["acquired_at"] = time.time()
+            _operator_lock["last_heartbeat"] = time.time()
+            return jsonify({"success": True, "token": new_token})
+        # If same token is re-acquiring (page refresh), allow it
+        if token and token == _operator_lock["session_token"]:
+            _operator_lock["client_ip"] = client_ip
+            _operator_lock["last_heartbeat"] = time.time()
+            return jsonify({"success": True, "token": token})
+        return jsonify({"success": False, "message": "Another operator holds the lock"}), 409
+
+
+@app.route('/api/operator/heartbeat', methods=['POST'])
+def operator_heartbeat():
+    data = request.get_json(silent=True) or {}
+    token = data.get("token")
+    if not token:
+        return jsonify({"success": False, "message": "Token required"}), 400
+    with _operator_lock_mutex:
+        if _operator_lock["session_token"] == token:
+            _operator_lock["last_heartbeat"] = time.time()
+            return jsonify({"success": True})
+        return jsonify({"success": False, "message": "Token does not match"}), 403
+
+
+@app.route('/api/operator/release', methods=['POST'])
+def operator_release():
+    data = request.get_json(silent=True) or {}
+    token = data.get("token")
+    if not token:
+        return jsonify({"success": False, "message": "Token required"}), 400
+    with _operator_lock_mutex:
+        if _operator_lock["session_token"] == token:
+            _operator_lock["session_token"] = None
+            _operator_lock["client_ip"] = None
+            _operator_lock["acquired_at"] = None
+            _operator_lock["last_heartbeat"] = None
+            return jsonify({"success": True})
+        return jsonify({"success": False, "message": "Token does not match"}), 403
+
+
+@app.route('/api/operator/status', methods=['GET'])
+def operator_status():
+    with _operator_lock_mutex:
+        if _is_operator_lock_expired():
+            # Auto-clear expired lock
+            _operator_lock["session_token"] = None
+            _operator_lock["client_ip"] = None
+            _operator_lock["acquired_at"] = None
+            _operator_lock["last_heartbeat"] = None
+            return jsonify({"locked": False, "holder_ip": None})
+        return jsonify({"locked": True, "holder_ip": _operator_lock["client_ip"]})
 
 
 def main():

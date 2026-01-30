@@ -892,6 +892,25 @@
     </style>
 </head>
 <body>
+    <!-- Force reload on bfcache restore (Safari back-forward cache) -->
+    <script>
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) { window.location.reload(); }
+        });
+    </script>
+    <!-- Force clear stale service workers and caches -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(r) { r.unregister(); });
+            });
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    names.forEach(function(n) { caches.delete(n); });
+                });
+            }
+        }
+    </script>
     <!-- Global error handler for debugging -->
     <script>
         window.onerror = function(msg, url, line, col, error) {
@@ -1273,14 +1292,19 @@
             </div>
         </div>
 
+        <div id="operatorLockBanner" style="display:none; align-items:center; justify-content:center; gap:8px; padding:10px 16px; margin:0 10px 8px; border-radius:8px; background:var(--status-error-bg); border:1px solid var(--status-error); color:var(--status-error); font-size:13px; font-weight:500;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Another browser has control — motor controls locked
+        </div>
+
         <div class="controls">
             <div class="control-row">
-                <button class="control-btn" style="font-size: 13px; background-color: #00C8D4 !important; color: white !important;"
+                <button id="jogFwdBtn" class="control-btn" style="font-size: 13px; background-color: #00C8D4 !important; color: white !important;"
                     onclick="startJog(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Jog Forward</button>
-                <button class="control-btn" style="font-size: 13px; background-color: #00C8D4 !important; color: white !important;"
+                <button id="jogBwdBtn" class="control-btn" style="font-size: 13px; background-color: #00C8D4 !important; color: white !important;"
                     onclick="startJog(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>Jog Backward</button>
             </div>
-            <button class="control-btn btn-auto" onclick="autoMove()" style="background-color: #34c759 !important; color: white !important; display: block !important; visibility: visible !important;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>Auto Move</button>
+            <button id="autoMoveBtn" class="control-btn btn-auto" onclick="autoMove()" style="background-color: #34c759 !important; color: white !important; display: block !important; visibility: visible !important;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>Auto Move</button>
             <button class="control-btn btn-stop" onclick="stopJog()" style="background-color: #ff3b30 !important; color: white !important; display: block !important; visibility: visible !important;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
         </div>
 
@@ -1441,9 +1465,10 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
+    <script src="/js/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '2.1.1';
+
+        var CURRENT_VERSION = '2.1.2';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var SYSTEM_ID = 'edgeflex';
         var MOTOR_COUNT = 1;
@@ -1487,6 +1512,117 @@
         var clearlinkIsConnected = false;
         var alarms = [];
         var alarmCounter = 0;
+
+        // Operator lock state
+        var operatorToken = sessionStorage.getItem('operatorToken') || null;
+        var isOperatorLocked = false;
+        var heartbeatInterval = null;
+        var lockPollInterval = null;
+
+        function acquireOperatorLock() {
+            var wasLocked = isOperatorLocked;
+            var body = operatorToken ? JSON.stringify({token: operatorToken}) : '{}';
+            fetch('/api/operator/acquire', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: body})
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        operatorToken = data.token;
+                        sessionStorage.setItem('operatorToken', data.token);
+                        isOperatorLocked = false;
+                        updateMotorControlUI(true);
+                        startHeartbeat();
+                        if (lockPollInterval) { clearInterval(lockPollInterval); lockPollInterval = null; }
+                        if (wasLocked) {
+
+                            reconnectRosbridge();
+                        }
+                    } else {
+                        operatorToken = null;
+                        sessionStorage.removeItem('operatorToken');
+                        isOperatorLocked = true;
+                        updateMotorControlUI(false);
+                        startLockPolling();
+                    }
+                })
+                .catch(function() {
+                    // Network error — try again via polling
+                    startLockPolling();
+                });
+        }
+
+        function startHeartbeat() {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            heartbeatInterval = setInterval(function() {
+                if (!operatorToken) return;
+                fetch('/api/operator/heartbeat', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: operatorToken})})
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (!data.success) {
+                            // Lost the lock
+                            operatorToken = null;
+                            sessionStorage.removeItem('operatorToken');
+                            isOperatorLocked = true;
+                            updateMotorControlUI(false);
+                            clearInterval(heartbeatInterval);
+                            heartbeatInterval = null;
+                            startLockPolling();
+                        }
+                    })
+                    .catch(function() {});
+            }, 5000);
+        }
+
+        function startLockPolling() {
+            if (lockPollInterval) return;
+            lockPollInterval = setInterval(function() {
+                fetch('/api/operator/status')
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (!data.locked) {
+                            acquireOperatorLock();
+                        }
+                    })
+                    .catch(function() {});
+            }, 2000);
+        }
+
+        function updateMotorControlUI(hasControl) {
+            var banner = document.getElementById('operatorLockBanner');
+            var jogFwd = document.getElementById('jogFwdBtn');
+            var jogBwd = document.getElementById('jogBwdBtn');
+            var autoBtn = document.getElementById('autoMoveBtn');
+            if (hasControl) {
+                banner.style.display = 'none';
+                jogFwd.disabled = false; jogFwd.style.opacity = '1'; jogFwd.style.pointerEvents = '';
+                jogBwd.disabled = false; jogBwd.style.opacity = '1'; jogBwd.style.pointerEvents = '';
+                autoBtn.disabled = false; autoBtn.style.opacity = '1'; autoBtn.style.pointerEvents = '';
+            } else {
+                banner.style.display = 'flex';
+                jogFwd.disabled = true; jogFwd.style.opacity = '0.4'; jogFwd.style.pointerEvents = 'none';
+                jogBwd.disabled = true; jogBwd.style.opacity = '0.4'; jogBwd.style.pointerEvents = 'none';
+                autoBtn.disabled = true; autoBtn.style.opacity = '0.4'; autoBtn.style.pointerEvents = 'none';
+            }
+        }
+
+        function releaseOperatorLock() {
+            if (!operatorToken) return;
+            fetch('/api/operator/release', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: operatorToken})})
+                .then(function() {
+                    operatorToken = null;
+                    sessionStorage.removeItem('operatorToken');
+                    isOperatorLocked = false;
+                    updateMotorControlUI(false);
+                    if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+                    acquireOperatorLock();
+                })
+                .catch(function() {});
+        }
+
+        window.addEventListener('beforeunload', function() {
+            if (operatorToken) {
+                navigator.sendBeacon('/api/operator/release', new Blob([JSON.stringify({token: operatorToken})], {type: 'application/json'}));
+            }
+        });
 
         function addAlarm(message) {
             alarmCounter++;
@@ -1831,13 +1967,22 @@
                         document.getElementById('invertAngleToggleStats').checked = imuInvertAngle;
                         document.getElementById('invertAngleToggleSettings').checked = imuInvertAngle;
                     }
+                    // Load IMU calibration offsets
+                    if (settings.imuRollOffset !== undefined) {
+                        imuRollOffset = settings.imuRollOffset;
+                    }
+                    if (settings.imuPitchOffset !== undefined) {
+                        imuPitchOffset = settings.imuPitchOffset;
+                    }
                     console.log('Settings loaded: jogSpeedInSec=' + jogSpeedInSec + ', rampPercent=' + rampPercent + ', stepsPerInch=' + stepsPerInch + ', maxStepsPerSec=' + maxStepsPerSec);
                     savedDefaults = {
                         pipeDiameter: pipeDiameter,
                         distanceMode: distanceMode,
                         jogSpeedInSec: jogSpeedInSec,
                         rampPercent: rampPercent,
-                        imuInvertAngle: imuInvertAngle
+                        imuInvertAngle: imuInvertAngle,
+                        imuRollOffset: imuRollOffset,
+                        imuPitchOffset: imuPitchOffset
                     };
                 })
                 .catch(function(e) { console.error('Failed to load settings:', e); });
@@ -1873,7 +2018,9 @@
                 distanceMode: distanceMode,
                 jogSpeedInSec: jogSpeedInSec,
                 rampPercent: rampPercent,
-                imuInvertAngle: imuInvertAngle
+                imuInvertAngle: imuInvertAngle,
+                imuRollOffset: imuRollOffset,
+                imuPitchOffset: imuPitchOffset
             };
             fetch('/api/settings', {
                 method: 'POST',
@@ -1887,10 +2034,12 @@
                         distanceMode: distanceMode,
                         jogSpeedInSec: jogSpeedInSec,
                         rampPercent: rampPercent,
-                        imuInvertAngle: imuInvertAngle
+                        imuInvertAngle: imuInvertAngle,
+                        imuRollOffset: imuRollOffset,
+                        imuPitchOffset: imuPitchOffset
                     };
                     btn.classList.add('saved');
-                    var count = 5;
+                    var count = 3;
                     btn.textContent = 'Saving...' + count;
                     var countdown = setInterval(function() {
                         count--;
@@ -2068,6 +2217,10 @@
         }
 
         function startJog(direction) {
+            if (!operatorToken) {
+                addAlarm('Motor controls locked: another operator is connected');
+                return;
+            }
             if (!rosbridgeConnected) {
                 addAlarm('Cannot start motor: ROS bridge not connected');
                 return;
@@ -2236,55 +2389,56 @@
         function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (compareVersions(CURRENT_VERSION, v) < 0) { document.getElementById('updateBanner').classList.add('show'); document.getElementById('newVersion').textContent = v; } }).catch(function(e) { }); }
         setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
 
-        var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
+        var _wsUrl = 'ws://' + window.location.hostname + ':9090';
+
+        var ros = new ROSLIB.Ros({ url: _wsUrl });
+
+        // Safari workaround: websocket can silently fail with no events
+        var _wsConnectTimeout = setTimeout(function() {
+            if (!rosbridgeConnected) {
+                console.log('WS timeout — retrying');
+                try { ros.close(); } catch(e) {}
+                setTimeout(function() {
+                    ros.connect(_wsUrl);
+                    _wsConnectTimeout = setTimeout(function() {
+                        if (!rosbridgeConnected) {
+                            console.log('WS timeout — reloading');
+                            window.location.reload();
+                        }
+                    }, 5000);
+                }, 1000);
+            }
+        }, 4000);
         var rosbridgeConnected = false;
 
-        // Auto-reconnect on stale data (fixes multi-client rosbridge issue)
+        // Auto-reconnect on stale data
         var lastDataReceived = 0;
         var connectionTime = 0;
-        var staleThreshold = 5000; // 5 seconds without data = stale
-        var reconnecting = false;
-        var reconnectAttempts = 0;
-        var maxReconnectAttempts = 3;
+        var staleThreshold = 8000; // 8 seconds without data = stale
+        var hasEverReceivedData = false;
 
         function updateLastDataTime() {
             lastDataReceived = Date.now();
-            reconnectAttempts = 0; // Reset on successful data
-        }
-
-        function forceReconnect() {
-            if (reconnecting) return;
-            if (reconnectAttempts >= maxReconnectAttempts) {
-                console.log('Max reconnect attempts reached, reloading page...');
-                window.location.reload();
-                return;
-            }
-            console.log('Reconnecting (attempt ' + (reconnectAttempts + 1) + ')...');
-            reconnecting = true;
-            reconnectAttempts++;
-            ros.close();
-            setTimeout(function() {
-                ros.connect('ws://' + window.location.hostname + ':9090');
-                reconnecting = false;
-            }, 1000);
+            hasEverReceivedData = true;
         }
 
         function checkForStaleConnection() {
-            if (!rosbridgeConnected || reconnecting) return;
+            if (!rosbridgeConnected) return;
             var now = Date.now();
-            // Check if we connected but never received data
+            var stale = false;
             if (lastDataReceived === 0 && connectionTime > 0 && (now - connectionTime) > staleThreshold) {
-                console.log('Connected but no data received');
-                forceReconnect();
-                return;
+                stale = true;
             }
-            // Check if data stopped flowing
             if (lastDataReceived > 0 && (now - lastDataReceived) > staleThreshold) {
-                console.log('Data stopped flowing');
-                forceReconnect();
+                stale = true;
+            }
+            if (stale && hasEverReceivedData) {
+                // Data was flowing but stopped — reload to get fresh connection
+                console.log('Data stopped flowing — reloading');
+                window.location.reload();
             }
         }
-        setInterval(checkForStaleConnection, 2000);
+        setInterval(checkForStaleConnection, 3000);
 
         // Helper to get current theme colors from CSS variables
         function getThemeColor(varName) {
@@ -2332,8 +2486,9 @@
         ros.on('connection', function() {
             rosbridgeConnected = true;
             connectionTime = Date.now();
-            lastDataReceived = 0; // Reset - wait for actual data
+            lastDataReceived = 0;
             updateClearlinkStatus(false);
+            if (_wsConnectTimeout) { clearTimeout(_wsConnectTimeout); _wsConnectTimeout = null; }
             console.log('ROS connected');
         });
         ros.on('error', function() { rosbridgeConnected = false; connectionTime = 0; updateClearlinkStatus(false); });
@@ -2350,7 +2505,9 @@
         var imuPitchSubscriber = new ROSLIB.Topic({ ros: ros, name: '/imu/pitch', messageType: 'std_msgs/Float32' });
         var edgeflexStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/clearlink/status', messageType: 'clearlink_interfaces/MotorStatus' });
 
+
         edgeflexStatusSubscriber.subscribe(function(msg) {
+            updateLastDataTime();
             // Support both old field names (axis1_*) and new field names (m0_*)
             var m0Fault = msg.m0_fault !== undefined ? msg.m0_fault : msg.axis1_fault;
             var m1Fault = msg.m1_fault !== undefined ? msg.m1_fault : msg.axis2_fault;
@@ -2556,6 +2713,8 @@
             document.getElementById('imuRelPitch').textContent = '0.0';
             closeCalibrateModal();
             document.getElementById('calibrateSuccessModal').classList.add('show');
+            // Persist calibration offsets
+            saveSettings({ imuRollOffset: imuRollOffset, imuPitchOffset: imuPitchOffset });
         }
 
         function closeCalibrateSuccess() {
@@ -2637,6 +2796,61 @@
                 prevRelPitch = relPitch;
             }
         });
+
+        // Reconnect rosbridge — destroy old connection, create fresh one, resubscribe
+        function reconnectRosbridge() {
+            try { ros.close(); } catch(e) {}
+            rosbridgeConnected = false;
+            connectionTime = 0;
+            lastDataReceived = 0;
+            hasEverReceivedData = false;
+
+            setTimeout(function() {
+                console.log('Handover: creating new ROS connection');
+                ros = new ROSLIB.Ros({ url: _wsUrl });
+                ros.on('connection', function() {
+                    rosbridgeConnected = true;
+                    connectionTime = Date.now();
+                    lastDataReceived = 0;
+                    updateClearlinkStatus(false);
+                    if (_wsConnectTimeout) { clearTimeout(_wsConnectTimeout); _wsConnectTimeout = null; }
+                    console.log('ROS reconnected after handover');
+                });
+                ros.on('error', function() { rosbridgeConnected = false; connectionTime = 0; updateClearlinkStatus(false); });
+                ros.on('close', function() { rosbridgeConnected = false; connectionTime = 0; updateClearlinkStatus(false); });
+
+                // Recreate all topics on new ros object and resubscribe
+                clearlinkCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/clearlink/command', messageType: 'clearlink_interfaces/MotorCommand' });
+                cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/edgeflex/command', messageType: 'std_msgs/String' });
+                systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
+
+                var newCpuTemp = new ROSLIB.Topic({ ros: ros, name: '/cpu_temp', messageType: 'std_msgs/Float32' });
+                var newNetInfo = new ROSLIB.Topic({ ros: ros, name: '/network_info', messageType: 'std_msgs/String' });
+                var newUpdate = new ROSLIB.Topic({ ros: ros, name: '/update_status', messageType: 'std_msgs/String' });
+                var newRoll = new ROSLIB.Topic({ ros: ros, name: '/imu/roll', messageType: 'std_msgs/Float32' });
+                var newPitch = new ROSLIB.Topic({ ros: ros, name: '/imu/pitch', messageType: 'std_msgs/Float32' });
+                var newStatus = new ROSLIB.Topic({ ros: ros, name: '/clearlink/status', messageType: 'clearlink_interfaces/MotorStatus' });
+
+                // Copy subscribe callbacks from old topics
+                edgeflexStatusSubscriber.listeners('message').forEach(function(cb) { newStatus.subscribe(cb); });
+                cpuTempSubscriber.listeners('message').forEach(function(cb) { newCpuTemp.subscribe(cb); });
+                networkInfoSubscriber.listeners('message').forEach(function(cb) { newNetInfo.subscribe(cb); });
+                updateStatusSubscriber.listeners('message').forEach(function(cb) { newUpdate.subscribe(cb); });
+                imuRollSubscriber.listeners('message').forEach(function(cb) { newRoll.subscribe(cb); });
+                imuPitchSubscriber.listeners('message').forEach(function(cb) { newPitch.subscribe(cb); });
+
+                // Replace references
+                edgeflexStatusSubscriber = newStatus;
+                cpuTempSubscriber = newCpuTemp;
+                networkInfoSubscriber = newNetInfo;
+                updateStatusSubscriber = newUpdate;
+                imuRollSubscriber = newRoll;
+                imuPitchSubscriber = newPitch;
+
+                // Update service client
+                clearFaultsClient = new ROSLIB.Service({ ros: ros, name: '/clearlink/clear_faults', serviceType: 'clearlink_interfaces/ClearFaults' });
+            }, 2000);
+        }
 
         // Check IMU connection status periodically
         setInterval(function() {
@@ -2839,6 +3053,10 @@
 
         var shots = [];
         function autoMove() {
+            if (!operatorToken) {
+                addAlarm('Motor controls locked: another operator is connected');
+                return;
+            }
             if (!rosbridgeConnected) {
                 addAlarm('Cannot start motor: ROS bridge not connected');
                 return;
@@ -2937,7 +3155,7 @@
             function loadFrame() {
                 var collapsible = document.getElementById('cameraCollapsible');
                 var fullscreen = document.getElementById('cameraExpandedOverlay');
-                if (collapsible.classList.contains('collapsed') && !fullscreen.classList.contains('active')) {
+                if (collapsible && collapsible.classList.contains('collapsed') && (!fullscreen || !fullscreen.classList.contains('active'))) {
                     setTimeout(loadFrame, 500);
                     return;
                 }
@@ -3095,7 +3313,7 @@
                 });
         }
 
-        window.onload = function() { recalculate(); loadSettings(); loadUsbDevices(); loadFanSpeed(); loadSystemStats(); setTimeout(function() { resetPosition(); }, 100); };
+        window.onload = function() { recalculate(); loadSettings(); loadUsbDevices(); loadFanSpeed(); loadSystemStats(); setTimeout(function() { resetPosition(); }, 100); acquireOperatorLock(); };
         setInterval(loadUsbDevices, 10000); // Refresh USB info every 10 seconds
         setInterval(loadFanSpeed, 5000); // Refresh fan speed every 5 seconds
         setInterval(loadSystemStats, 3000); // Refresh system stats every 3 seconds
