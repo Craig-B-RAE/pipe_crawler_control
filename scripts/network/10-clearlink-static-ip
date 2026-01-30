@@ -1,0 +1,32 @@
+#!/bin/bash
+# NetworkManager dispatcher script
+# When eth0 comes up and active crawler is edgeflex_clearlink,
+# set static IP 192.168.20.200. Otherwise revert to DHCP.
+
+INTERFACE="$1"
+ACTION="$2"
+CONNECTION="netplan-eth0"
+STATIC_IP="192.168.20.200/24"
+ACTIVE_SYSTEM_FILE="/home/craig/active_system"
+
+# Only act on eth0 up/down events
+[ "$INTERFACE" = "eth0" ] || exit 0
+
+if [ "$ACTION" = "up" ]; then
+    ACTIVE=$(cat "$ACTIVE_SYSTEM_FILE" 2>/dev/null)
+    CURRENT_METHOD=$(nmcli -g ipv4.method connection show "$CONNECTION" 2>/dev/null)
+
+    if [ "$ACTIVE" = "edgeflex_clearlink" ]; then
+        if [ "$CURRENT_METHOD" != "manual" ]; then
+            logger -t clearlink-ip "ClearLink config detected, setting eth0 to static $STATIC_IP"
+            nmcli connection modify "$CONNECTION" ipv4.method manual ipv4.addresses "$STATIC_IP" ipv4.gateway "" ipv4.dns ""
+            nmcli connection up "$CONNECTION"
+        fi
+    else
+        if [ "$CURRENT_METHOD" != "auto" ]; then
+            logger -t clearlink-ip "Non-ClearLink config, reverting eth0 to DHCP"
+            nmcli connection modify "$CONNECTION" ipv4.method auto ipv4.addresses "" ipv4.gateway "" ipv4.dns ""
+            nmcli connection up "$CONNECTION"
+        fi
+    fi
+fi

@@ -765,7 +765,6 @@
             cursor: pointer;
             color: var(--text-tertiary);
             padding: 4px;
-            margin-left: 8px;
             display: flex;
             align-items: center;
         }
@@ -812,7 +811,6 @@
             cursor: pointer;
             color: var(--text-tertiary);
             padding: 4px;
-            margin-left: 12px;
             display: flex;
             align-items: center;
         }
@@ -1336,7 +1334,7 @@
         <div class="camera-section">
             <div class="camera-header" id="cameraToggleBtn" onclick="toggleCameraView()">
                 <span>Camera Feed</span>
-                <div style="display:flex;align-items:center;">
+                <div style="display:flex;align-items:center;gap:12px;">
                     <button class="camera-overlay-btn active" id="cameraOverlayBtn" onclick="event.stopPropagation(); toggleCameraOverlay()" title="Toggle guide overlay">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
