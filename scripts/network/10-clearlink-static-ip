@@ -20,13 +20,13 @@ if [ "$ACTION" = "up" ]; then
         if [ "$CURRENT_METHOD" != "manual" ]; then
             logger -t clearlink-ip "ClearLink config detected, setting eth0 to static $STATIC_IP"
             nmcli connection modify "$CONNECTION" ipv4.method manual ipv4.addresses "$STATIC_IP" ipv4.gateway "" ipv4.dns ""
-            nmcli connection up "$CONNECTION"
+            nmcli device reapply eth0 2>/dev/null || true
         fi
     else
         if [ "$CURRENT_METHOD" != "auto" ]; then
             logger -t clearlink-ip "Non-ClearLink config, reverting eth0 to DHCP"
             nmcli connection modify "$CONNECTION" ipv4.method auto ipv4.addresses "" ipv4.gateway "" ipv4.dns ""
-            nmcli connection up "$CONNECTION"
+            nmcli device reapply eth0 2>/dev/null || true
         fi
     fi
 fi

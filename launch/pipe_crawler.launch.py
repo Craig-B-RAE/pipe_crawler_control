@@ -164,4 +164,13 @@ def generate_launch_description():
         )
     )
 
+    # MQTT cloud dashboard bridge
+    nodes.append(
+        Node(
+            package='pipe_crawler_control',
+            executable='mqtt_bridge',
+            name='mqtt_bridge'
+        )
+    )
+
     return LaunchDescription(nodes)

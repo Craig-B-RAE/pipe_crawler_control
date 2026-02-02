@@ -71,7 +71,8 @@ def _camera_capture_thread():
             cap = None
             time.sleep(1)
 
-threading.Thread(target=_camera_capture_thread, daemon=True).start()
+# USB camera removed - no longer in use
+# threading.Thread(target=_camera_capture_thread, daemon=True).start()
 
 @app.route('/api/camera/snapshot')
 def camera_snapshot():
@@ -1155,6 +1156,79 @@ def api_config_set():
         return jsonify({"success": True})
     else:
         return jsonify({"success": False, "error": "Failed to save configuration"})
+
+
+@app.route("/api/config/hostname", methods=["POST"])
+def api_config_hostname():
+    """Change system hostname. Requires master password."""
+    try:
+        import sys
+        sys.path.insert(0, "/opt/crawler")
+        from security_utils import verify_master_password
+
+        data = request.get_json() or {}
+        master_password = data.get("master_password", "")
+        new_hostname = data.get("hostname", "").strip()
+
+        if not master_password:
+            return jsonify({"success": False, "error": "Master password is required."})
+
+        if not verify_master_password(master_password):
+            return jsonify({"success": False, "error": "Invalid master password."})
+
+        if not new_hostname:
+            return jsonify({"success": False, "error": "Hostname cannot be empty."})
+
+        # Validate hostname: lowercase letters, digits, hyphens, max 63 chars
+        import re
+        if not re.match(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", new_hostname):
+            return jsonify({"success": False, "error": "Invalid hostname. Use lowercase letters, digits, and hyphens (max 63 chars). Must start and end with a letter or digit."})
+
+        # Set hostname via hostnamectl
+        result = subprocess.run(["sudo", "hostnamectl", "set-hostname", new_hostname],
+                                capture_output=True, text=True, timeout=10)
+        if result.returncode != 0:
+            return jsonify({"success": False, "error": f"Failed to set hostname: {result.stderr.strip()}"})
+
+        # Update /etc/hosts
+        try:
+            with open("/etc/hosts", "r") as f:
+                lines = f.readlines()
+            with open("/etc/hosts", "w") as f:
+                for line in lines:
+                    if "127.0.1.1" in line:
+                        f.write(f"127.0.1.1\t{new_hostname}\n")
+                    else:
+                        f.write(line)
+        except Exception:
+            pass
+
+        # Update config file if it exists
+        try:
+            if os.path.exists(CONFIG_FILE):
+                with open(CONFIG_FILE, "r") as f:
+                    config_lines = f.readlines()
+                with open(CONFIG_FILE, "w") as f:
+                    found = False
+                    for line in config_lines:
+                        if line.startswith("HOSTNAME="):
+                            f.write(f"HOSTNAME={new_hostname}\n")
+                            found = True
+                        else:
+                            f.write(line)
+                    if not found:
+                        f.write(f"HOSTNAME={new_hostname}\n")
+        except Exception:
+            pass
+
+        # Restart avahi so .local mDNS name updates immediately
+        subprocess.run(["sudo", "systemctl", "restart", "avahi-daemon"],
+                        capture_output=True, timeout=10)
+
+        return jsonify({"success": True, "hostname": new_hostname})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 def scan_wifi_networks():
@@ -3692,6 +3766,210 @@ def operator_status():
             _operator_lock["last_heartbeat"] = None
             return jsonify({"locked": False, "holder_ip": None})
         return jsonify({"locked": True, "holder_ip": _operator_lock["client_ip"]})
+
+
+# =====================================================================
+# MQTT Cloud Dashboard Endpoints
+# =====================================================================
+
+MQTT_CONF_PATH = '/etc/crawler/mqtt.conf'
+
+@app.route('/api/mqtt/status', methods=['GET'])
+def mqtt_status():
+    """Return MQTT config and service status."""
+    import yaml
+    config = {
+        'enabled': False,
+        'broker': '',
+        'port': 443,
+        'api_key_set': False,
+        'hostname': '',
+        'service_running': False,
+    }
+    try:
+        with open(MQTT_CONF_PATH, 'r') as f:
+            conf = yaml.safe_load(f) or {}
+        config['enabled'] = bool(conf.get('enabled', False))
+        config['broker'] = conf.get('broker', '')
+        config['port'] = conf.get('port', 8883)
+        config['api_key_set'] = bool(conf.get('api_key', ''))
+        config['hostname'] = conf.get('hostname', '') or subprocess.check_output(['hostname'], text=True).strip()
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        config['error'] = str(e)
+
+    # Check if mqtt-bridge service is running
+    try:
+        result = subprocess.run(
+            ['systemctl', 'is-active', 'mqtt-bridge'],
+            capture_output=True, text=True, timeout=5
+        )
+        config['service_running'] = result.stdout.strip() == 'active'
+    except Exception:
+        pass
+
+    return jsonify(config)
+
+
+@app.route('/api/mqtt/config', methods=['POST'])
+def mqtt_config_save():
+    """Save MQTT configuration. Requires master password."""
+    import yaml
+    try:
+        import sys
+        sys.path.insert(0, "/opt/crawler")
+        from security_utils import verify_master_password
+    except ImportError:
+        return jsonify({"success": False, "error": "Security module not available"}), 500
+
+    data = request.get_json() or {}
+    master_password = data.get('master_password', '')
+
+    if not master_password:
+        return jsonify({"success": False, "error": "Master password is required."})
+
+    if not verify_master_password(master_password):
+        return jsonify({"success": False, "error": "Invalid master password."})
+
+    # Load existing config
+    try:
+        with open(MQTT_CONF_PATH, 'r') as f:
+            conf = yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        conf = {}
+
+    # Update fields if provided
+    if 'enabled' in data:
+        conf['enabled'] = bool(data['enabled'])
+    if 'broker' in data:
+        conf['broker'] = str(data['broker']).strip()
+    if 'port' in data:
+        conf['port'] = int(data['port'])
+    if 'api_key' in data:
+        conf['api_key'] = str(data['api_key']).strip()
+
+    # Write config
+    try:
+        os.makedirs(os.path.dirname(MQTT_CONF_PATH), exist_ok=True)
+        with open(MQTT_CONF_PATH, 'w') as f:
+            yaml.dump(conf, f, default_flow_style=False)
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to write config: {e}"})
+
+    # Restart service if it exists
+    try:
+        subprocess.run(['systemctl', 'restart', 'mqtt-bridge'], timeout=10)
+    except Exception:
+        pass
+
+    return jsonify({"success": True})
+
+
+@app.route('/api/mqtt/test', methods=['POST'])
+def mqtt_test():
+    """Test MQTT connection. Requires master password."""
+    try:
+        import sys
+        sys.path.insert(0, "/opt/crawler")
+        from security_utils import verify_master_password
+    except ImportError:
+        return jsonify({"success": False, "error": "Security module not available"}), 500
+
+    data = request.get_json() or {}
+    master_password = data.get('master_password', '')
+
+    if not master_password:
+        return jsonify({"success": False, "error": "Master password is required."})
+
+    if not verify_master_password(master_password):
+        return jsonify({"success": False, "error": "Invalid master password."})
+
+    broker = data.get('broker', '').strip()
+    port = int(data.get('port', 8883))
+    api_key = data.get('api_key', '').strip()
+
+    if not broker:
+        return jsonify({"success": False, "error": "Broker URL is required."})
+
+    import ssl
+    import socket as sock
+
+    try:
+        hostname = sock.gethostname()
+        import paho.mqtt.client as paho_mqtt
+
+        result_data = {"connected": False, "rc": None}
+
+        def on_connect(client, userdata, flags, rc, properties=None):
+            # paho-mqtt v2 returns ReasonCode object, use .value for int
+            rc_val = rc.value if hasattr(rc, 'value') else rc
+            result_data["connected"] = (rc_val == 0)
+            result_data["rc"] = rc_val
+            client.disconnect()
+
+        # Read transport settings from config
+        import yaml as _yaml
+        _transport = 'websockets'
+        _ws_path = '/mqtt'
+        try:
+            with open(MQTT_CONF_PATH, 'r') as _f:
+                _conf = _yaml.safe_load(_f) or {}
+            _transport = _conf.get('transport', 'websockets')
+            _ws_path = _conf.get('ws_path', '/mqtt')
+        except Exception:
+            pass
+
+        client = paho_mqtt.Client(
+            callback_api_version=paho_mqtt.CallbackAPIVersion.VERSION2,
+            client_id=f'crawler-{hostname}-test',
+            protocol=paho_mqtt.MQTTv311,
+            transport=_transport,
+        )
+        if _transport == 'websockets':
+            client.ws_set_options(path=_ws_path)
+        if api_key:
+            client.username_pw_set(f'crawler_{hostname}', api_key)
+        client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS_CLIENT)
+        client.on_connect = on_connect
+
+        client.connect(broker, port, keepalive=10)
+        client.loop_start()
+
+        # Wait up to 10 seconds for connection
+        import time as _time
+        deadline = _time.time() + 10
+        while _time.time() < deadline and result_data["rc"] is None:
+            _time.sleep(0.1)
+        _time.sleep(0.5)
+
+        client.loop_stop()
+        client.disconnect()
+
+        if result_data["connected"]:
+            return jsonify({"success": True, "message": "Connection successful"})
+        else:
+            rc = result_data.get("rc", -1)
+            reasons = {
+                1: "Incorrect protocol version",
+                2: "Invalid client identifier",
+                3: "Server unavailable",
+                4: "Bad username or password",
+                5: "Not authorized",
+            }
+            reason = reasons.get(rc, f"Connection refused (code {rc})")
+            return jsonify({"success": False, "error": reason})
+
+    except ImportError:
+        return jsonify({"success": False, "error": "paho-mqtt not installed"})
+    except sock.timeout:
+        return jsonify({"success": False, "error": f"Connection timed out to {broker}:{port}"})
+    except sock.gaierror:
+        return jsonify({"success": False, "error": f"Could not resolve hostname: {broker}"})
+    except ssl.SSLError as e:
+        return jsonify({"success": False, "error": f"TLS error: {e}"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 def main():

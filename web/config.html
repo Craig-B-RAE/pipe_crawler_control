@@ -127,23 +127,31 @@
             }
         }
         .network-info {
-            display: grid;
-            gap: 8px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            overflow: hidden;
         }
         .network-item {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 10px 12px;
-            background: var(--bg-secondary);
-            border-radius: 8px;
+            padding: 12px 14px;
             font-size: 13px;
+            border-bottom: 1px solid var(--border-color, rgba(128,128,128,0.15));
         }
-        .network-item .label { color: var(--text-tertiary); }
+        .network-item:last-child {
+            border-bottom: none;
+        }
+        .network-item .label {
+            color: var(--text-tertiary);
+            min-width: 80px;
+            flex-shrink: 0;
+        }
         .network-item .value {
             color: var(--text-primary);
             font-weight: 500;
-            font-family: -apple-system, monospace;
+            font-family: 'SF Mono', SFMono-Regular, Menlo, monospace;
+            text-align: right;
+            flex: 1;
         }
         .network-item .value.none {
             color: #c0c0c0;
@@ -495,13 +503,44 @@
             </div>
         </div>
 
+        <!-- Change Hostname Modal -->
+        <div id="hostnameModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-overlay); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: var(--bg-primary); border-radius: 16px; padding: 24px; max-width: 320px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.2);">
+                <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">Change Hostname</h3>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">New Hostname:</label>
+                    <input type="text" id="hostnameInput" class="form-input" placeholder="e.g., crawler-01"
+                           style="width: 100%; padding: 10px 12px; font-size: 14px; box-sizing: border-box;"
+                           maxlength="63" pattern="[a-z0-9][a-z0-9-]*[a-z0-9]">
+                    <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 4px;">Lowercase letters, digits, hyphens. Must start and end with a letter or digit.</div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Master Password:</label>
+                    <input type="password" id="hostnamePassword" class="form-input" placeholder="Enter master password"
+                           style="width: 100%; padding: 10px 12px; font-size: 14px; box-sizing: border-box;">
+                </div>
+
+                <div id="hostnameError" style="display: none; font-size: 11px; color: var(--status-error); margin-bottom: 12px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;"></div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeHostnameModal()" style="flex: 1; padding: 10px;">Cancel</button>
+                    <button type="button" id="hostnameConfirmBtn" class="btn btn-primary" onclick="executeHostnameChange()" style="flex: 1; padding: 10px;">Save</button>
+                </div>
+            </div>
+        </div>
         <!-- Network Status -->
         <div class="section">
             <div class="section-title">Network Status</div>
             <div class="network-info">
-                <div class="network-item">
+                <div class="network-item" style="cursor: pointer;" title="Click to change hostname">
                     <span class="label">Hostname</span>
-                    <span class="value" id="hostnameDisplay">--</span>
+                    <span class="value" id="hostnameDisplay" onclick="showHostnameModal()">--</span>
+                    <svg onclick="copyHostname(event)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" style="margin-left: 6px; flex-shrink: 0; cursor: pointer;" title="Copy hostname">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <svg onclick="showHostnameModal()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" style="margin-left: 4px; flex-shrink: 0; cursor: pointer;" title="Edit hostname"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </div>
                 <div class="network-item">
                     <span class="label">WiFi</span>
@@ -510,6 +549,92 @@
                 <div class="network-item">
                     <span class="label">Ethernet</span>
                     <span class="value" id="ethernetDisplay">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cloud Dashboard (MQTT) -->
+        <div class="section" id="mqttSection">
+            <div class="section-title">Cloud Dashboard (MQTT)</div>
+            <div class="network-info">
+                <div class="network-item">
+                    <span class="label">Status</span>
+                    <span class="value" id="mqttStatusDisplay">--</span>
+                </div>
+                <div class="network-item">
+                    <span class="label">Broker</span>
+                    <span class="value" id="mqttBrokerDisplay">--</span>
+                </div>
+                <div class="network-item">
+                    <span class="label">Service</span>
+                    <span class="value" id="mqttServiceDisplay">--</span>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 12px;">
+                <button type="button" class="btn btn-secondary" onclick="showMqttAuth()" style="width: auto; padding: 10px 20px;">
+                    Configure MQTT
+                </button>
+            </div>
+        </div>
+
+        <!-- MQTT Auth Modal -->
+        <div id="mqttAuthModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-overlay); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: var(--bg-primary); border-radius: 16px; padding: 24px; max-width: 360px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">Configure MQTT</h3>
+                    <button onclick="closeMqttModal()" style="background: none; border: none; cursor: pointer; padding: 4px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Master Password:</label>
+                    <input type="password" id="mqttAuthPassword" class="form-input" placeholder="Enter master password"
+                           style="width: 100%; padding: 10px 12px; font-size: 14px; box-sizing: border-box;">
+                </div>
+
+                <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <label style="font-size: 13px; color: var(--text-primary); font-weight: 500;">Enable MQTT</label>
+                    <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                        <input type="checkbox" id="mqttEnabled" style="opacity: 0; width: 0; height: 0;">
+                        <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 24px; transition: 0.3s;" onclick="this.previousElementSibling.checked = !this.previousElementSibling.checked; this.style.background = this.previousElementSibling.checked ? 'var(--button-success-bg)' : '#ccc';">
+                            <span style="position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s;"></span>
+                        </span>
+                    </label>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Broker URL:</label>
+                    <input type="text" id="mqttBroker" class="form-input" placeholder="edge-primeinspections.com"
+                           style="width: 100%; padding: 10px 12px; font-size: 14px; box-sizing: border-box;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Port:</label>
+                    <input type="number" id="mqttPort" class="form-input" placeholder="443" value="443"
+                           style="width: 100%; padding: 10px 12px; font-size: 14px; box-sizing: border-box;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">API Key:</label>
+                    <div style="position: relative;">
+                        <input type="password" id="mqttApiKey" class="form-input" placeholder="Enter API key"
+                               style="width: 100%; padding: 10px 36px 10px 12px; font-size: 14px; box-sizing: border-box;">
+                        <button type="button" onclick="toggleMqttApiKeyVisibility()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; color: var(--text-tertiary);">
+                            <svg id="mqttApiKeyEyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mqttTestResult" style="display: none; font-size: 11px; margin-bottom: 12px; padding: 8px; border-radius: 6px;"></div>
+
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <button type="button" class="btn btn-secondary" onclick="testMqttConnection()" id="mqttTestBtn" style="flex: 1; padding: 10px; font-size: 12px;">Test Connection</button>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeMqttModal()" style="flex: 1; padding: 10px;">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveMqttConfig()" id="mqttSaveBtn" style="flex: 1; padding: 10px;">Save</button>
                 </div>
             </div>
         </div>
@@ -546,7 +671,7 @@
         </div>
 
         <!-- Config Tools Button -->
-        <div class="section" style="margin-top: 20px; text-align: center; border-bottom: none;">
+        <div class="section" style="margin-top: 20px; text-align: center;">
             <button type="button" class="btn btn-secondary" onclick="openConfigTools()" style="width: auto; padding: 10px 20px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                 Open Config Tools
@@ -1295,10 +1420,275 @@
             if (e.key === 'Enter') executeProgramRoboclaw();
         });
 
+
+        function showHostnameModal() {
+            var current = document.getElementById("hostnameDisplay").textContent;
+            document.getElementById("hostnameInput").value = (current !== "--") ? current : "";
+            document.getElementById("hostnamePassword").value = "";
+            document.getElementById("hostnameError").style.display = "none";
+            document.getElementById("hostnameModal").style.display = "flex";
+        }
+
+        function closeHostnameModal() {
+            document.getElementById("hostnameModal").style.display = "none";
+        }
+
+        function executeHostnameChange() {
+            var hostname = document.getElementById("hostnameInput").value.trim().toLowerCase();
+            var password = document.getElementById("hostnamePassword").value;
+            var errorEl = document.getElementById("hostnameError");
+            var btn = document.getElementById("hostnameConfirmBtn");
+
+            if (!hostname) {
+                errorEl.textContent = "Hostname cannot be empty.";
+                errorEl.style.display = "block";
+                return;
+            }
+            if (!password) {
+                errorEl.textContent = "Master password is required.";
+                errorEl.style.display = "block";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Saving...";
+            errorEl.style.display = "none";
+
+            fetch("/api/config/hostname", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ hostname: hostname, master_password: password })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = "Save";
+                if (data.success) {
+                    document.getElementById("hostnameDisplay").textContent = data.hostname;
+                    closeHostnameModal();
+                } else {
+                    errorEl.textContent = data.error || "Failed to change hostname.";
+                    errorEl.style.display = "block";
+                }
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.textContent = "Save";
+                errorEl.textContent = "Network error. Please try again.";
+                errorEl.style.display = "block";
+            });
+        }
+
+        document.getElementById("hostnameInput").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") executeHostnameChange();
+        });
+        document.getElementById("hostnamePassword").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") executeHostnameChange();
+        });
+        // =====================================================================
+        // Hostname Copy Function
+        // =====================================================================
+
+        function copyHostname(e) {
+            e.stopPropagation();
+            var hostname = document.getElementById('hostnameDisplay').textContent;
+            if (hostname && hostname !== '--') {
+                var fullHostname = hostname + '.local';
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(fullHostname).then(function() {
+                        showSuccess('Copied: ' + fullHostname);
+                    });
+                } else {
+                    var ta = document.createElement('textarea');
+                    ta.value = fullHostname;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    showSuccess('Copied: ' + fullHostname);
+                }
+            }
+        }
+
+        // =====================================================================
+        // MQTT Cloud Dashboard Functions
+        // =====================================================================
+
+        function loadMqttStatus() {
+            fetch('/api/mqtt/status')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var statusEl = document.getElementById('mqttStatusDisplay');
+                    var brokerEl = document.getElementById('mqttBrokerDisplay');
+                    var serviceEl = document.getElementById('mqttServiceDisplay');
+
+                    if (data.enabled) {
+                        statusEl.textContent = 'Enabled';
+                        statusEl.style.color = 'var(--status-ok)';
+                    } else {
+                        statusEl.textContent = 'Disabled';
+                        statusEl.style.color = 'var(--text-tertiary)';
+                    }
+
+                    brokerEl.textContent = data.broker || 'Not configured';
+                    if (!data.broker) brokerEl.classList.add('none');
+
+                    if (data.service_running) {
+                        serviceEl.textContent = 'Running';
+                        serviceEl.style.color = 'var(--status-ok)';
+                    } else {
+                        serviceEl.textContent = 'Stopped';
+                        serviceEl.style.color = 'var(--text-tertiary)';
+                    }
+                })
+                .catch(function() {
+                    document.getElementById('mqttStatusDisplay').textContent = 'Error';
+                });
+        }
+
+        function showMqttAuth() {
+            document.getElementById('mqttAuthPassword').value = '';
+            document.getElementById('mqttTestResult').style.display = 'none';
+
+            // Pre-fill current values
+            fetch('/api/mqtt/status')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    document.getElementById('mqttBroker').value = data.broker || '';
+                    document.getElementById('mqttPort').value = data.port || 443;
+                    var enabledCb = document.getElementById('mqttEnabled');
+                    enabledCb.checked = data.enabled;
+                    // Update toggle visual
+                    var toggle = enabledCb.nextElementSibling;
+                    toggle.style.background = data.enabled ? 'var(--button-success-bg)' : '#ccc';
+                    // Don't pre-fill API key for security
+                    document.getElementById('mqttApiKey').value = '';
+                });
+
+            document.getElementById('mqttAuthModal').style.display = 'flex';
+            document.getElementById('mqttAuthPassword').focus();
+        }
+
+        function closeMqttModal() {
+            document.getElementById('mqttAuthModal').style.display = 'none';
+        }
+
+        function toggleMqttApiKeyVisibility() {
+            var input = document.getElementById('mqttApiKey');
+            input.type = (input.type === 'password') ? 'text' : 'password';
+        }
+
+        function testMqttConnection() {
+            var password = document.getElementById('mqttAuthPassword').value;
+            var broker = document.getElementById('mqttBroker').value.trim();
+            var port = document.getElementById('mqttPort').value;
+            var apiKey = document.getElementById('mqttApiKey').value.trim();
+            var resultEl = document.getElementById('mqttTestResult');
+            var btn = document.getElementById('mqttTestBtn');
+
+            if (!password) {
+                resultEl.textContent = 'Enter master password first.';
+                resultEl.style.background = 'var(--status-error-bg)';
+                resultEl.style.color = 'var(--status-error)';
+                resultEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            resultEl.style.display = 'none';
+
+            fetch('/api/mqtt/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    master_password: password,
+                    broker: broker,
+                    port: parseInt(port),
+                    api_key: apiKey
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = 'Test Connection';
+                if (data.success) {
+                    resultEl.textContent = 'Connection successful!';
+                    resultEl.style.background = '#e8f5e9';
+                    resultEl.style.color = '#2e7d32';
+                } else {
+                    resultEl.textContent = data.error || 'Connection failed';
+                    resultEl.style.background = 'var(--status-error-bg)';
+                    resultEl.style.color = 'var(--status-error)';
+                }
+                resultEl.style.display = 'block';
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.textContent = 'Test Connection';
+                resultEl.textContent = 'Request failed';
+                resultEl.style.background = 'var(--status-error-bg)';
+                resultEl.style.color = 'var(--status-error)';
+                resultEl.style.display = 'block';
+            });
+        }
+
+        function saveMqttConfig() {
+            var password = document.getElementById('mqttAuthPassword').value;
+            var broker = document.getElementById('mqttBroker').value.trim();
+            var port = document.getElementById('mqttPort').value;
+            var apiKey = document.getElementById('mqttApiKey').value.trim();
+            var enabled = document.getElementById('mqttEnabled').checked;
+            var btn = document.getElementById('mqttSaveBtn');
+
+            if (!password) {
+                showError('Master password is required');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            var body = {
+                master_password: password,
+                enabled: enabled,
+                broker: broker,
+                port: parseInt(port)
+            };
+            // Only send api_key if user entered one
+            if (apiKey) {
+                body.api_key = apiKey;
+            }
+
+            fetch('/api/mqtt/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+                if (data.success) {
+                    closeMqttModal();
+                    showSuccess('MQTT configuration saved.');
+                    loadMqttStatus();
+                } else {
+                    showError(data.error || 'Failed to save MQTT config');
+                }
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+                showError('Failed to save MQTT config');
+            });
+        }
+
         // Load config and security status on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadConfig();
             loadSecurityStatus();
+            loadMqttStatus();
         });
     </script>
     <script src="/js/theme.js"></script>
