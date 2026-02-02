@@ -3972,6 +3972,122 @@ def mqtt_test():
         return jsonify({"success": False, "error": str(e)})
 
 
+@app.route('/api/mqtt/topics', methods=['GET'])
+def mqtt_topics_get():
+    """Return MQTT topics config from mqtt.conf."""
+    import yaml
+    defaults = {
+        'heartbeat': {'enabled': True, 'interval': 5.0},
+        'system': {'enabled': True, 'interval': 5.0, 'fields': {
+            'cpu_temp': True, 'ram': True, 'storage': True,
+        }},
+        'imu': {'enabled': True, 'interval': 2.0, 'fields': {
+            'roll': True, 'pitch': True, 'cal_roll': True, 'cal_pitch': True,
+        }},
+        'motor': {'enabled': True, 'interval': 2.0, 'fields': {
+            'connected': True, 'm1_speed': True, 'm2_speed': True,
+            'm1_torque': True, 'm2_torque': True, 'last_command': True,
+        }},
+    }
+    try:
+        with open(MQTT_CONF_PATH, 'r') as f:
+            conf = yaml.safe_load(f) or {}
+        topics = conf.get('topics', {})
+        # Merge defaults for any missing topics
+        for name, defs in defaults.items():
+            if name not in topics:
+                topics[name] = defs
+            else:
+                for k, v in defs.items():
+                    if k not in topics[name]:
+                        topics[name][k] = v
+                # Merge nested fields defaults
+                if 'fields' in defs and 'fields' in topics[name]:
+                    for fk, fv in defs['fields'].items():
+                        if fk not in topics[name]['fields']:
+                            topics[name]['fields'][fk] = fv
+        return jsonify({"topics": topics})
+    except FileNotFoundError:
+        return jsonify({"topics": defaults})
+    except Exception as e:
+        return jsonify({"topics": defaults, "error": str(e)})
+
+
+@app.route('/api/mqtt/topics', methods=['POST'])
+def mqtt_topics_save():
+    """Save MQTT topics configuration. Requires master password."""
+    import yaml
+    try:
+        import sys
+        sys.path.insert(0, "/opt/crawler")
+        from security_utils import verify_master_password
+    except ImportError:
+        return jsonify({"success": False, "error": "Security module not available"}), 500
+
+    data = request.get_json() or {}
+    master_password = data.get('master_password', '')
+
+    if not master_password:
+        return jsonify({"success": False, "error": "Master password is required."})
+
+    if not verify_master_password(master_password):
+        return jsonify({"success": False, "error": "Invalid master password."})
+
+    topics = data.get('topics', {})
+    if not topics:
+        return jsonify({"success": False, "error": "No topics provided."})
+
+    # Validate topic data
+    valid_topics = {
+        'heartbeat': [],
+        'system': ['cpu_temp', 'ram', 'storage'],
+        'imu': ['roll', 'pitch', 'cal_roll', 'cal_pitch'],
+        'motor': ['connected', 'm1_speed', 'm2_speed',
+                  'm1_torque', 'm2_torque', 'last_command'],
+    }
+    sanitized = {}
+    for name, valid_fields in valid_topics.items():
+        if name in topics:
+            t = topics[name]
+            enabled = bool(t.get('enabled', True))
+            interval = float(t.get('interval', 2.0))
+            if interval < 0.5 or interval > 300:
+                return jsonify({"success": False, "error": f"Interval for {name} must be between 0.5 and 300 seconds."})
+            entry = {'enabled': enabled, 'interval': interval}
+            # Handle per-field toggles
+            if valid_fields and 'fields' in t:
+                fields = {}
+                for f in valid_fields:
+                    fields[f] = bool(t['fields'].get(f, True))
+                entry['fields'] = fields
+            sanitized[name] = entry
+
+    # Load existing config
+    try:
+        with open(MQTT_CONF_PATH, 'r') as f:
+            conf = yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        conf = {}
+
+    conf['topics'] = sanitized
+
+    # Write config
+    try:
+        os.makedirs(os.path.dirname(MQTT_CONF_PATH), exist_ok=True)
+        with open(MQTT_CONF_PATH, 'w') as f:
+            yaml.dump(conf, f, default_flow_style=False)
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to write config: {e}"})
+
+    # Restart mqtt-bridge service
+    try:
+        subprocess.run(['systemctl', 'restart', 'mqtt-bridge'], timeout=10)
+    except Exception:
+        pass
+
+    return jsonify({"success": True})
+
+
 def main():
     """Run the crawler UI server."""
     global boot_state

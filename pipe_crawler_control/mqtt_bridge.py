@@ -7,6 +7,7 @@ Publishes heartbeat, status, and settings; subscribes to remote commands.
 Config loaded from /etc/crawler/mqtt.conf.
 """
 
+import math
 import os
 import ssl
 import json
@@ -25,6 +26,23 @@ except ImportError:
     MQTT_AVAILABLE = False
 
 MQTT_CONF_PATH = '/etc/crawler/mqtt.conf'
+
+
+NETWORK_CONF_PATH = '/etc/xpresscan/network.conf'
+
+DEFAULT_TOPICS = {
+    'heartbeat': {'enabled': True, 'interval': 5.0},
+    'system': {'enabled': True, 'interval': 5.0, 'fields': {
+        'cpu_temp': True, 'ram': True, 'storage': True,
+    }},
+    'imu': {'enabled': True, 'interval': 2.0, 'fields': {
+        'roll': True, 'pitch': True, 'cal_roll': True, 'cal_pitch': True,
+    }},
+    'motor': {'enabled': True, 'interval': 2.0, 'fields': {
+        'connected': True, 'm1_speed': True, 'm2_speed': True,
+        'm1_torque': True, 'm2_torque': True, 'last_command': True,
+    }},
+}
 
 
 def load_mqtt_config():
@@ -49,6 +67,16 @@ def load_mqtt_config():
     # If hostname not set, use system hostname
     if not defaults['hostname']:
         defaults['hostname'] = socket.gethostname()
+    # Merge topic defaults
+    topics = defaults.get('topics', {})
+    for name, defs in DEFAULT_TOPICS.items():
+        if name not in topics:
+            topics[name] = dict(defs)
+        else:
+            for k, v in defs.items():
+                if k not in topics[name]:
+                    topics[name][k] = v
+    defaults['topics'] = topics
     return defaults
 
 
@@ -62,7 +90,13 @@ class MqttBridge(Node):
         self._last_cpu_temp = 0.0
         self._last_imu_roll = 0.0
         self._last_imu_pitch = 0.0
+        self._last_cal_roll = 0.0
+        self._last_cal_pitch = 0.0
         self._last_robot_command = ''
+        self._crawler_name = self._load_crawler_name()
+        self._motor_params = self._load_motor_params()
+        self._steps_per_metre = self._calc_steps_per_metre()
+        self._peak_torque_nm = self._motor_params.get('peakTorqueNm', 2.0)
 
         if not MQTT_AVAILABLE:
             self.get_logger().error('paho-mqtt not installed. MQTT bridge disabled.')
@@ -82,6 +116,8 @@ class MqttBridge(Node):
         self.create_subscription(Float32, '/cpu_temp', self._on_cpu_temp, 10)
         self.create_subscription(Float32, '/imu/roll', self._on_imu_roll, 10)
         self.create_subscription(Float32, '/imu/pitch', self._on_imu_pitch, 10)
+        self.create_subscription(Float32, '/imu/calibrated_roll', self._on_cal_roll, 10)
+        self.create_subscription(Float32, '/imu/calibrated_pitch', self._on_cal_pitch, 10)
         self.create_subscription(String, '/robot_command', self._on_robot_command, 10)
 
         # Try clearlink status if available
@@ -136,10 +172,20 @@ class MqttBridge(Node):
         except Exception as e:
             self.get_logger().error(f'MQTT connect failed: {e}')
 
-        # Timers for publishing
-        interval = self.config['publish_interval']
-        self.create_timer(5.0, self._publish_heartbeat)
-        self.create_timer(interval, self._publish_status)
+        # Timers for publishing (per-topic config)
+        topics = self.config.get('topics', DEFAULT_TOPICS)
+        hb = topics.get('heartbeat', DEFAULT_TOPICS['heartbeat'])
+        if hb.get('enabled', True):
+            self.create_timer(hb.get('interval', 5.0), self._publish_heartbeat)
+        sys_t = topics.get('system', DEFAULT_TOPICS['system'])
+        if sys_t.get('enabled', True):
+            self.create_timer(sys_t.get('interval', 5.0), self._publish_system)
+        imu_t = topics.get('imu', DEFAULT_TOPICS['imu'])
+        if imu_t.get('enabled', True):
+            self.create_timer(imu_t.get('interval', 2.0), self._publish_imu)
+        motor_t = topics.get('motor', DEFAULT_TOPICS['motor'])
+        if motor_t.get('enabled', True):
+            self.create_timer(motor_t.get('interval', 2.0), self._publish_motor)
 
     def _on_mqtt_connect(self, client, userdata, flags, rc, properties=None):
         rc_val = rc.value if hasattr(rc, 'value') else rc
@@ -194,6 +240,12 @@ class MqttBridge(Node):
     def _on_imu_pitch(self, msg):
         self._last_imu_pitch = msg.data
 
+    def _on_cal_roll(self, msg):
+        self._last_cal_roll = msg.data
+
+    def _on_cal_pitch(self, msg):
+        self._last_cal_pitch = msg.data
+
     def _on_robot_command(self, msg):
         self._last_robot_command = msg.data
 
@@ -214,6 +266,7 @@ class MqttBridge(Node):
         hostname = self.config['hostname']
         payload = json.dumps({
             'hostname': hostname,
+            'crawler_name': self._crawler_name,
             'timestamp': time.time(),
             'uptime': self._get_uptime(),
         })
@@ -222,23 +275,80 @@ class MqttBridge(Node):
             payload, qos=0
         )
 
-    def _publish_status(self):
+    def _publish_system(self):
         if not self.connected or not self.mqtt_client:
             return
         hostname = self.config['hostname']
-        status = {
+        topics = self.config.get('topics', DEFAULT_TOPICS)
+        fields = topics.get('system', {}).get('fields', {})
+        data = {
             'hostname': hostname,
             'timestamp': time.time(),
-            'cpu_temp': round(self._last_cpu_temp, 1),
-            'imu_roll': round(self._last_imu_roll, 2),
-            'imu_pitch': round(self._last_imu_pitch, 2),
-            'last_command': self._last_robot_command,
+        }
+        if fields.get('cpu_temp', True):
+            data['cpu_temp'] = round(self._last_cpu_temp, 1)
+        if fields.get('ram', True):
+            data['ram'] = self._get_ram_usage()
+        if fields.get('storage', True):
+            data['storage'] = self._get_disk_usage()
+        self.mqtt_client.publish(
+            f'crawler/{hostname}/system',
+            json.dumps(data), qos=0
+        )
+
+    def _publish_imu(self):
+        if not self.connected or not self.mqtt_client:
+            return
+        hostname = self.config['hostname']
+        topics = self.config.get('topics', DEFAULT_TOPICS)
+        fields = topics.get('imu', {}).get('fields', {})
+        data = {
+            'hostname': hostname,
+            'timestamp': time.time(),
+        }
+        if fields.get('roll', True):
+            data['roll'] = round(self._last_imu_roll, 2)
+        if fields.get('pitch', True):
+            data['pitch'] = round(self._last_imu_pitch, 2)
+        if fields.get('cal_roll', True):
+            data['cal_roll'] = round(self._last_cal_roll, 2)
+        if fields.get('cal_pitch', True):
+            data['cal_pitch'] = round(self._last_cal_pitch, 2)
+        self.mqtt_client.publish(
+            f'crawler/{hostname}/imu',
+            json.dumps(data), qos=0
+        )
+
+    def _publish_motor(self):
+        if not self.connected or not self.mqtt_client:
+            return
+        hostname = self.config['hostname']
+        topics = self.config.get('topics', DEFAULT_TOPICS)
+        fields = topics.get('motor', {}).get('fields', {})
+        data = {
+            'hostname': hostname,
+            'timestamp': time.time(),
         }
         if self._last_status:
-            status['motor'] = self._last_status
+            if fields.get('connected', True):
+                data['connected'] = self._last_status.get('connected')
+            if fields.get('m1_speed', True):
+                data['m1_speed'] = self._steps_to_ms(
+                    self._last_status.get('axis1_velocity', 0))
+            if fields.get('m2_speed', True):
+                data['m2_speed'] = self._steps_to_ms(
+                    self._last_status.get('axis2_velocity', 0))
+            if fields.get('m1_torque', True):
+                data['m1_torque'] = self._torque_to_nm(
+                    self._last_status.get('axis1_torque', 0))
+            if fields.get('m2_torque', True):
+                data['m2_torque'] = self._torque_to_nm(
+                    self._last_status.get('axis2_torque', 0))
+        if fields.get('last_command', True):
+            data['last_command'] = self._last_robot_command
         self.mqtt_client.publish(
-            f'crawler/{hostname}/status',
-            json.dumps(status), qos=0
+            f'crawler/{hostname}/motor',
+            json.dumps(data), qos=0
         )
 
     # --- Command handlers ---
@@ -302,12 +412,101 @@ class MqttBridge(Node):
 
     # --- Utilities ---
 
+    def _load_crawler_name(self):
+        """Load crawler name from /etc/xpresscan/network.conf."""
+        try:
+            with open(NETWORK_CONF_PATH, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith('CRAWLER_NAME='):
+                        return line.split('=', 1)[1].strip()
+        except Exception:
+            pass
+        return socket.gethostname()
+
+    def _load_motor_params(self):
+        """Load motor parameters from settings file."""
+        defaults = {
+            'encoderRes': 1000,
+            'wheelDia': 1.77,       # inches
+            'gearboxRatio': 20,
+            'gearRatio': 30,
+            'peakTorqueNm': 2.0,
+        }
+        try:
+            settings_file = os.path.expanduser(
+                '~/ros2_ws/src/pipe_crawler_control/config/settings.yaml')
+            if os.path.exists(settings_file):
+                with open(settings_file, 'r') as f:
+                    settings = yaml.safe_load(f) or {}
+                if 'motorParams' in settings:
+                    defaults.update(settings['motorParams'])
+        except Exception:
+            pass
+        return defaults
+
+    def _calc_steps_per_metre(self):
+        """Calculate steps per metre from motor parameters."""
+        p = self._motor_params
+        total_ratio = p['gearboxRatio'] * p['gearRatio']
+        wheel_circ_in = math.pi * p['wheelDia']
+        travel_per_rev_in = wheel_circ_in / total_ratio
+        steps_per_inch = p['encoderRes'] / travel_per_rev_in
+        return steps_per_inch / 0.0254  # convert steps/inch to steps/metre
+
+    def _steps_to_ms(self, steps_per_sec):
+        """Convert steps/sec to m/s."""
+        if not steps_per_sec or self._steps_per_metre == 0:
+            return 0.0
+        return round(abs(steps_per_sec) / self._steps_per_metre, 4)
+
+    def _torque_to_nm(self, torque_percent):
+        """Convert torque percentage to Nm."""
+        if torque_percent is None or torque_percent == -9999:
+            return None
+        return round(abs(torque_percent) / 100.0 * self._peak_torque_nm, 2)
+
     def _get_uptime(self):
         try:
             with open('/proc/uptime', 'r') as f:
                 return float(f.read().split()[0])
         except Exception:
             return 0.0
+
+    def _get_ram_usage(self):
+        """Return RAM usage dict from /proc/meminfo."""
+        try:
+            with open('/proc/meminfo', 'r') as f:
+                info = {}
+                for line in f:
+                    parts = line.split()
+                    if parts[0] in ('MemTotal:', 'MemAvailable:'):
+                        info[parts[0]] = int(parts[1])
+                total_kb = info.get('MemTotal:', 0)
+                avail_kb = info.get('MemAvailable:', 0)
+                used_kb = total_kb - avail_kb
+                return {
+                    'percent': round(100.0 * used_kb / total_kb, 1) if total_kb else 0,
+                    'used_gb': round(used_kb / 1048576.0, 2),
+                    'total_gb': round(total_kb / 1048576.0, 2),
+                }
+        except Exception:
+            return {'percent': 0, 'used_gb': 0, 'total_gb': 0}
+
+    def _get_disk_usage(self):
+        """Return disk usage dict from os.statvfs."""
+        try:
+            st = os.statvfs('/')
+            total = st.f_blocks * st.f_frsize
+            free = st.f_bfree * st.f_frsize
+            used = total - free
+            return {
+                'percent': round(100.0 * used / total, 1) if total else 0,
+                'used_gb': round(used / 1073741824.0, 2),
+                'total_gb': round(total / 1073741824.0, 2),
+            }
+        except Exception:
+            return {'percent': 0, 'used_gb': 0, 'total_gb': 0}
 
     def _check_config_reload(self):
         """Periodically check if config has been enabled."""
