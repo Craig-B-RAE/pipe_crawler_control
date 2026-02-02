@@ -26,53 +26,44 @@ from flask import Flask, render_template_string, jsonify, send_from_directory, r
 
 app = Flask(__name__)
 
-# --- Camera streaming (frame-averaged to eliminate color flicker) ---
+# --- Camera streaming via rpicam-vid (Arducam 64MP CSI camera) ---
 _camera_frame = None
 _camera_frame_lock = threading.Lock()
-BLEND_COUNT = 4
 
 def _camera_capture_thread():
     global _camera_frame
-    cap = None
+    cmd = [
+        "rpicam-vid", "-t", "0",
+        "--width", "1920", "--height", "1080",
+        "--framerate", "30",
+        "--codec", "mjpeg",
+        "--inline",
+        "-o", "-",
+    ]
     while True:
         try:
-            if cap is None or not cap.isOpened():
-                cap = cv2.VideoCapture('/dev/video0', cv2.CAP_V4L2)
-                cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
-                cap.set(cv2.CAP_PROP_FPS, 30)
-                subprocess.run(
-                    ['v4l2-ctl', '-d', '/dev/video0',
-                     '--set-ctrl=white_balance_automatic=0',
-                     '--set-ctrl=white_balance_temperature=4600',
-                     '--set-ctrl=auto_exposure=1',
-                     '--set-ctrl=exposure_time_absolute=83',
-                     '--set-ctrl=gain=32',
-                     '--set-ctrl=power_line_frequency=2'],
-                    stderr=subprocess.DEVNULL
-                )
-            # Read BLEND_COUNT frames, use the median to kill color outliers
-            frames = []
-            for _ in range(BLEND_COUNT):
-                ret, frame = cap.read()
-                if ret:
-                    frames.append(frame)
-            if frames:
-                blended = np.median(frames, axis=0).astype(np.uint8)
-                ret, jpeg = cv2.imencode('.jpg', blended, [cv2.IMWRITE_JPEG_QUALITY, 75])
-                if ret:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            buf = b""
+            while True:
+                chunk = proc.stdout.read(4096)
+                if not chunk:
+                    break
+                buf += chunk
+                while True:
+                    start = buf.find(b"\xff\xd8")
+                    end = buf.find(b"\xff\xd9", start + 2) if start != -1 else -1
+                    if start == -1 or end == -1:
+                        break
+                    frame = buf[start:end + 2]
+                    buf = buf[end + 2:]
                     with _camera_frame_lock:
-                        _camera_frame = jpeg.tobytes()
-            else:
-                cap = None
-                time.sleep(0.5)
+                        _camera_frame = frame
+            proc.terminate()
         except Exception:
-            cap = None
-            time.sleep(1)
+            pass
+        time.sleep(1)
 
-# USB camera removed - no longer in use
-# threading.Thread(target=_camera_capture_thread, daemon=True).start()
+threading.Thread(target=_camera_capture_thread, daemon=True).start()
 
 @app.route('/api/camera/snapshot')
 def camera_snapshot():
