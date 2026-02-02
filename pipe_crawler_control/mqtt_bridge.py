@@ -33,7 +33,7 @@ NETWORK_CONF_PATH = '/etc/xpresscan/network.conf'
 DEFAULT_TOPICS = {
     'heartbeat': {'enabled': True, 'interval': 5.0},
     'system': {'enabled': True, 'interval': 5.0, 'fields': {
-        'cpu_temp': True, 'ram': True, 'storage': True,
+        'cpu_temp': True, 'ram': True, 'storage': True, 'revision': True,
     }},
     'imu': {'enabled': True, 'interval': 2.0, 'fields': {
         'roll': True, 'pitch': True, 'cal_roll': True, 'cal_pitch': True,
@@ -90,10 +90,10 @@ class MqttBridge(Node):
         self._last_cpu_temp = 0.0
         self._last_imu_roll = 0.0
         self._last_imu_pitch = 0.0
-        self._last_cal_roll = 0.0
-        self._last_cal_pitch = 0.0
         self._last_robot_command = ''
         self._crawler_name = self._load_crawler_name()
+        self._revision = self._load_revision()
+        self._imu_offsets = self._load_imu_offsets()
         self._motor_params = self._load_motor_params()
         self._steps_per_metre = self._calc_steps_per_metre()
         self._peak_torque_nm = self._motor_params.get('peakTorqueNm', 2.0)
@@ -116,8 +116,6 @@ class MqttBridge(Node):
         self.create_subscription(Float32, '/cpu_temp', self._on_cpu_temp, 10)
         self.create_subscription(Float32, '/imu/roll', self._on_imu_roll, 10)
         self.create_subscription(Float32, '/imu/pitch', self._on_imu_pitch, 10)
-        self.create_subscription(Float32, '/imu/calibrated_roll', self._on_cal_roll, 10)
-        self.create_subscription(Float32, '/imu/calibrated_pitch', self._on_cal_pitch, 10)
         self.create_subscription(String, '/robot_command', self._on_robot_command, 10)
 
         # Try clearlink status if available
@@ -240,12 +238,6 @@ class MqttBridge(Node):
     def _on_imu_pitch(self, msg):
         self._last_imu_pitch = msg.data
 
-    def _on_cal_roll(self, msg):
-        self._last_cal_roll = msg.data
-
-    def _on_cal_pitch(self, msg):
-        self._last_cal_pitch = msg.data
-
     def _on_robot_command(self, msg):
         self._last_robot_command = msg.data
 
@@ -264,15 +256,19 @@ class MqttBridge(Node):
         if not self.connected or not self.mqtt_client:
             return
         hostname = self.config['hostname']
-        payload = json.dumps({
+        topics = self.config.get('topics', DEFAULT_TOPICS)
+        hb_conf = topics.get('heartbeat', {})
+        data = {
             'hostname': hostname,
             'crawler_name': self._crawler_name,
             'timestamp': time.time(),
             'uptime': self._get_uptime(),
-        })
+        }
+        if hb_conf.get('iccid_enabled') and hb_conf.get('iccid'):
+            data['iccid'] = hb_conf['iccid']
         self.mqtt_client.publish(
             f'crawler/{hostname}/heartbeat',
-            payload, qos=0
+            json.dumps(data), qos=0
         )
 
     def _publish_system(self):
@@ -291,6 +287,8 @@ class MqttBridge(Node):
             data['ram'] = self._get_ram_usage()
         if fields.get('storage', True):
             data['storage'] = self._get_disk_usage()
+        if fields.get('revision', True):
+            data['revision'] = self._revision
         self.mqtt_client.publish(
             f'crawler/{hostname}/system',
             json.dumps(data), qos=0
@@ -311,9 +309,11 @@ class MqttBridge(Node):
         if fields.get('pitch', True):
             data['pitch'] = round(self._last_imu_pitch, 2)
         if fields.get('cal_roll', True):
-            data['cal_roll'] = round(self._last_cal_roll, 2)
+            data['cal_roll'] = round(
+                self._last_imu_roll - self._imu_offsets['roll'], 2)
         if fields.get('cal_pitch', True):
-            data['cal_pitch'] = round(self._last_cal_pitch, 2)
+            data['cal_pitch'] = round(
+                self._last_imu_pitch - self._imu_offsets['pitch'], 2)
         self.mqtt_client.publish(
             f'crawler/{hostname}/imu',
             json.dumps(data), qos=0
@@ -424,8 +424,38 @@ class MqttBridge(Node):
             pass
         return socket.gethostname()
 
+    def _load_revision(self):
+        """Load software revision from VERSION file."""
+        try:
+            version_file = os.path.expanduser(
+                '~/ros2_ws/src/pipe_crawler_control/VERSION')
+            with open(version_file, 'r') as f:
+                return f.read().strip()
+        except Exception:
+            return 'unknown'
+
+    def _load_imu_offsets(self):
+        """Load IMU calibration offsets from UI settings file."""
+        defaults = {'roll': 0.0, 'pitch': 0.0}
+        try:
+            active_file = os.path.expanduser('~/active_system')
+            with open(active_file, 'r') as f:
+                crawler_id = f.read().strip()
+            settings_file = f'/etc/xpresscan/ui_settings_{crawler_id}.json'
+            with open(settings_file, 'r') as f:
+                settings = json.load(f)
+            defaults['roll'] = float(settings.get('imuRollOffset', 0.0))
+            defaults['pitch'] = float(settings.get('imuPitchOffset', 0.0))
+            self.get_logger().info(
+                f'IMU offsets loaded: roll={defaults["roll"]}, '
+                f'pitch={defaults["pitch"]}')
+        except Exception as e:
+            self.get_logger().warn(
+                f'Could not load IMU offsets, using 0: {e}')
+        return defaults
+
     def _load_motor_params(self):
-        """Load motor parameters from settings file."""
+        """Load motor parameters from UI settings file."""
         defaults = {
             'encoderRes': 1000,
             'wheelDia': 1.77,       # inches
@@ -434,15 +464,22 @@ class MqttBridge(Node):
             'peakTorqueNm': 2.0,
         }
         try:
-            settings_file = os.path.expanduser(
-                '~/ros2_ws/src/pipe_crawler_control/config/settings.yaml')
-            if os.path.exists(settings_file):
-                with open(settings_file, 'r') as f:
-                    settings = yaml.safe_load(f) or {}
-                if 'motorParams' in settings:
-                    defaults.update(settings['motorParams'])
-        except Exception:
-            pass
+            active_file = os.path.expanduser('~/active_system')
+            with open(active_file, 'r') as f:
+                crawler_id = f.read().strip()
+            settings_file = f'/etc/xpresscan/ui_settings_{crawler_id}.json'
+            with open(settings_file, 'r') as f:
+                settings = json.load(f)
+            if 'motorParams' in settings:
+                defaults.update(settings['motorParams'])
+                self.get_logger().info(
+                    f'Motor params loaded: encoderRes={defaults["encoderRes"]}, '
+                    f'wheelDia={defaults["wheelDia"]}, '
+                    f'gearboxRatio={defaults["gearboxRatio"]}, '
+                    f'gearRatio={defaults["gearRatio"]}')
+        except Exception as e:
+            self.get_logger().warn(
+                f'Could not load motor params, using defaults: {e}')
         return defaults
 
     def _calc_steps_per_metre(self):

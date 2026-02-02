@@ -3979,7 +3979,7 @@ def mqtt_topics_get():
     defaults = {
         'heartbeat': {'enabled': True, 'interval': 5.0},
         'system': {'enabled': True, 'interval': 5.0, 'fields': {
-            'cpu_temp': True, 'ram': True, 'storage': True,
+            'cpu_temp': True, 'ram': True, 'storage': True, 'revision': True,
         }},
         'imu': {'enabled': True, 'interval': 2.0, 'fields': {
             'roll': True, 'pitch': True, 'cal_roll': True, 'cal_pitch': True,
@@ -4040,7 +4040,7 @@ def mqtt_topics_save():
     # Validate topic data
     valid_topics = {
         'heartbeat': [],
-        'system': ['cpu_temp', 'ram', 'storage'],
+        'system': ['cpu_temp', 'ram', 'storage', 'revision'],
         'imu': ['roll', 'pitch', 'cal_roll', 'cal_pitch'],
         'motor': ['connected', 'm1_speed', 'm2_speed',
                   'm1_torque', 'm2_torque', 'last_command'],
@@ -4060,6 +4060,10 @@ def mqtt_topics_save():
                 for f in valid_fields:
                     fields[f] = bool(t['fields'].get(f, True))
                 entry['fields'] = fields
+            # Handle ICCID for heartbeat
+            if name == 'heartbeat':
+                entry['iccid_enabled'] = bool(t.get('iccid_enabled', False))
+                entry['iccid'] = str(t.get('iccid', '')).strip()
             sanitized[name] = entry
 
     # Load existing config
