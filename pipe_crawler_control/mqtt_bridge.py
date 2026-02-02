@@ -200,10 +200,10 @@ class MqttBridge(Node):
     def _on_clearlink_status(self, msg):
         self._last_status = {
             'connected': msg.connected,
-            'm1_velocity': msg.m1_velocity,
-            'm2_velocity': msg.m2_velocity,
-            'm1_torque': msg.m1_torque,
-            'm2_torque': msg.m2_torque,
+            'axis1_velocity': msg.axis1_velocity,
+            'axis2_velocity': msg.axis2_velocity,
+            'axis1_torque': msg.axis1_torque,
+            'axis2_torque': msg.axis2_torque,
         }
 
     # --- MQTT publishing ---

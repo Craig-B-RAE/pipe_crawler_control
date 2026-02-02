@@ -594,13 +594,13 @@
                 </div>
 
                 <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-                    <label style="font-size: 13px; color: var(--text-primary); font-weight: 500;">Enable MQTT</label>
-                    <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
-                        <input type="checkbox" id="mqttEnabled" style="opacity: 0; width: 0; height: 0;">
-                        <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 24px; transition: 0.3s;" onclick="this.previousElementSibling.checked = !this.previousElementSibling.checked; this.style.background = this.previousElementSibling.checked ? 'var(--button-success-bg)' : '#ccc';">
-                            <span style="position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s;"></span>
+                    <span style="font-size: 13px; color: var(--text-primary); font-weight: 500;">Enable MQTT</span>
+                    <div id="mqttToggle" onclick="toggleMqttEnabled()" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer;">
+                        <input type="checkbox" id="mqttEnabled" style="display: none;">
+                        <span id="mqttToggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 24px; transition: 0.3s;">
+                            <span id="mqttToggleThumb" style="position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s;"></span>
                         </span>
-                    </label>
+                    </div>
                 </div>
 
                 <div style="margin-bottom: 12px;">
@@ -1556,17 +1556,28 @@
                 .then(function(data) {
                     document.getElementById('mqttBroker').value = data.broker || '';
                     document.getElementById('mqttPort').value = data.port || 443;
-                    var enabledCb = document.getElementById('mqttEnabled');
-                    enabledCb.checked = data.enabled;
-                    // Update toggle visual
-                    var toggle = enabledCb.nextElementSibling;
-                    toggle.style.background = data.enabled ? 'var(--button-success-bg)' : '#ccc';
+                    document.getElementById('mqttEnabled').checked = data.enabled;
+                    updateMqttToggleVisual();
                     // Don't pre-fill API key for security
                     document.getElementById('mqttApiKey').value = '';
                 });
 
             document.getElementById('mqttAuthModal').style.display = 'flex';
             document.getElementById('mqttAuthPassword').focus();
+        }
+
+        function toggleMqttEnabled() {
+            var cb = document.getElementById('mqttEnabled');
+            cb.checked = !cb.checked;
+            updateMqttToggleVisual();
+        }
+
+        function updateMqttToggleVisual() {
+            var on = document.getElementById('mqttEnabled').checked;
+            var track = document.getElementById('mqttToggleTrack');
+            var thumb = document.getElementById('mqttToggleThumb');
+            track.style.background = on ? 'var(--button-success-bg)' : '#ccc';
+            thumb.style.left = on ? '23px' : '3px';
         }
 
         function closeMqttModal() {
