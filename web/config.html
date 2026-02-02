@@ -653,12 +653,6 @@
                     </button>
                 </div>
 
-                <div style="margin-bottom: 16px;">
-                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Master Password:</label>
-                    <input type="password" id="mqttTopicsPassword" class="form-input" placeholder="Enter master password"
-                           style="width: 100%; padding: 10px 12px; font-size: 14px; box-sizing: border-box;">
-                </div>
-
                 <div id="mqttTopicsList" style="margin-bottom: 16px;">
                     <!-- heartbeat topic -->
                     <div style="padding: 12px; background: var(--bg-secondary); border-radius: 10px; margin-bottom: 8px; border: 1px solid var(--border-color);">
@@ -761,6 +755,15 @@
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 4px;" id="fields_motor"></div>
                     </div>
+
+                    <!-- settings response -->
+                    <div style="padding: 12px; background: var(--bg-secondary); border-radius: 10px; margin-bottom: 8px; border: 1px solid var(--border-color);">
+                        <div style="margin-bottom: 8px;">
+                            <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Settings</span>
+                            <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 2px;">Sent when requested by server</div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;" id="fields_settings"></div>
+                    </div>
                 </div>
 
                 <div id="mqttTopicsError" style="display: none; font-size: 11px; color: var(--status-error); margin-bottom: 12px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;"></div>
@@ -770,6 +773,23 @@
                     <button type="button" class="btn btn-primary" onclick="saveMqttTopics()" id="mqttTopicsSaveBtn" style="flex: 1; padding: 10px;">Save</button>
                 </div>
               </div>
+            </div>
+        </div>
+
+        <!-- MQTT Topics Password Prompt -->
+        <div id="mqttTopicsPasswordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-overlay); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: var(--bg-primary); border-radius: 16px; padding: 24px; max-width: 320px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.2);">
+                <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">MQTT Topic Settings</h3>
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Master Password:</label>
+                    <input type="password" id="mqttTopicsPwPrompt" class="form-input" placeholder="Enter master password"
+                           style="width: 100%; padding: 10px 12px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div id="mqttTopicsPwError" style="display: none; font-size: 11px; color: var(--status-error); margin-bottom: 12px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeMqttTopicsPwPrompt()" style="flex: 1; padding: 10px;">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="verifyMqttTopicsPassword()" id="mqttTopicsPwBtn" style="flex: 1; padding: 10px;">Unlock</button>
+                </div>
             </div>
         </div>
 
@@ -1861,18 +1881,25 @@
         // MQTT Topic Settings Functions
         // =====================================================================
 
+        var _mqttTopicsPassword = '';  // Stored after password verification
+
         // Topic groups and their fields
         var TOPIC_GROUPS = ['heartbeat', 'system', 'imu', 'motor'];
         var GROUP_FIELDS = {
             'system': ['cpu_temp', 'ram', 'storage', 'revision'],
             'imu': ['roll', 'pitch', 'cal_roll', 'cal_pitch'],
-            'motor': ['connected', 'm1_speed', 'm2_speed', 'm1_torque', 'm2_torque', 'last_command']
+            'motor': ['connected', 'm1_speed', 'm2_speed', 'm1_torque', 'm2_torque']
         };
+        var SETTINGS_FIELDS = ['pipeDiameter', 'jogSpeedInSec', 'rampPercent', 'distanceMode',
+            'motorDriver', 'imuInvertAngle', 'motorParams'];
         var FIELD_LABELS = {
             'cpu_temp': 'CPU Temp', 'ram': 'RAM', 'storage': 'Storage', 'revision': 'Revision',
             'roll': 'Roll', 'pitch': 'Pitch', 'cal_roll': 'Calibrated Roll', 'cal_pitch': 'Calibrated Pitch',
-            'connected': 'Connected', 'm1_speed': 'Motor 1 Speed (m/s)', 'm2_speed': 'Motor 2 Speed (m/s)',
-            'm1_torque': 'Motor 1 Torque (Nm)', 'm2_torque': 'Motor 2 Torque (Nm)', 'last_command': 'Last Command'
+            'connected': 'Connected', 'm1_speed': 'Motor 1 Speed (in/s)', 'm2_speed': 'Motor 2 Speed (in/s)',
+            'm1_torque': 'Motor 1 Torque (Nm)', 'm2_torque': 'Motor 2 Torque (Nm)',
+            'pipeDiameter': 'Pipe Diameter', 'jogSpeedInSec': 'Jog Speed', 'rampPercent': 'Ramp',
+            'distanceMode': 'Distance Mode', 'motorDriver': 'Motor Driver',
+            'imuInvertAngle': 'IMU Invert Angle', 'motorParams': 'Motor Parameters'
         };
         var GROUP_DEFAULTS = {
             'heartbeat': {interval: 5.0},
@@ -1900,10 +1927,81 @@
                 GROUP_FIELDS[group].forEach(function(f) { html += buildFieldToggleHtml(f); });
                 container.innerHTML = html;
             }
+            // Settings response fields
+            var sc = document.getElementById('fields_settings');
+            if (sc) {
+                var html = '';
+                SETTINGS_FIELDS.forEach(function(f) { html += buildFieldToggleHtml(f); });
+                sc.innerHTML = html;
+            }
         }
 
         function showMqttTopicsModal() {
-            document.getElementById('mqttTopicsPassword').value = getCachedMasterPassword();
+            // If we have a cached password, skip the prompt
+            var cached = getCachedMasterPassword();
+            if (cached) {
+                _mqttTopicsPassword = cached;
+                openMqttTopicsModal();
+            } else {
+                // Show password prompt first
+                document.getElementById('mqttTopicsPwPrompt').value = '';
+                document.getElementById('mqttTopicsPwError').style.display = 'none';
+                document.getElementById('mqttTopicsPasswordModal').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                document.getElementById('mqttTopicsPwPrompt').focus();
+            }
+        }
+
+        function closeMqttTopicsPwPrompt() {
+            document.getElementById('mqttTopicsPasswordModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function verifyMqttTopicsPassword() {
+            var password = document.getElementById('mqttTopicsPwPrompt').value;
+            var errorEl = document.getElementById('mqttTopicsPwError');
+            var btn = document.getElementById('mqttTopicsPwBtn');
+            if (!password) {
+                errorEl.textContent = 'Password is required.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+            errorEl.style.display = 'none';
+            fetch('/api/mqtt/topics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ master_password: password, verify_only: true })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = 'Unlock';
+                if (data.success || data.verified) {
+                    cacheMasterPassword(password);
+                    _mqttTopicsPassword = password;
+                    closeMqttTopicsPwPrompt();
+                    openMqttTopicsModal();
+                } else {
+                    errorEl.textContent = data.error || 'Invalid password.';
+                    errorEl.style.display = 'block';
+                }
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.textContent = 'Unlock';
+                errorEl.textContent = 'Network error.';
+                errorEl.style.display = 'block';
+            });
+        }
+
+        // Handle Enter key in password prompt
+        document.getElementById('mqttTopicsPwPrompt').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') verifyMqttTopicsPassword();
+        });
+
+        function openMqttTopicsModal() {
             document.getElementById('mqttTopicsError').style.display = 'none';
             renderFieldToggles();
 
@@ -1928,7 +2026,6 @@
                                 }
                             }
                         });
-                        updateAllFieldVisuals();
                         // ICCID fields
                         if (topics.heartbeat) {
                             document.getElementById('iccid_enabled').checked = topics.heartbeat.iccid_enabled === true;
@@ -1936,6 +2033,14 @@
                             updateIccidToggleVisual();
                         }
                     }
+                    // Settings response fields
+                    if (data.settings_fields) {
+                        SETTINGS_FIELDS.forEach(function(f) {
+                            var el = document.getElementById('field_' + f);
+                            if (el) el.checked = data.settings_fields[f] !== false;
+                        });
+                    }
+                    updateAllFieldVisuals();
                 })
                 .catch(function() {
                     TOPIC_GROUPS.forEach(function(g) { updateTopicToggleVisual(g); });
@@ -2001,18 +2106,13 @@
             for (var group in GROUP_FIELDS) {
                 GROUP_FIELDS[group].forEach(function(f) { updateFieldToggleVisual(f); });
             }
+            SETTINGS_FIELDS.forEach(function(f) { updateFieldToggleVisual(f); });
         }
 
         function saveMqttTopics() {
-            var password = document.getElementById('mqttTopicsPassword').value;
+            var password = _mqttTopicsPassword;
             var errorEl = document.getElementById('mqttTopicsError');
             var btn = document.getElementById('mqttTopicsSaveBtn');
-
-            if (!password) {
-                errorEl.textContent = 'Master password is required.';
-                errorEl.style.display = 'block';
-                return;
-            }
 
             // Validate all intervals
             var topicsPayload = {};
@@ -2042,6 +2142,12 @@
             topicsPayload.heartbeat.iccid_enabled = document.getElementById('iccid_enabled').checked;
             topicsPayload.heartbeat.iccid = document.getElementById('iccid_value').value.trim();
 
+            // Collect settings response field states
+            var settingsFields = {};
+            SETTINGS_FIELDS.forEach(function(f) {
+                settingsFields[f] = document.getElementById('field_' + f).checked;
+            });
+
             btn.disabled = true;
             btn.textContent = 'Saving...';
             errorEl.style.display = 'none';
@@ -2051,7 +2157,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     master_password: password,
-                    topics: topicsPayload
+                    topics: topicsPayload,
+                    settings_fields: settingsFields
                 })
             })
             .then(function(r) { return r.json(); })
@@ -2074,11 +2181,6 @@
                 errorEl.style.display = 'block';
             });
         }
-
-        // Handle Enter key in MQTT Topics password field
-        document.getElementById('mqttTopicsPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') saveMqttTopics();
-        });
 
         // Load config and security status on page load
         document.addEventListener('DOMContentLoaded', function() {

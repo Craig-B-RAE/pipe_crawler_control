@@ -40,7 +40,7 @@ DEFAULT_TOPICS = {
     }},
     'motor': {'enabled': True, 'interval': 2.0, 'fields': {
         'connected': True, 'm1_speed': True, 'm2_speed': True,
-        'm1_torque': True, 'm2_torque': True, 'last_command': True,
+        'm1_torque': True, 'm2_torque': True,
     }},
 }
 
@@ -77,6 +77,17 @@ def load_mqtt_config():
                 if k not in topics[name]:
                     topics[name][k] = v
     defaults['topics'] = topics
+    # Merge settings_fields defaults
+    sf_defaults = {
+        'pipeDiameter': True, 'jogSpeedInSec': True, 'rampPercent': True,
+        'distanceMode': True, 'motorDriver': True,
+        'imuInvertAngle': True, 'motorParams': True,
+    }
+    sf = defaults.get('settings_fields', {})
+    for k, v in sf_defaults.items():
+        if k not in sf:
+            sf[k] = v
+    defaults['settings_fields'] = sf
     return defaults
 
 
@@ -95,7 +106,7 @@ class MqttBridge(Node):
         self._revision = self._load_revision()
         self._imu_offsets = self._load_imu_offsets()
         self._motor_params = self._load_motor_params()
-        self._steps_per_metre = self._calc_steps_per_metre()
+        self._steps_per_inch = self._calc_steps_per_inch()
         self._peak_torque_nm = self._motor_params.get('peakTorqueNm', 2.0)
 
         if not MQTT_AVAILABLE:
@@ -190,16 +201,20 @@ class MqttBridge(Node):
         if rc_val == 0:
             self.connected = True
             hostname = self.config['hostname']
-            self.get_logger().info('MQTT connected')
+            self.get_logger().info(f'MQTT connected (flags={flags})')
             # Subscribe to command topics
-            client.subscribe(f'crawler/{hostname}/cmd/#', qos=1)
+            result = client.subscribe(f'crawler/{hostname}/cmd/#', qos=1)
+            self.get_logger().info(f'Subscribed to crawler/{hostname}/cmd/# (result={result})')
+            result2 = client.subscribe(f'crawler/{hostname}/settings/request', qos=1)
+            self.get_logger().info(f'Subscribed to crawler/{hostname}/settings/request (result={result2})')
         else:
             self.get_logger().error(f'MQTT connect failed with code {rc_val} ({rc})')
 
     def _on_mqtt_disconnect(self, client, userdata, flags, rc, properties=None):
         self.connected = False
-        if rc != 0:
-            self.get_logger().warn(f'MQTT disconnected unexpectedly (rc={rc}), will reconnect')
+        rc_val = rc.value if hasattr(rc, 'value') else rc
+        if rc_val != 0:
+            self.get_logger().warn(f'MQTT disconnected unexpectedly (rc={rc_val}, reason={rc}), will reconnect')
 
     def _on_mqtt_message(self, client, userdata, msg):
         """Handle incoming MQTT commands."""
@@ -210,6 +225,13 @@ class MqttBridge(Node):
             payload = msg.payload.decode()
 
         hostname = self.config['hostname']
+
+        # Handle settings request topic
+        if topic == f'crawler/{hostname}/settings/request':
+            self.get_logger().info('MQTT settings request received')
+            self._handle_get_settings()
+            return
+
         cmd_prefix = f'crawler/{hostname}/cmd/'
 
         if not topic.startswith(cmd_prefix):
@@ -333,10 +355,10 @@ class MqttBridge(Node):
             if fields.get('connected', True):
                 data['connected'] = self._last_status.get('connected')
             if fields.get('m1_speed', True):
-                data['m1_speed'] = self._steps_to_ms(
+                data['m1_speed'] = self._steps_to_ips(
                     self._last_status.get('axis1_velocity', 0))
             if fields.get('m2_speed', True):
-                data['m2_speed'] = self._steps_to_ms(
+                data['m2_speed'] = self._steps_to_ips(
                     self._last_status.get('axis2_velocity', 0))
             if fields.get('m1_torque', True):
                 data['m1_torque'] = self._torque_to_nm(
@@ -344,8 +366,6 @@ class MqttBridge(Node):
             if fields.get('m2_torque', True):
                 data['m2_torque'] = self._torque_to_nm(
                     self._last_status.get('axis2_torque', 0))
-        if fields.get('last_command', True):
-            data['last_command'] = self._last_robot_command
         self.mqtt_client.publish(
             f'crawler/{hostname}/motor',
             json.dumps(data), qos=0
@@ -354,22 +374,36 @@ class MqttBridge(Node):
     # --- Command handlers ---
 
     def _handle_get_settings(self):
-        """Publish current settings to MQTT."""
+        """Publish current settings to MQTT, filtered by settings_fields config."""
         hostname = self.config['hostname']
+
+        # Read settings from UI settings file
+        settings = {}
         try:
-            # Read crawler settings from the settings file
-            settings_file = os.path.expanduser('~/ros2_ws/src/pipe_crawler_control/config/settings.yaml')
-            if os.path.exists(settings_file):
-                with open(settings_file, 'r') as f:
-                    settings = yaml.safe_load(f) or {}
-            else:
-                settings = {}
-        except Exception:
-            settings = {}
+            active_file = '/home/craig/active_system'
+            with open(active_file, 'r') as f:
+                crawler_id = f.read().strip()
+            settings_file = f'/etc/xpresscan/ui_settings_{crawler_id}.json'
+            with open(settings_file, 'r') as f:
+                settings = json.load(f)
+        except Exception as e:
+            self.get_logger().warn(f'Could not load UI settings for get_settings: {e}')
+
+        # Filter by settings_fields config
+        settings_fields = self.config.get('settings_fields', {})
+        allowed_keys = [
+            'pipeDiameter', 'jogSpeedInSec', 'rampPercent', 'distanceMode',
+            'motorDriver', 'imuInvertAngle',
+            'motorParams',
+        ]
+        filtered = {}
+        for key in allowed_keys:
+            if settings_fields.get(key, True) and key in settings:
+                filtered[key] = settings[key]
 
         self.mqtt_client.publish(
             f'crawler/{hostname}/settings',
-            json.dumps(settings), qos=1
+            json.dumps(filtered), qos=1
         )
 
     def _handle_jog(self, payload):
@@ -427,8 +461,7 @@ class MqttBridge(Node):
     def _load_revision(self):
         """Load software revision from VERSION file."""
         try:
-            version_file = os.path.expanduser(
-                '~/ros2_ws/src/pipe_crawler_control/VERSION')
+            version_file = '/home/craig/ros2_ws/src/pipe_crawler_control/VERSION'
             with open(version_file, 'r') as f:
                 return f.read().strip()
         except Exception:
@@ -438,7 +471,7 @@ class MqttBridge(Node):
         """Load IMU calibration offsets from UI settings file."""
         defaults = {'roll': 0.0, 'pitch': 0.0}
         try:
-            active_file = os.path.expanduser('~/active_system')
+            active_file = '/home/craig/active_system'
             with open(active_file, 'r') as f:
                 crawler_id = f.read().strip()
             settings_file = f'/etc/xpresscan/ui_settings_{crawler_id}.json'
@@ -464,7 +497,7 @@ class MqttBridge(Node):
             'peakTorqueNm': 2.0,
         }
         try:
-            active_file = os.path.expanduser('~/active_system')
+            active_file = '/home/craig/active_system'
             with open(active_file, 'r') as f:
                 crawler_id = f.read().strip()
             settings_file = f'/etc/xpresscan/ui_settings_{crawler_id}.json'
@@ -482,20 +515,19 @@ class MqttBridge(Node):
                 f'Could not load motor params, using defaults: {e}')
         return defaults
 
-    def _calc_steps_per_metre(self):
-        """Calculate steps per metre from motor parameters."""
+    def _calc_steps_per_inch(self):
+        """Calculate steps per inch from motor parameters."""
         p = self._motor_params
         total_ratio = p['gearboxRatio'] * p['gearRatio']
         wheel_circ_in = math.pi * p['wheelDia']
         travel_per_rev_in = wheel_circ_in / total_ratio
-        steps_per_inch = p['encoderRes'] / travel_per_rev_in
-        return steps_per_inch / 0.0254  # convert steps/inch to steps/metre
+        return p['encoderRes'] / travel_per_rev_in
 
-    def _steps_to_ms(self, steps_per_sec):
-        """Convert steps/sec to m/s."""
-        if not steps_per_sec or self._steps_per_metre == 0:
+    def _steps_to_ips(self, steps_per_sec):
+        """Convert steps/sec to inches/sec."""
+        if not steps_per_sec or self._steps_per_inch == 0:
             return 0.0
-        return round(abs(steps_per_sec) / self._steps_per_metre, 4)
+        return round(abs(steps_per_sec) / self._steps_per_inch, 4)
 
     def _torque_to_nm(self, torque_percent):
         """Convert torque percentage to Nm."""

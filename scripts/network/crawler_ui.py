@@ -3986,7 +3986,7 @@ def mqtt_topics_get():
         }},
         'motor': {'enabled': True, 'interval': 2.0, 'fields': {
             'connected': True, 'm1_speed': True, 'm2_speed': True,
-            'm1_torque': True, 'm2_torque': True, 'last_command': True,
+            'm1_torque': True, 'm2_torque': True,
         }},
     }
     try:
@@ -4006,11 +4006,31 @@ def mqtt_topics_get():
                     for fk, fv in defs['fields'].items():
                         if fk not in topics[name]['fields']:
                             topics[name]['fields'][fk] = fv
-        return jsonify({"topics": topics})
+        # Settings fields defaults
+        settings_defaults = {
+            'pipeDiameter': True, 'jogSpeedInSec': True, 'rampPercent': True,
+            'distanceMode': True, 'motorDriver': True,
+            'imuInvertAngle': True, 'motorParams': True,
+        }
+        settings_fields = conf.get('settings_fields', {})
+        for k, v in settings_defaults.items():
+            if k not in settings_fields:
+                settings_fields[k] = v
+        return jsonify({"topics": topics, "settings_fields": settings_fields})
     except FileNotFoundError:
-        return jsonify({"topics": defaults})
+        settings_defaults = {
+            'pipeDiameter': True, 'jogSpeedInSec': True, 'rampPercent': True,
+            'distanceMode': True, 'motorDriver': True,
+            'imuInvertAngle': True, 'motorParams': True,
+        }
+        return jsonify({"topics": defaults, "settings_fields": settings_defaults})
     except Exception as e:
-        return jsonify({"topics": defaults, "error": str(e)})
+        settings_defaults = {
+            'pipeDiameter': True, 'jogSpeedInSec': True, 'rampPercent': True,
+            'distanceMode': True, 'motorDriver': True,
+            'imuInvertAngle': True, 'motorParams': True,
+        }
+        return jsonify({"topics": defaults, "settings_fields": settings_defaults, "error": str(e)})
 
 
 @app.route('/api/mqtt/topics', methods=['POST'])
@@ -4033,6 +4053,10 @@ def mqtt_topics_save():
     if not verify_master_password(master_password):
         return jsonify({"success": False, "error": "Invalid master password."})
 
+    # Password-only verification (no save)
+    if data.get('verify_only'):
+        return jsonify({"verified": True})
+
     topics = data.get('topics', {})
     if not topics:
         return jsonify({"success": False, "error": "No topics provided."})
@@ -4043,7 +4067,7 @@ def mqtt_topics_save():
         'system': ['cpu_temp', 'ram', 'storage', 'revision'],
         'imu': ['roll', 'pitch', 'cal_roll', 'cal_pitch'],
         'motor': ['connected', 'm1_speed', 'm2_speed',
-                  'm1_torque', 'm2_torque', 'last_command'],
+                  'm1_torque', 'm2_torque'],
     }
     sanitized = {}
     for name, valid_fields in valid_topics.items():
@@ -4074,6 +4098,19 @@ def mqtt_topics_save():
         conf = {}
 
     conf['topics'] = sanitized
+
+    # Validate and save settings_fields
+    valid_settings_keys = [
+        'pipeDiameter', 'jogSpeedInSec', 'rampPercent', 'distanceMode',
+        'motorDriver', 'imuInvertAngle',
+        'motorParams',
+    ]
+    sf_input = data.get('settings_fields', {})
+    if sf_input:
+        settings_fields = {}
+        for k in valid_settings_keys:
+            settings_fields[k] = bool(sf_input.get(k, True))
+        conf['settings_fields'] = settings_fields
 
     # Write config
     try:
