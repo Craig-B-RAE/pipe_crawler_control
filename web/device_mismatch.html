@@ -12,27 +12,8 @@
     <meta http-equiv="refresh" content="30" id="autoRefresh">
     <title>Device Mismatch - System Blocked</title>
     <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/base.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-secondary);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            color: var(--text-primary);
-        }
-        .container {
-            background: var(--bg-primary);
-            border-radius: 16px;
-            padding: 40px;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            text-align: center;
-        }
         .debug-banner {
             background: var(--status-warning);
             color: var(--text-primary);
@@ -47,19 +28,15 @@
             margin-left: 15px;
         }
         .warning-icon {
-            font-size: 64px;
             margin-bottom: 20px;
+            color: var(--status-warning);
         }
         h1 {
             color: var(--status-error);
             font-size: 22px;
-            font-weight: 600;
             margin-bottom: 8px;
-            letter-spacing: -0.5px;
         }
         .subtitle {
-            color: var(--text-tertiary);
-            font-size: 14px;
             margin-bottom: 30px;
         }
         .table-responsive {
@@ -131,26 +108,6 @@
             color: var(--status-warning);
             font-weight: 500;
         }
-        .contact-info {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 25px;
-        }
-        .contact-info p {
-            color: var(--text-tertiary);
-            font-size: 13px;
-            margin-bottom: 8px;
-        }
-        .contact-email {
-            color: var(--status-info);
-            font-size: 16px;
-            font-weight: 500;
-            text-decoration: none;
-        }
-        .contact-email:hover {
-            text-decoration: underline;
-        }
         .refresh-notice {
             color: var(--text-tertiary);
             font-size: 12px;
@@ -219,7 +176,7 @@
             color: var(--text-tertiary);
         }
         .admin-btn {
-            background: #f0f7ff;
+            background: var(--button-secondary-bg);
             border: none;
             border-radius: 8px;
             padding: 10px 16px;
@@ -228,9 +185,10 @@
             font-weight: 500;
             cursor: pointer;
             transition: background 0.2s;
+            touch-action: manipulation;
         }
         .admin-btn:hover {
-            background: #e0efff;
+            background: var(--button-secondary-hover);
         }
         .admin-btn:disabled {
             opacity: 0.5;
@@ -247,16 +205,13 @@
         }
     </style>
 </head>
-<body>
-    <!-- Inline theme initialization to apply saved theme - Default is LIGHT -->
+<body class="page-utility">
+    <!-- Inline theme initialization to prevent flash -->
     <script>
         (function() {
-            var savedTheme = localStorage.getItem('crawler-theme');
+            var savedTheme = localStorage.getItem('crawler-theme') || 'light';
             if (savedTheme === 'dark') {
-                document.documentElement.removeAttribute('data-theme');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-                if (!savedTheme) localStorage.setItem('crawler-theme', 'light');
+                document.documentElement.setAttribute('data-theme', 'dark');
             }
         })();
     </script>
@@ -267,9 +222,11 @@
             <a href="/config.html">Back to Config</a>
         </div>
 
-        <div class="warning-icon">&#9888;&#65039;</div>
-        <h1>DEVICE MISMATCH - CANNOT START</h1>
-        <p class="subtitle">Hardware binding verification failed</p>
+        <div class="warning-icon">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <h1>Hardware Verification Required</h1>
+        <p class="subtitle">One or more devices did not match the expected configuration</p>
 
         <div id="deviceTable" class="table-responsive">
             <div class="loading">Loading device status...</div>

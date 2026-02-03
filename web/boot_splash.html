@@ -11,24 +11,8 @@
     <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
     <title>Starting Up...</title>
     <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/base.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-secondary);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            color: var(--text-primary);
-        }
-        .container {
-            text-align: center;
-            padding: 40px;
-            max-width: 500px;
-            width: 90%;
-        }
         .logo {
             max-width: 350px;
             width: 80%;
@@ -90,25 +74,25 @@
         /* Continue button - hidden initially */
         .continue-button {
             display: none;
-            background: #00C8D4;
+            background: var(--accent-cyan);
             color: #FFFFFF;
             border: none;
             padding: 14px 50px;
             font-size: 17px;
             font-weight: 600;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
             margin-top: 30px;
             font-family: inherit;
             letter-spacing: -0.3px;
+            touch-action: manipulation;
         }
         .continue-button:hover {
-            background: #00B0BA;
+            background: var(--accent-cyan-hover);
             transform: scale(1.02);
         }
         .continue-button:active {
-            background: #009AA3;
             transform: scale(0.98);
         }
         .continue-button.show {
@@ -151,16 +135,13 @@
         }
     </style>
 </head>
-<body>
-    <!-- Inline theme initialization to apply saved theme - Default is LIGHT -->
+<body class="page-utility">
+    <!-- Inline theme initialization to prevent flash -->
     <script>
         (function() {
-            var savedTheme = localStorage.getItem('crawler-theme');
+            var savedTheme = localStorage.getItem('crawler-theme') || 'light';
             if (savedTheme === 'dark') {
-                document.documentElement.removeAttribute('data-theme');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-                if (!savedTheme) localStorage.setItem('crawler-theme', 'light');
+                document.documentElement.setAttribute('data-theme', 'dark');
             }
         })();
     </script>
@@ -247,129 +228,24 @@
             "Running diagnostics..."
         ];
 
-        // Funny messages (randomly mixed in)
+        // Funny messages (randomly mixed in — light tech humor only)
         var funnyMessages = [
-            // Classic tech humor
-            "Connecting to Mars...",
-            "Consulting with aliens...",
             "Reticulating splines...",
             "Charging flux capacitor...",
-            "Warming up the hamster wheel...",
-            "Asking ChatGPT for advice...",
-            "Bribing the electrons...",
-            "Negotiating with the cloud...",
-            "Teaching robots to dance...",
-            "Convincing bits to become bytes...",
             "Downloading more RAM...",
-            "Polishing the pixels...",
-            "Untangling the cables...",
-            "Feeding the code monkeys...",
-            "Waking up the server gnomes...",
-            "Aligning the warp coils...",
-            "Summoning the WiFi spirits...",
-            "Brewing digital coffee...",
-            "Herding the cats...",
-            "Looking for the any key...",
-            "Spinning up the hyperdrive...",
             "Reversing the polarity...",
-            "Deploying the magic smoke...",
-            "Adjusting the gravitons...",
             "Calibrating the turbo encabulator...",
-            "Warming up the warp core...",
-            "Synchronizing the flux matrices...",
-            "Initializing sarcasm module...",
-            "Loading witty remarks...",
-            "Googling the answer...",
-            "Pretending to work...",
-            "Doing important stuff...",
-            "Making things happen...",
-            "Working very hard...",
+            "Brewing digital coffee...",
+            "Untangling the cables...",
+            "Warming up the hamster wheel...",
+            "Convincing bits to become bytes...",
+            "Polishing the pixels...",
+            "Negotiating with the cloud...",
             "Almost there, promise...",
-            "Just a few more seconds...",
             "Any moment now...",
-            "Counting to infinity...",
-            "Dividing by zero...",
-            "Compiling excuses...",
             "Generating random numbers... 4...",
-            "Convincing the CPU to cooperate...",
-            "Waiting for the intern...",
-            "Performing interpretive dance...",
-            // Dark humor / existential
-            "Questioning existence...",
-            "Contemplating the void...",
-            "Staring into the abyss...",
-            "The abyss is staring back...",
-            "Existential crisis loading...",
-            "Finding meaning in life...",
-            "Reassessing life choices...",
-            "Wondering why we're here...",
-            "Pondering mortality...",
-            "Accepting our robot overlords...",
-            "Preparing for the singularity...",
-            "Deleting your browser history...",
-            "Reading your emails...",
-            "Judging your code silently...",
-            "Regretting past decisions...",
-            "Blaming the previous developer...",
             "It's not a bug, it's a feature...",
-            "Have you tried turning it off and on?",
-            "This might take a while...",
-            "Don't panic...",
-            "Everything is fine...",
-            "Nothing to see here...",
-            "This is fine...",
-            "We're all doomed anyway...",
-            "At least it's not Monday...",
-            "Could be worse...",
-            "Send help...",
-            "Why is it always DNS?",
-            "Praying to the demo gods...",
-            "Hope nobody's watching...",
-            "Crossing fingers...",
-            "What could possibly go wrong?",
-            "Famous last words...",
-            // Sarcastic / sardonic
-            "Loading loading screen...",
-            "Spinning wheels meaningfully...",
-            "Progress bar doing its best...",
-            "Faking productivity...",
-            "Looking busy...",
-            "Updating unnecessarily...",
-            "Installing updates nobody asked for...",
-            "Ignoring your preferences...",
-            "Collecting your data... kidding!",
-            "Mining cryptocurrency... just kidding...",
-            "Selling your soul to the cloud...",
-            "Terms and conditions apply...",
-            "Results may vary...",
-            "No refunds...",
-            "Warranty void if opened...",
-            "Instructions unclear...",
-            "Task failed successfully...",
-            "Error: Success...",
-            "Works on my machine...",
-            "Should've used Python...",
-            "Blaming JavaScript...",
-            "It was like this when I got here...",
-            // Absurdist
-            "Teaching fish to code...",
-            "Befriending the server hamsters...",
-            "Sacrificing a rubber duck...",
-            "Consulting the magic 8-ball...",
-            "Rolling for initiative...",
-            "Spinning prayer wheels...",
-            "Appeasing the machine spirits...",
-            "Performing ancient rituals...",
-            "Reading tea leaves...",
-            "Checking horoscope...",
-            "Mercury is in retrograde...",
-            "The stars are not aligned...",
-            "Waiting for a sign...",
-            "Hoping for the best...",
-            "Expecting the worst...",
-            "Lowering expectations...",
-            "Managing disappointment...",
-            "Preparing excuses in advance..."
+            "Why is it always DNS?"
         ];
 
         // Shuffle array using Fisher-Yates algorithm

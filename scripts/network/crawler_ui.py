@@ -1263,23 +1263,121 @@ def scan_wifi_networks():
 
 @app.route("/api/vpn/status")
 def api_vpn_status():
-    """Check if WireGuard VPN (wg0) is up and has a handshake."""
+    """Full VPN status: enabled state, token, IP, service states."""
+    VPN_TOKEN_PATH = "/etc/crawler/vpn_token"
+    result = {
+        "enabled": False,
+        "token_exists": False,
+        "connected": False,
+        "vpn_ip": None,
+        "tunnel_status": "inactive",
+        "wg_status": "inactive",
+    }
+
+    # Check if token exists and has content
     try:
-        result = subprocess.run(
+        if os.path.exists(VPN_TOKEN_PATH):
+            with open(VPN_TOKEN_PATH, "r") as f:
+                token = f.read().strip()
+            result["token_exists"] = len(token) > 0
+    except Exception:
+        pass
+
+    # Check service states
+    for svc_name, key in [("wstunnel-client", "tunnel_status"), ("wg-quick@wg0", "wg_status")]:
+        try:
+            r = subprocess.run(
+                ["systemctl", "is-active", svc_name],
+                capture_output=True, text=True, timeout=5
+            )
+            result[key] = r.stdout.strip()  # "active", "inactive", "failed", etc.
+        except Exception:
+            pass
+
+    # Enabled = token exists and at least wstunnel service is not masked/disabled
+    result["enabled"] = result["token_exists"] and result["tunnel_status"] != "inactive"
+
+    # Get VPN IP from wg0 interface
+    try:
+        r = subprocess.run(
+            ["ip", "-4", "-o", "addr", "show", "wg0"],
+            capture_output=True, text=True, timeout=5
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            # Parse: "N: wg0    inet 10.0.0.10/24 ..."
+            parts = r.stdout.strip().split()
+            for i, p in enumerate(parts):
+                if p == "inet" and i + 1 < len(parts):
+                    result["vpn_ip"] = parts[i + 1].split("/")[0]
+                    break
+    except Exception:
+        pass
+
+    # Check WireGuard handshake for "connected" status
+    try:
+        r = subprocess.run(
             ["wg", "show", "wg0", "latest-handshakes"],
             capture_output=True, text=True, timeout=5
         )
-        if result.returncode == 0 and result.stdout.strip():
-            # wg0 is up and has a peer — check handshake is recent (within 3 minutes)
-            parts = result.stdout.strip().split()
+        if r.returncode == 0 and r.stdout.strip():
+            parts = r.stdout.strip().split()
             if len(parts) >= 2:
                 last_handshake = int(parts[1])
-                import time as _time
-                connected = last_handshake > 0 and (_time.time() - last_handshake) < 180
-                return jsonify({"connected": connected})
-        return jsonify({"connected": False})
+                result["connected"] = last_handshake > 0 and (time.time() - last_handshake) < 180
     except Exception:
-        return jsonify({"connected": False})
+        pass
+
+    return jsonify(result)
+
+
+@app.route("/api/vpn/config", methods=["POST"])
+def api_vpn_config():
+    """Enable/disable VPN and save registration token."""
+    VPN_TOKEN_PATH = "/etc/crawler/vpn_token"
+    VPN_SERVICES = ["wstunnel-client", "wg-quick@wg0", "crawler-heartbeat", "ttyd"]
+
+    data = request.get_json()
+    enabled = data.get("enabled", False)
+    token = data.get("token", "").strip()
+
+    try:
+        if enabled:
+            # Save token if provided
+            if token:
+                os.makedirs(os.path.dirname(VPN_TOKEN_PATH), exist_ok=True)
+                with open(VPN_TOKEN_PATH, "w") as f:
+                    f.write(token + "\n")
+                os.chmod(VPN_TOKEN_PATH, 0o600)
+
+            # Verify token exists before enabling
+            if not os.path.exists(VPN_TOKEN_PATH):
+                return jsonify({"success": False, "error": "No VPN token saved. Provide a registration token."})
+            with open(VPN_TOKEN_PATH, "r") as f:
+                if not f.read().strip():
+                    return jsonify({"success": False, "error": "VPN token file is empty. Provide a registration token."})
+
+            # Enable and start services in order
+            for svc in VPN_SERVICES:
+                subprocess.run(["systemctl", "enable", svc], capture_output=True, timeout=10)
+            for svc in VPN_SERVICES:
+                subprocess.run(["systemctl", "restart", svc], capture_output=True, timeout=15)
+
+            return jsonify({"success": True, "message": "VPN enabled. Services starting..."})
+
+        else:
+            # Disable VPN: stop services and remove token
+            for svc in reversed(VPN_SERVICES):
+                subprocess.run(["systemctl", "stop", svc], capture_output=True, timeout=15)
+                subprocess.run(["systemctl", "disable", svc], capture_output=True, timeout=10)
+
+            # Remove token
+            if os.path.exists(VPN_TOKEN_PATH):
+                os.remove(VPN_TOKEN_PATH)
+
+            return jsonify({"success": True, "message": "VPN disabled. Services stopped and token removed."})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route("/api/wifi/scan")

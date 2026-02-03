@@ -11,70 +11,13 @@
     <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
     <title>Crawler Configuration</title>
     <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/base.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-secondary);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            background: var(--bg-primary);
-            border-radius: 16px;
-            padding: 30px;
-            max-width: 500px;
-            margin: 0 auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-        h1 {
-            color: var(--text-primary);
-            margin-bottom: 8px;
-            font-size: 22px;
-            text-align: center;
-        }
         .subtitle {
-            color: var(--text-tertiary);
             margin-bottom: 25px;
             font-size: 13px;
-            text-align: center;
-        }
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--status-info);
-            text-decoration: none;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-        .back-link:hover { text-decoration: underline; }
-        .section {
-            margin-bottom: 20px;
-            padding: 16px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-        }
-        .section:last-child {
-            margin-bottom: 0;
-        }
-        .section-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-tertiary);
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
         /* Device Bindings Table */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
         .device-table {
             width: 100%;
             min-width: 400px;
@@ -126,37 +69,7 @@
                 padding: 6px 8px;
             }
         }
-        .network-info {
-            background: var(--bg-secondary);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .network-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 14px;
-            font-size: 13px;
-            border-bottom: 1px solid var(--border-color, rgba(128,128,128,0.15));
-        }
-        .network-item:last-child {
-            border-bottom: none;
-        }
-        .network-item .label {
-            color: var(--text-tertiary);
-            min-width: 80px;
-            flex-shrink: 0;
-        }
-        .network-item .value {
-            color: var(--text-primary);
-            font-weight: 500;
-            font-family: 'SF Mono', SFMono-Regular, Menlo, monospace;
-            text-align: right;
-            flex: 1;
-        }
-        .network-item .value.none {
-            color: #c0c0c0;
-            font-style: italic;
-        }
+        /* network-info styles are in base.css */
         .crawler-options {
             display: flex;
             flex-direction: column;
@@ -235,9 +148,9 @@
         .btn-primary:hover { background: var(--button-primary-hover); }
         .btn-secondary {
             color: var(--status-info);
-            background: #f0f7ff;
+            background: var(--button-secondary-bg);
         }
-        .btn-secondary:hover { background: #e0efff; }
+        .btn-secondary:hover { background: var(--button-secondary-hover); }
         .btn-small {
             padding: 8px 12px;
             font-size: 12px;
@@ -249,8 +162,8 @@
         }
         .btn-danger:hover { background: var(--button-danger-hover); }
         .reboot-notice {
-            background: #fff3e0;
-            color: #e65100;
+            background: var(--bg-secondary);
+            color: var(--status-warning);
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 12px;
@@ -289,8 +202,8 @@
         }
         .error.show { display: block; }
         .success {
-            background: #e8f5e9;
-            color: #2e7d32;
+            background: var(--bg-secondary);
+            color: var(--status-ok);
             padding: 10px 12px;
             border-radius: 8px;
             margin-bottom: 15px;
@@ -386,16 +299,13 @@
         }
     </style>
 </head>
-<body>
-    <!-- Inline theme initialization to apply saved theme - Default is LIGHT -->
+<body class="page-config">
+    <!-- Inline theme initialization to prevent flash -->
     <script>
         (function() {
-            var savedTheme = localStorage.getItem('crawler-theme');
+            var savedTheme = localStorage.getItem('crawler-theme') || 'light';
             if (savedTheme === 'dark') {
-                document.documentElement.removeAttribute('data-theme');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-                if (!savedTheme) localStorage.setItem('crawler-theme', 'light');
+                document.documentElement.setAttribute('data-theme', 'dark');
             }
         })();
     </script>
@@ -789,6 +699,79 @@
                 <div style="display: flex; gap: 10px;">
                     <button type="button" class="btn btn-secondary" onclick="closeMqttTopicsPwPrompt()" style="flex: 1; padding: 10px;">Cancel</button>
                     <button type="button" class="btn btn-primary" onclick="verifyMqttTopicsPassword()" id="mqttTopicsPwBtn" style="flex: 1; padding: 10px;">Unlock</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VPN Configuration -->
+        <div class="section" id="vpnSection">
+            <div class="section-title">VPN (Remote Access)</div>
+            <div class="network-info">
+                <div class="network-item">
+                    <span class="label">VPN</span>
+                    <span class="value" id="vpnEnabledDisplay">--</span>
+                </div>
+                <div class="network-item">
+                    <span class="label">VPN IP</span>
+                    <span class="value" id="vpnIpDisplay">--</span>
+                </div>
+                <div class="network-item">
+                    <span class="label">Tunnel</span>
+                    <span class="value" id="vpnTunnelDisplay">--</span>
+                </div>
+                <div class="network-item">
+                    <span class="label">WireGuard</span>
+                    <span class="value" id="vpnWgDisplay">--</span>
+                </div>
+                <div class="network-item">
+                    <span class="label">Dashboard</span>
+                    <span class="value"><a href="https://edge-primeinspections.com/fleet" target="_blank" style="color: var(--status-info); text-decoration: none; font-family: inherit;">Fleet Dashboard &#x2197;</a></span>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 12px;">
+                <button type="button" class="btn btn-secondary" onclick="showVpnConfig()" style="width: auto; padding: 10px 20px;">
+                    Configure VPN
+                </button>
+            </div>
+        </div>
+
+        <!-- VPN Config Modal -->
+        <div id="vpnConfigModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-overlay); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: var(--bg-primary); border-radius: 16px; padding: 24px; max-width: 360px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">VPN Configuration</h3>
+                    <button onclick="closeVpnConfig()" style="background: none; border: none; cursor: pointer; padding: 4px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+
+                <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 13px; color: var(--text-primary); font-weight: 500;">Enable VPN</span>
+                    <div id="vpnToggle" onclick="toggleVpnEnabled()" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer;">
+                        <input type="checkbox" id="vpnEnabled" style="display: none;">
+                        <span id="vpnToggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 24px; transition: 0.3s;">
+                            <span id="vpnToggleThumb" style="position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s;"></span>
+                        </span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Registration Token:</label>
+                    <div style="position: relative;">
+                        <input type="password" id="vpnToken" class="form-input" placeholder="Enter VPN registration token"
+                               style="width: 100%; padding: 10px 36px 10px 12px; font-size: 14px; box-sizing: border-box; font-family: monospace;">
+                        <button type="button" onclick="toggleVpnTokenVisibility()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; color: var(--text-tertiary);">
+                            <svg id="vpnTokenEyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 3px;">Token from fleet dashboard. Saved to /etc/crawler/vpn_token</div>
+                </div>
+
+                <div id="vpnConfigResult" style="display: none; font-size: 11px; margin-bottom: 12px; padding: 8px; border-radius: 6px;"></div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeVpnConfig()" style="flex: 1; padding: 10px;">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveVpnConfig()" id="vpnSaveBtn" style="flex: 1; padding: 10px;">Save</button>
                 </div>
             </div>
         </div>
@@ -2182,11 +2165,173 @@
             });
         }
 
+        // =====================================================================
+        // VPN Configuration Functions
+        // =====================================================================
+
+        var vpnCurrentState = { enabled: false, token_exists: false };
+
+        function loadVpnStatus() {
+            fetch('/api/vpn/status')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    vpnCurrentState = data;
+
+                    // Update status display
+                    var enabledEl = document.getElementById('vpnEnabledDisplay');
+                    if (data.enabled) {
+                        enabledEl.textContent = 'Enabled';
+                        enabledEl.style.color = 'var(--status-ok)';
+                    } else {
+                        enabledEl.textContent = 'Disabled';
+                        enabledEl.style.color = 'var(--text-muted)';
+                    }
+
+                    var ipEl = document.getElementById('vpnIpDisplay');
+                    if (data.vpn_ip) {
+                        ipEl.textContent = data.vpn_ip;
+                        ipEl.classList.remove('none');
+                    } else {
+                        ipEl.textContent = 'Not connected';
+                        ipEl.classList.add('none');
+                    }
+
+                    var tunnelEl = document.getElementById('vpnTunnelDisplay');
+                    tunnelEl.textContent = data.tunnel_status || '--';
+                    if (data.tunnel_status === 'active') {
+                        tunnelEl.style.color = 'var(--status-ok)';
+                    } else {
+                        tunnelEl.style.color = 'var(--text-muted)';
+                    }
+
+                    var wgEl = document.getElementById('vpnWgDisplay');
+                    wgEl.textContent = data.wg_status || '--';
+                    if (data.wg_status === 'active') {
+                        wgEl.style.color = 'var(--status-ok)';
+                    } else {
+                        wgEl.style.color = 'var(--text-muted)';
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Error loading VPN status:', err);
+                });
+        }
+
+        function showVpnConfig() {
+            var modal = document.getElementById('vpnConfigModal');
+            var cb = document.getElementById('vpnEnabled');
+            cb.checked = vpnCurrentState.enabled;
+            updateVpnToggleUI();
+
+            // Clear token field - don't show current token for security
+            document.getElementById('vpnToken').value = '';
+            document.getElementById('vpnToken').placeholder = vpnCurrentState.token_exists ? '••••••••  (token set)' : 'Enter VPN registration token';
+            document.getElementById('vpnConfigResult').style.display = 'none';
+
+            modal.style.display = 'flex';
+        }
+
+        function closeVpnConfig() {
+            document.getElementById('vpnConfigModal').style.display = 'none';
+        }
+
+        function toggleVpnEnabled() {
+            var cb = document.getElementById('vpnEnabled');
+            cb.checked = !cb.checked;
+            updateVpnToggleUI();
+        }
+
+        function updateVpnToggleUI() {
+            var cb = document.getElementById('vpnEnabled');
+            var track = document.getElementById('vpnToggleTrack');
+            var thumb = document.getElementById('vpnToggleThumb');
+            if (cb.checked) {
+                track.style.background = 'var(--button-success-bg)';
+                thumb.style.left = '23px';
+            } else {
+                track.style.background = '#ccc';
+                thumb.style.left = '3px';
+            }
+        }
+
+        function toggleVpnTokenVisibility() {
+            var input = document.getElementById('vpnToken');
+            var icon = document.getElementById('vpnTokenEyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+            } else {
+                input.type = 'password';
+                icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+            }
+        }
+
+        function saveVpnConfig() {
+            var enabled = document.getElementById('vpnEnabled').checked;
+            var token = document.getElementById('vpnToken').value.trim();
+            var resultEl = document.getElementById('vpnConfigResult');
+            var btn = document.getElementById('vpnSaveBtn');
+
+            // If enabling and no token set and no existing token, require token
+            if (enabled && !token && !vpnCurrentState.token_exists) {
+                resultEl.textContent = 'Registration token is required to enable VPN.';
+                resultEl.style.display = 'block';
+                resultEl.style.background = 'var(--status-error-bg)';
+                resultEl.style.color = 'var(--status-error)';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            resultEl.style.display = 'none';
+
+            var payload = { enabled: enabled };
+            if (token) {
+                payload.token = token;
+            }
+
+            fetch('/api/vpn/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+                if (data.success) {
+                    closeVpnConfig();
+                    showSuccess(data.message || 'VPN configuration saved.');
+                    // Reload status after a brief delay to let services start/stop
+                    setTimeout(loadVpnStatus, 3000);
+                } else {
+                    resultEl.textContent = data.error || 'Failed to save VPN configuration.';
+                    resultEl.style.display = 'block';
+                    resultEl.style.background = 'var(--status-error-bg)';
+                    resultEl.style.color = 'var(--status-error)';
+                }
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+                resultEl.textContent = 'Network error. Please try again.';
+                resultEl.style.display = 'block';
+                resultEl.style.background = 'var(--status-error-bg)';
+                resultEl.style.color = 'var(--status-error)';
+            });
+        }
+
+        // Close VPN modal when clicking outside
+        document.getElementById('vpnConfigModal').addEventListener('click', function(e) {
+            if (e.target === this) closeVpnConfig();
+        });
+
         // Load config and security status on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadConfig();
             loadSecurityStatus();
             loadMqttStatus();
+            loadVpnStatus();
         });
     </script>
     <script src="/js/theme.js"></script>
