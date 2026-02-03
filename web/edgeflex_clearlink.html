@@ -1039,6 +1039,10 @@
         <!-- Row 2: Status indicators - centered -->
         <div class="status-bar" id="connectionStatus">
             <div class="status-item">
+                <svg id="vpnIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--status-error);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span id="vpnText">VPN</span>
+            </div>
+            <div class="status-item">
                 <svg id="internetIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--status-error);"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                 <span id="internetText">Offline</span>
             </div>
@@ -2504,6 +2508,21 @@
                 text.textContent = 'ClearLink';
             }
         }
+        function updateVpnStatus(connected) {
+            var icon = document.getElementById('vpnIcon');
+            var text = document.getElementById('vpnText');
+            var okColor = getThemeColor('--status-ok');
+            var errorColor = getThemeColor('--status-error');
+            icon.style.stroke = connected ? okColor : errorColor;
+            text.textContent = 'VPN';
+        }
+        function checkVpn() {
+            fetch('/api/vpn/status')
+                .then(function(r) { return r.json(); })
+                .then(function(data) { updateVpnStatus(data.connected); })
+                .catch(function() { updateVpnStatus(false); });
+        }
+        checkVpn(); setInterval(checkVpn, 10000);
         function updateInternetStatus(online) {
             var icon = document.getElementById('internetIcon');
             var text = document.getElementById('internetText');

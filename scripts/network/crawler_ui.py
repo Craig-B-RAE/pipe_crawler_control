@@ -1261,6 +1261,27 @@ def scan_wifi_networks():
     return networks
 
 
+@app.route("/api/vpn/status")
+def api_vpn_status():
+    """Check if WireGuard VPN (wg0) is up and has a handshake."""
+    try:
+        result = subprocess.run(
+            ["wg", "show", "wg0", "latest-handshakes"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            # wg0 is up and has a peer — check handshake is recent (within 3 minutes)
+            parts = result.stdout.strip().split()
+            if len(parts) >= 2:
+                last_handshake = int(parts[1])
+                import time as _time
+                connected = last_handshake > 0 and (_time.time() - last_handshake) < 180
+                return jsonify({"connected": connected})
+        return jsonify({"connected": False})
+    except Exception:
+        return jsonify({"connected": False})
+
+
 @app.route("/api/wifi/scan")
 def api_wifi_scan():
     """Scan for WiFi networks."""
