@@ -100,6 +100,7 @@ h1 {
     display: flex;
     justify-content: space-around;
     background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 12px 8px;
     margin-bottom: 15px;
@@ -152,7 +153,7 @@ h1 {
     font-size: 13px;
     display: inline-block;
     position: relative;
-    border: none;
+    border: 1px solid var(--border-color);
     transition: background 0.2s;
     touch-action: manipulation;
 }
@@ -640,6 +641,7 @@ button.control-btn.btn-auto:hover { background: var(--button-success-hover); }
 /* ── Pipe Section ──────────────────────────────────────── */
 .pipe-section {
     background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     padding: clamp(15px, 3vw, 25px);
     border-radius: 16px;
     margin-bottom: 20px;
@@ -655,6 +657,7 @@ button.control-btn.btn-auto:hover { background: var(--button-success-hover); }
 /* ── Camera Section ────────────────────────────────────── */
 .camera-section {
     background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     margin-bottom: 20px;
     overflow: hidden;
@@ -975,7 +978,7 @@ button.control-btn.btn-auto:hover { background: var(--button-success-hover); }
 .theme-slider input:checked + .slider-track .sun { opacity: 0.3; }
 
 /* ── Graph Section ────────────────────────────────────── */
-.graph-container { background: var(--bg-secondary); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.graph-container { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
 .graph-svg { width: 100%; height: 220px; }
 .graph-stats { display: flex; justify-content: space-around; align-items: flex-end; padding-top: 16px; border-top: 1px solid var(--border-color); }
 .graph-stat { text-align: center; }

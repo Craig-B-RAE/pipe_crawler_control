@@ -2321,30 +2321,62 @@
             document.getElementById('shotsRight').innerHTML = '';
         }
 
-        function togglePipeView() {
-            var collapsible = document.getElementById('pipeCollapsible');
-            var btn = document.getElementById('pipeToggleBtn');
-            collapsible.classList.toggle('collapsed');
-            btn.classList.toggle('collapsed');
-            // Save preference
-            localStorage.setItem('pipeViewCollapsed', collapsible.classList.contains('collapsed'));
+        function collapsePipe() {
+            document.getElementById('pipeCollapsible').classList.add('collapsed');
+            document.getElementById('pipeToggleBtn').classList.add('collapsed');
+        }
+        function expandPipe() {
+            document.getElementById('pipeCollapsible').classList.remove('collapsed');
+            document.getElementById('pipeToggleBtn').classList.remove('collapsed');
+        }
+        function collapseCamera() {
+            document.getElementById('cameraCollapsible').classList.add('collapsed');
+            document.getElementById('cameraToggleBtn').classList.add('collapsed');
+        }
+        function expandCamera() {
+            document.getElementById('cameraCollapsible').classList.remove('collapsed');
+            document.getElementById('cameraToggleBtn').classList.remove('collapsed');
         }
 
-        // Restore pipe view state on load
-        (function() {
-            if (localStorage.getItem('pipeViewCollapsed') === 'true') {
-                document.getElementById('pipeCollapsible').classList.add('collapsed');
-                document.getElementById('pipeToggleBtn').classList.add('collapsed');
+        function togglePipeView() {
+            var isCollapsed = document.getElementById('pipeCollapsible').classList.contains('collapsed');
+            if (isCollapsed) {
+                expandPipe();
+                collapseCamera();
+                localStorage.setItem('openSection', 'pipe');
+            } else {
+                collapsePipe();
+                localStorage.setItem('openSection', 'none');
             }
-        })();
+        }
 
         function toggleCameraView() {
-            var collapsible = document.getElementById('cameraCollapsible');
-            var btn = document.getElementById('cameraToggleBtn');
-            collapsible.classList.toggle('collapsed');
-            btn.classList.toggle('collapsed');
-            localStorage.setItem('cameraViewCollapsed', collapsible.classList.contains('collapsed'));
+            var isCollapsed = document.getElementById('cameraCollapsible').classList.contains('collapsed');
+            if (isCollapsed) {
+                expandCamera();
+                collapsePipe();
+                localStorage.setItem('openSection', 'camera');
+            } else {
+                collapseCamera();
+                localStorage.setItem('openSection', 'none');
+            }
         }
+
+        // Restore section state on load (default: pipe open)
+        (function() {
+            var saved = localStorage.getItem('openSection');
+            if (saved === 'camera') {
+                collapsePipe();
+                expandCamera();
+            } else if (saved === 'none') {
+                collapsePipe();
+                collapseCamera();
+            } else {
+                // Default: pipe open, camera closed
+                expandPipe();
+                collapseCamera();
+            }
+        })();
 
         function toggleCameraFullscreen() {
             var overlay = document.getElementById('cameraExpandedOverlay');
@@ -2373,17 +2405,7 @@
             localStorage.setItem('cameraOverlayVisible', !visible);
         }
 
-        // Restore camera view state on load (default collapsed)
-        (function() {
-            var saved = localStorage.getItem('cameraViewCollapsed');
-            if (saved === null || saved === 'true') {
-                document.getElementById('cameraCollapsible').classList.add('collapsed');
-                document.getElementById('cameraToggleBtn').classList.add('collapsed');
-            } else {
-                document.getElementById('cameraCollapsible').classList.remove('collapsed');
-                document.getElementById('cameraToggleBtn').classList.remove('collapsed');
-            }
-        })();
+        // Camera/pipe restore handled by openSection logic above
 
         // Restore camera overlay state on load (default visible)
         (function() {

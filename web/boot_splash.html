@@ -10,9 +10,30 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
     <title>Starting Up...</title>
+    <script>
+        // Redirect immediately if splash already shown this session — MUST be in <head> to prevent flash
+        (function() {
+            var isDebug = window.location.search.indexOf('debug=true') !== -1;
+            if (!isDebug) {
+                try {
+                    if (sessionStorage.getItem('splashComplete') === 'true') {
+                        window.location.replace('/');
+                    }
+                } catch (e) {}
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="/css/theme.css">
     <link rel="stylesheet" href="/css/base.css">
     <style>
+        /* Hide body until ready to prevent FOUC */
+        body.page-utility {
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        body.page-utility.loaded {
+            opacity: 1;
+        }
         .logo {
             max-width: 350px;
             width: 80%;
@@ -69,6 +90,10 @@
             color: var(--text-tertiary);
             margin-top: 20px;
             min-height: 20px;
+            transition: opacity 0.3s ease;
+        }
+        .status-message.fading {
+            opacity: 0;
         }
 
         /* Continue button - hidden initially */
@@ -180,27 +205,13 @@
             return false;
         };
 
-        // Check if splash was already shown this session (skip if already completed)
-        // sessionStorage clears when browser closes or device reboots - perfect for boot splash
-        (function() {
-            var isDebug = window.location.search.indexOf('debug=true') !== -1;
-            if (!isDebug) {
-                try {
-                    if (sessionStorage.getItem('splashComplete') === 'true') {
-                        // Already shown this session, skip to main page
-                        window.location.replace('/');
-                        return;
-                    }
-                } catch (e) {
-                    console.log('sessionStorage not available');
-                }
-            }
-        })();
+        // Fade in body once loaded
+        document.body.classList.add('loaded');
 
         // Configuration
         var STARTUP_DURATION = 30000; // 30 seconds - must match MINIMUM_BOOT_TIME in crawler_ui.py
         var UPDATE_INTERVAL = 100;    // Update every 100ms for smooth progress
-        var MESSAGE_INTERVAL = 2500;  // Show new message every 2.5 seconds
+        var MESSAGE_INTERVAL = 3500;  // Show new message every 3.5 seconds
         var isDebugMode = window.location.search.indexOf('debug=true') !== -1;
 
         // State
@@ -272,8 +283,8 @@
             return shuffleArray(selected);
         }
 
-        // Generate 12 messages for the 30-second boot (one every ~2.5 seconds)
-        var bootMessages = getRandomMessages(12);
+        // Generate 8 messages for the 30-second boot (one every ~3.5 seconds)
+        var bootMessages = getRandomMessages(8);
 
         // Debug mode
         if (isDebugMode) {
@@ -301,11 +312,17 @@
             document.getElementById('progressBar').style.width = progress + '%';
             document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
 
-            // Update status message at regular intervals
+            // Update status message at regular intervals with crossfade
             if (elapsed - lastMessageTime >= MESSAGE_INTERVAL) {
                 lastMessageTime = elapsed;
                 if (currentMessageIndex < bootMessages.length) {
-                    document.getElementById('statusMessage').textContent = bootMessages[currentMessageIndex];
+                    var msgEl = document.getElementById('statusMessage');
+                    msgEl.classList.add('fading');
+                    var idx = currentMessageIndex;
+                    setTimeout(function() {
+                        msgEl.textContent = bootMessages[idx];
+                        msgEl.classList.remove('fading');
+                    }, 300);
                     currentMessageIndex++;
                 }
             }

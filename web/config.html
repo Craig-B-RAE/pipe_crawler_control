@@ -17,6 +17,38 @@
             margin-bottom: 25px;
             font-size: 13px;
         }
+        /* Collapsible sections */
+        .section-title.collapsible {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            -webkit-user-select: none;
+            user-select: none;
+            margin-bottom: 0;
+            transition: margin-bottom 0.2s ease;
+        }
+        .section-title.collapsible.expanded {
+            margin-bottom: 12px;
+        }
+        .section-title.collapsible .chevron {
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+        .section-title.collapsible.expanded .chevron {
+            transform: rotate(180deg);
+        }
+        .section-body {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.35s ease, opacity 0.25s ease;
+        }
+        .section-body.open {
+            max-height: 2000px;
+            opacity: 1;
+        }
         /* Device Bindings Table */
         .device-table {
             width: 100%;
@@ -745,6 +777,12 @@
                     </button>
                 </div>
 
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 4px;">Master Password:</label>
+                    <input type="password" id="vpnAuthPassword" class="form-input" placeholder="Enter master password"
+                           style="width: 100%; padding: 10px 12px; font-size: 14px; box-sizing: border-box;">
+                </div>
+
                 <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
                     <span style="font-size: 13px; color: var(--text-primary); font-weight: 500;">Enable VPN</span>
                     <div id="vpnToggle" onclick="toggleVpnEnabled()" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer;">
@@ -1218,10 +1256,7 @@
             showSuccess('Crawler type changed to ' + CRAWLERS[selectedCrawler].name + '. Click "Reboot and Save Changes" to apply.');
         }
 
-        // Close Config Tools modal when clicking outside
-        document.getElementById('configToolsModal').addEventListener('click', function(e) {
-            if (e.target === this) closeConfigTools();
-        });
+        // Config Tools modal is NOT background-dismissable (must use Close button)
 
         // =====================================================================
         // Device Security Lock Functions (v2 - Multi-Device)
@@ -2219,6 +2254,7 @@
 
         function showVpnConfig() {
             var modal = document.getElementById('vpnConfigModal');
+            document.getElementById('vpnAuthPassword').value = getCachedMasterPassword();
             var cb = document.getElementById('vpnEnabled');
             cb.checked = vpnCurrentState.enabled;
             updateVpnToggleUI();
@@ -2229,6 +2265,9 @@
             document.getElementById('vpnConfigResult').style.display = 'none';
 
             modal.style.display = 'flex';
+            if (!getCachedMasterPassword()) {
+                document.getElementById('vpnAuthPassword').focus();
+            }
         }
 
         function closeVpnConfig() {
@@ -2267,10 +2306,19 @@
         }
 
         function saveVpnConfig() {
+            var password = document.getElementById('vpnAuthPassword').value;
             var enabled = document.getElementById('vpnEnabled').checked;
             var token = document.getElementById('vpnToken').value.trim();
             var resultEl = document.getElementById('vpnConfigResult');
             var btn = document.getElementById('vpnSaveBtn');
+
+            if (!password) {
+                resultEl.textContent = 'Master password is required.';
+                resultEl.style.display = 'block';
+                resultEl.style.background = 'var(--status-error-bg)';
+                resultEl.style.color = 'var(--status-error)';
+                return;
+            }
 
             // If enabling and no token set and no existing token, require token
             if (enabled && !token && !vpnCurrentState.token_exists) {
@@ -2285,7 +2333,7 @@
             btn.textContent = 'Saving...';
             resultEl.style.display = 'none';
 
-            var payload = { enabled: enabled };
+            var payload = { master_password: password, enabled: enabled };
             if (token) {
                 payload.token = token;
             }
@@ -2300,6 +2348,7 @@
                 btn.disabled = false;
                 btn.textContent = 'Save';
                 if (data.success) {
+                    cacheMasterPassword(password);
                     closeVpnConfig();
                     showSuccess(data.message || 'VPN configuration saved.');
                     // Reload status after a brief delay to let services start/stop
@@ -2327,7 +2376,79 @@
         });
 
         // Load config and security status on page load
+        // Collapsible sections
+        function initCollapsibleSections() {
+            var sectionIds = ['securitySection', null, 'mqttSection', 'vpnSection'];
+            // Find visible .section elements (skip hidden ones like crawlerTypeSection)
+            var allSections = document.querySelectorAll('.container > .section');
+            allSections.forEach(function(section) {
+                if (section.style.display === 'none') return;
+                var title = section.querySelector('.section-title');
+                if (!title) return;
+
+                // Add chevron SVG
+                var chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                chevron.setAttribute('class', 'chevron');
+                chevron.setAttribute('width', '14');
+                chevron.setAttribute('height', '14');
+                chevron.setAttribute('viewBox', '0 0 24 24');
+                chevron.setAttribute('fill', 'none');
+                chevron.setAttribute('stroke', 'currentColor');
+                chevron.setAttribute('stroke-width', '2');
+                var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', 'M6 9l6 6 6-6');
+                chevron.appendChild(path);
+                title.appendChild(chevron);
+                title.classList.add('collapsible');
+
+                // Wrap content after title in section-body
+                var body = document.createElement('div');
+                body.className = 'section-body';
+                var children = [];
+                var sibling = title.nextSibling;
+                while (sibling) {
+                    children.push(sibling);
+                    sibling = sibling.nextSibling;
+                }
+                children.forEach(function(child) { body.appendChild(child); });
+                section.appendChild(body);
+
+                // Click handler
+                title.addEventListener('click', function() {
+                    var isExpanded = title.classList.contains('expanded');
+                    if (isExpanded) {
+                        title.classList.remove('expanded');
+                        body.classList.remove('open');
+                    } else {
+                        // Collapse all others first
+                        allSections.forEach(function(s) {
+                            var t = s.querySelector('.section-title.collapsible');
+                            var b = s.querySelector('.section-body');
+                            if (t && b) {
+                                t.classList.remove('expanded');
+                                b.classList.remove('open');
+                            }
+                        });
+                        title.classList.add('expanded');
+                        body.classList.add('open');
+                    }
+                });
+            });
+
+            // Default: expand Network Status (second visible section)
+            var visibleSections = [];
+            allSections.forEach(function(s) {
+                if (s.style.display !== 'none') visibleSections.push(s);
+            });
+            if (visibleSections.length >= 2) {
+                var t = visibleSections[1].querySelector('.section-title.collapsible');
+                var b = visibleSections[1].querySelector('.section-body');
+                if (t && b) { t.classList.add('expanded'); b.classList.add('open'); }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            initCollapsibleSections();
             loadConfig();
             loadSecurityStatus();
             loadMqttStatus();

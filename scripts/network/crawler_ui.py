@@ -1336,7 +1336,22 @@ def api_vpn_config():
     VPN_TOKEN_PATH = "/etc/crawler/vpn_token"
     VPN_SERVICES = ["wstunnel-client", "wg-quick@wg0", "crawler-heartbeat", "ttyd"]
 
+    try:
+        import sys
+        sys.path.insert(0, "/opt/crawler")
+        from security_utils import verify_master_password
+    except ImportError:
+        return jsonify({"success": False, "error": "Security module not available."})
+
     data = request.get_json()
+    master_password = data.get("master_password", "")
+
+    if not master_password:
+        return jsonify({"success": False, "error": "Master password is required."})
+
+    if not verify_master_password(master_password):
+        return jsonify({"success": False, "error": "Invalid master password."})
+
     enabled = data.get("enabled", False)
     token = data.get("token", "").strip()
 
