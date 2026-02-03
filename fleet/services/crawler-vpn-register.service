@@ -1,0 +1,16 @@
+[Unit]
+Description=Crawler VPN Auto-Registration
+After=network-online.target wstunnel-client.service
+Wants=network-online.target
+Requires=wstunnel-client.service
+Before=wg-quick@wg0.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/crawler/vpn_register.py
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

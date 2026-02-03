@@ -1,0 +1,16 @@
+[Unit]
+Description=Crawler Fleet Heartbeat
+After=network.target wg-quick@wg0.service
+Wants=wg-quick@wg0.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/crawler/crawler_heartbeat.py
+WorkingDirectory=/opt/crawler
+Restart=always
+RestartSec=10
+Environment=FLEET_API_URL=http://10.0.0.1:9100
+Environment=HEARTBEAT_INTERVAL=60
+
+[Install]
+WantedBy=multi-user.target

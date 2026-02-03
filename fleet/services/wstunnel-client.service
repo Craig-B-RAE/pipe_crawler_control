@@ -1,0 +1,16 @@
+[Unit]
+Description=wstunnel Client (WireGuard over WebSocket)
+After=network-online.target
+Wants=network-online.target
+Before=wg-quick@wg0.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/wstunnel client -L udp://127.0.0.1:51820:127.0.0.1:51820 wss://edge-primeinspections.com/wstunnel
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Web Terminal (ttyd)
+After=network.target wg-quick@wg0.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ttyd --writable --port 7681 --interface wg0 /bin/bash
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
