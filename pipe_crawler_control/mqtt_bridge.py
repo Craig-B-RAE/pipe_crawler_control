@@ -97,6 +97,8 @@ class MqttBridge(Node):
         self.config = load_mqtt_config()
         self.mqtt_client = None
         self.connected = False
+        self._last_connected_time = time.time()
+        self._reconnect_attempts = 0
         self._last_status = {}
         self._last_cpu_temp = 0.0
         self._last_imu_roll = 0.0
@@ -121,6 +123,8 @@ class MqttBridge(Node):
 
         self._setup_subscriptions()
         self._setup_mqtt()
+        # Watchdog timer to force reconnect after prolonged outages
+        self.create_timer(30.0, self._connection_watchdog)
 
     def _setup_subscriptions(self):
         """Subscribe to ROS2 topics for status data."""
@@ -200,6 +204,8 @@ class MqttBridge(Node):
         rc_val = rc.value if hasattr(rc, 'value') else rc
         if rc_val == 0:
             self.connected = True
+            self._last_connected_time = time.time()
+            self._reconnect_attempts = 0
             hostname = self.config['hostname']
             self.get_logger().info(f'MQTT connected (flags={flags})')
             # Subscribe to command topics
@@ -215,6 +221,64 @@ class MqttBridge(Node):
         rc_val = rc.value if hasattr(rc, 'value') else rc
         if rc_val != 0:
             self.get_logger().warn(f'MQTT disconnected unexpectedly (rc={rc_val}, reason={rc}), will reconnect')
+
+    def _connection_watchdog(self):
+        """Periodically check connectivity and force reconnect if needed."""
+        if not self.mqtt_client:
+            return
+        if self.connected:
+            return
+        elapsed = time.time() - self._last_connected_time
+        # If disconnected for more than 90 seconds, force a full reconnect
+        if elapsed < 90:
+            return
+        self._reconnect_attempts += 1
+        self.get_logger().warn(
+            f'MQTT disconnected for {int(elapsed)}s, '
+            f'forcing reconnect (attempt {self._reconnect_attempts})')
+        self._force_reconnect()
+
+    def _force_reconnect(self):
+        """Tear down the MQTT client and create a fresh connection."""
+        try:
+            self.mqtt_client.loop_stop()
+            self.mqtt_client.disconnect()
+        except Exception:
+            pass
+        self.mqtt_client = None
+        self.connected = False
+        # Re-create the client and connect
+        broker = self.config['broker']
+        port = self.config['port']
+        hostname = self.config['hostname']
+        api_key = self.config['api_key']
+        transport = self.config.get('transport', 'tcp')
+        client_kwargs = dict(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            client_id=f'crawler-{hostname}',
+            protocol=mqtt.MQTTv311,
+            transport=transport,
+        )
+        self.mqtt_client = mqtt.Client(**client_kwargs)
+        if transport == 'websockets':
+            ws_path = self.config.get('ws_path', '/mqtt')
+            self.mqtt_client.ws_set_options(path=ws_path)
+        self.mqtt_client.username_pw_set(f'crawler_{hostname}', api_key)
+        if self.config['use_tls']:
+            self.mqtt_client.tls_set(
+                cert_reqs=ssl.CERT_REQUIRED,
+                tls_version=ssl.PROTOCOL_TLS_CLIENT,
+            )
+        self.mqtt_client.on_connect = self._on_mqtt_connect
+        self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
+        self.mqtt_client.on_message = self._on_mqtt_message
+        self.mqtt_client.reconnect_delay_set(min_delay=1, max_delay=60)
+        self.get_logger().info(f'Reconnecting to MQTT broker {broker}:{port} as {hostname}')
+        try:
+            self.mqtt_client.connect_async(broker, port, keepalive=60)
+            self.mqtt_client.loop_start()
+        except Exception as e:
+            self.get_logger().error(f'MQTT reconnect failed: {e}')
 
     def _on_mqtt_message(self, client, userdata, msg):
         """Handle incoming MQTT commands."""
