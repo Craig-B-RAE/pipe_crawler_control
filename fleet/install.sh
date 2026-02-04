@@ -81,17 +81,21 @@ mkdir -p /opt/crawler
 mkdir -p /etc/crawler
 echo "[OK] Directories /opt/crawler and /etc/crawler ready"
 
-# 7. Copy Python scripts
-cp "$SCRIPT_DIR/vpn_register.py" /opt/crawler/vpn_register.py
-cp "$SCRIPT_DIR/crawler_heartbeat.py" /opt/crawler/crawler_heartbeat.py
-chmod +x /opt/crawler/vpn_register.py /opt/crawler/crawler_heartbeat.py
-echo "[OK] Copied vpn_register.py and crawler_heartbeat.py to /opt/crawler/"
+# 7. Deploy application files (web UI, backend, scripts, services)
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+if [ -f "$REPO_DIR/scripts/deploy.sh" ]; then
+    bash "$REPO_DIR/scripts/deploy.sh"
+else
+    # Fallback: copy fleet files manually if deploy.sh not available
+    cp "$SCRIPT_DIR/vpn_register.py" /opt/crawler/vpn_register.py
+    cp "$SCRIPT_DIR/crawler_heartbeat.py" /opt/crawler/crawler_heartbeat.py
+    chmod +x /opt/crawler/vpn_register.py /opt/crawler/crawler_heartbeat.py
+    echo "[OK] Copied vpn_register.py and crawler_heartbeat.py to /opt/crawler/"
+    cp "$SCRIPT_DIR/services/"*.service /etc/systemd/system/
+    echo "[OK] Copied service files to /etc/systemd/system/"
+fi
 
-# 8. Copy service files
-cp "$SCRIPT_DIR/services/"*.service /etc/systemd/system/
-echo "[OK] Copied service files to /etc/systemd/system/"
-
-# 9. Write default wstunnel URL if not present
+# 8. Write default wstunnel URL if not present
 if [ ! -f /etc/crawler/wstunnel_url ]; then
     echo "wss://edge-primeinspections.com/wstunnel" > /etc/crawler/wstunnel_url
     echo "[OK] Wrote default wstunnel URL to /etc/crawler/wstunnel_url"
@@ -99,7 +103,7 @@ else
     echo "[OK] /etc/crawler/wstunnel_url already exists"
 fi
 
-# 10. Create default MQTT config if not present
+# 9. Create default MQTT config if not present
 if [ ! -f /etc/crawler/mqtt.conf ]; then
     cat > /etc/crawler/mqtt.conf <<'MQTTCONF'
 api_key: ''
@@ -146,23 +150,23 @@ else
     echo "[OK] /etc/crawler/mqtt.conf already exists"
 fi
 
-# 11. Reload systemd
+# 10. Reload systemd
 systemctl daemon-reload
 echo "[OK] systemd daemon reloaded"
 
-# 12. Enable services
+# 11. Enable services
 systemctl enable wstunnel-client
 systemctl enable crawler-vpn-register
 systemctl enable crawler-heartbeat
 systemctl enable ttyd
 echo "[OK] Enabled services: wstunnel-client, crawler-vpn-register, crawler-heartbeat, ttyd"
 
-# 13. Remove old WireGuard config for fresh registration
+# 12. Remove old WireGuard config for fresh registration
 rm -f /etc/wireguard/wg0.conf /etc/wireguard/private.key
 systemctl disable wg-quick@wg0 2>/dev/null || true
 echo "[OK] Cleared old WireGuard config (fresh registration on next boot)"
 
-# 14. Summary
+# 13. Summary
 echo ""
 echo "=== Installation Summary ==="
 echo "  WireGuard:          $(wg --version 2>/dev/null || echo 'installed')"
@@ -175,7 +179,7 @@ echo "  MQTT config:        /etc/crawler/mqtt.conf"
 echo "  Services enabled:   wstunnel-client, crawler-vpn-register, crawler-heartbeat, ttyd"
 echo ""
 
-# 15. Reminder
+# 14. Reminder
 echo "=== Next Steps ==="
 echo "  VPN token and MQTT API key are configured through the crawler"
 echo "  web UI at config.html. Set hostname and reboot when ready."
