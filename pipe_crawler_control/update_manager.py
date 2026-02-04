@@ -44,7 +44,7 @@ class UpdateManager(Node):
         self.publish_status('updating')
         try:
             result = subprocess.run(
-                ['/home/craig/update_crawler.sh'],
+                ['/home/craig/ros2_ws/src/pipe_crawler_control/scripts/update_crawler.sh'],
                 capture_output=True,
                 text=True,
                 timeout=120
