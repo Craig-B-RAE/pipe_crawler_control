@@ -131,6 +131,55 @@ All web pages must follow these rules consistently:
 - **Safari compatibility:** No optional chaining (`?.`), no nullish coalescing (`??`), no arrow functions (`=>`). Use `function(){}` and explicit null checks.
 - **No ES6 modules:** All JS is inline `<script>` blocks.
 
+## Fleet VPN System
+
+The fleet/ directory contains a WireGuard VPN system tunneled over WebSocket (wstunnel) for remote crawler management.
+
+### Architecture
+- WireGuard UDP is wrapped in WebSocket (TCP 443) using wstunnel
+- This allows VPN to work through any network including corporate firewalls, hotel WiFi, cellular
+- VM server at edge-primeinspections.com handles:
+  - wstunnel server (WebSocket→UDP on localhost)
+  - WireGuard server (localhost:51820)
+  - Fleet API with auto-registration (port 9100)
+  - Fleet dashboard at /fleet
+  - nginx proxies everything on TCP 443
+
+### Traffic Flow
+Crawler WireGuard → localhost:51820 → wstunnel client → wss://edge-primeinspections.com/wstunnel (TCP 443) → nginx → wstunnel server → WireGuard server
+
+### Boot Sequence (when VPN is configured)
+1. wstunnel-client.service - WebSocket tunnel
+2. crawler-vpn-register.service - auto-registers if no wg0.conf
+3. wg-quick@wg0 - WireGuard VPN
+4. ttyd.service - web terminal (VPN interface only)
+5. crawler-heartbeat.service - status to fleet API every 60s
+
+### VPN is Optional
+- Configured via config.html VPN section
+- If /etc/crawler/vpn_token doesn't exist, registration skips silently, no errors
+- Crawlers work standalone on local network without VPN
+
+### Fleet Files
+- fleet/vpn_register.py → /opt/crawler/ (auto-registration)
+- fleet/crawler_heartbeat.py → /opt/crawler/ (heartbeat)
+- fleet/services/*.service → /etc/systemd/system/
+- fleet/install.sh - installs everything, run as root
+- VPN token set via config.html, stored at /etc/crawler/vpn_token
+
+### Network
+- VPN subnet: 10.0.0.0/24, VM is 10.0.0.1
+- Crawler IPs: 10.0.0.10-254 (auto-assigned on registration)
+- Heartbeat: 60 second interval, 180 second offline threshold
+- Fleet API accessible at http://10.0.0.1:9100 over VPN
+- Dashboard: https://edge-primeinspections.com/fleet
+
+### Key Rules
+- Never expose WireGuard port externally - localhost only
+- Never store VPN token or MQTT keys in git
+- All external traffic goes through TCP 443 via wstunnel
+- ttyd binds to wg0 interface only (not local network)
+
 ## Key Config Files
 
 - `/etc/crawler/mqtt.conf` — MQTT broker/topic settings
