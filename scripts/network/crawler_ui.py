@@ -1035,7 +1035,8 @@ def load_full_config():
     config = {
         "crawler_id": None,
         "ssid": DEFAULT_SSID,
-        "password": DEFAULT_PASSWORD
+        "password": DEFAULT_PASSWORD,
+        "clearlink_gateway": ""
     }
 
     if os.path.exists(CONFIG_FILE):
@@ -1049,6 +1050,8 @@ def load_full_config():
                         config["ssid"] = line.split("=", 1)[1]
                     elif line.startswith("HOTSPOT_PASSWORD="):
                         config["password"] = line.split("=", 1)[1]
+                    elif line.startswith("CLEARLINK_GATEWAY="):
+                        config["clearlink_gateway"] = line.split("=", 1)[1]
         except Exception:
             pass
 
@@ -1120,6 +1123,17 @@ def save_full_config(crawler_id, ssid, password):
         html_file = crawler.get("html", "")
         motor_driver = crawler.get("motor_driver", "roboclaw")
 
+        # Preserve existing clearlink_gateway if not provided
+        existing_gateway = ""
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r") as f:
+                    for line in f:
+                        if line.strip().startswith("CLEARLINK_GATEWAY="):
+                            existing_gateway = line.strip().split("=", 1)[1]
+            except Exception:
+                pass
+
         with open(CONFIG_FILE, "w") as f:
             f.write("# Crawler Configuration\n")
             f.write(f"CRAWLER_ID={crawler_id}\n")
@@ -1131,6 +1145,7 @@ def save_full_config(crawler_id, ssid, password):
             f.write(f"CONFIG_YAML={yaml_file}\n")
             f.write(f"UI_HTML={html_file}\n")
             f.write(f"MOTOR_DRIVER={motor_driver}\n")
+            f.write(f"CLEARLINK_GATEWAY={existing_gateway}\n")
 
         # Also update the actual NetworkManager hotspot connection
         update_hotspot_connection(ssid, password)
@@ -1151,6 +1166,7 @@ def api_config_get():
         "crawler_id": config["crawler_id"],
         "ssid": config["ssid"],
         "password": config["password"],
+        "clearlink_gateway": config.get("clearlink_gateway", ""),
         "crawlers": DEFAULT_CRAWLERS,
         "network": network_info
     })
@@ -1177,6 +1193,67 @@ def api_config_set():
         return jsonify({"success": True})
     else:
         return jsonify({"success": False, "error": "Failed to save configuration"})
+
+
+@app.route("/api/config/gateway", methods=["POST"])
+def api_config_gateway():
+    """Save ClearLink ethernet gateway. Updates network.conf and reapplies eth0."""
+    data = request.get_json() or {}
+    gateway = data.get("gateway", "").strip()
+
+    # Validate gateway IP if provided
+    if gateway:
+        import re
+        if not re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', gateway):
+            return jsonify({"success": False, "error": "Invalid gateway IP address"})
+
+    try:
+        # Read existing config and update CLEARLINK_GATEWAY
+        lines = []
+        found = False
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, "r") as f:
+                for line in f:
+                    if line.strip().startswith("CLEARLINK_GATEWAY="):
+                        lines.append("CLEARLINK_GATEWAY=" + gateway + "\n")
+                        found = True
+                    else:
+                        lines.append(line)
+        if not found:
+            lines.append("CLEARLINK_GATEWAY=" + gateway + "\n")
+
+        os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+        with open(CONFIG_FILE, "w") as f:
+            f.writelines(lines)
+
+        # Reapply eth0 if ClearLink is active
+        active = ""
+        try:
+            with open("/home/craig/active_system", "r") as f:
+                active = f.read().strip()
+        except Exception:
+            pass
+
+        if active == "edgeflex_clearlink":
+            dns = "8.8.8.8,8.8.4.4"
+            if gateway:
+                subprocess.run(
+                    ["nmcli", "connection", "modify", "netplan-eth0",
+                     "ipv4.gateway", gateway, "ipv4.dns", dns],
+                    capture_output=True, text=True, timeout=10
+                )
+            else:
+                subprocess.run(
+                    ["nmcli", "connection", "modify", "netplan-eth0",
+                     "ipv4.gateway", "", "ipv4.dns", dns],
+                    capture_output=True, text=True, timeout=10
+                )
+            subprocess.run(["nmcli", "device", "reapply", "eth0"],
+                           capture_output=True, text=True, timeout=10)
+
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route("/api/config/hostname", methods=["POST"])

@@ -1,13 +1,16 @@
 #!/bin/bash
 # NetworkManager dispatcher script
 # When eth0 comes up and active crawler is edgeflex_clearlink,
-# set static IP 192.168.20.200. Otherwise revert to DHCP.
+# set static IP 192.168.20.200 with configurable gateway and DNS.
+# Otherwise revert to DHCP.
 
 INTERFACE="$1"
 ACTION="$2"
 CONNECTION="netplan-eth0"
 STATIC_IP="192.168.20.200/24"
+DNS_SERVERS="8.8.8.8,8.8.4.4"
 ACTIVE_SYSTEM_FILE="/home/craig/active_system"
+CONFIG_FILE="/etc/xpresscan/network.conf"
 
 # Only act on eth0 up/down events
 [ "$INTERFACE" = "eth0" ] || exit 0
@@ -17,9 +20,19 @@ if [ "$ACTION" = "up" ]; then
     CURRENT_METHOD=$(nmcli -g ipv4.method connection show "$CONNECTION" 2>/dev/null)
 
     if [ "$ACTIVE" = "edgeflex_clearlink" ]; then
+        # Read gateway from config file (default: empty = no gateway)
+        GATEWAY=""
+        if [ -f "$CONFIG_FILE" ]; then
+            GATEWAY=$(grep "^CLEARLINK_GATEWAY=" "$CONFIG_FILE" 2>/dev/null | cut -d= -f2)
+        fi
+
         if [ "$CURRENT_METHOD" != "manual" ]; then
-            logger -t clearlink-ip "ClearLink config detected, setting eth0 to static $STATIC_IP"
-            nmcli connection modify "$CONNECTION" ipv4.method manual ipv4.addresses "$STATIC_IP" ipv4.gateway "" ipv4.dns ""
+            logger -t clearlink-ip "ClearLink config detected, setting eth0 to static $STATIC_IP gateway=${GATEWAY:-none} dns=$DNS_SERVERS"
+            if [ -n "$GATEWAY" ]; then
+                nmcli connection modify "$CONNECTION" ipv4.method manual ipv4.addresses "$STATIC_IP" ipv4.gateway "$GATEWAY" ipv4.dns "$DNS_SERVERS"
+            else
+                nmcli connection modify "$CONNECTION" ipv4.method manual ipv4.addresses "$STATIC_IP" ipv4.gateway "" ipv4.dns "$DNS_SERVERS"
+            fi
             nmcli device reapply eth0 2>/dev/null || true
         fi
     else

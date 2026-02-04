@@ -500,6 +500,22 @@
                     <span class="label">Ethernet</span>
                     <span class="value" id="ethernetDisplay">--</span>
                 </div>
+                <div class="network-item" id="gatewayRow" style="display: none;">
+                    <span class="label">Gateway</span>
+                    <span class="value" id="gatewayDisplay" style="cursor: pointer;" onclick="showGatewayEdit()">--</span>
+                    <svg onclick="showGatewayEdit()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" style="margin-left: 4px; flex-shrink: 0; cursor: pointer;" title="Edit gateway"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </div>
+                <div id="gatewayEditRow" style="display: none; padding: 8px 0;">
+                    <div style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 6px;">Router gateway IP for internet access (ClearLink only)</div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="gatewayInput" class="form-input" placeholder="192.168.20.254"
+                               style="flex: 1; padding: 8px 10px; font-size: 13px; box-sizing: border-box;">
+                        <button type="button" class="btn btn-primary" onclick="saveGateway()" style="padding: 8px 14px; font-size: 12px; white-space: nowrap;">Save</button>
+                        <button type="button" class="btn btn-secondary" onclick="cancelGatewayEdit()" style="padding: 8px 10px; font-size: 12px;">Cancel</button>
+                    </div>
+                    <div id="gatewayError" style="display: none; font-size: 11px; color: var(--status-error); margin-top: 4px;"></div>
+                    <div id="gatewaySuccess" style="display: none; font-size: 11px; color: var(--status-success); margin-top: 4px;">Gateway saved</div>
+                </div>
             </div>
         </div>
 
@@ -1040,6 +1056,18 @@
                         document.getElementById('ethernetDisplay').classList.add('none');
                     }
 
+                    // Show gateway row only for ClearLink configs
+                    if (data.crawler_id === 'edgeflex_clearlink') {
+                        document.getElementById('gatewayRow').style.display = '';
+                        var gw = data.clearlink_gateway || '';
+                        document.getElementById('gatewayDisplay').textContent = gw || 'Not set';
+                        if (!gw) {
+                            document.getElementById('gatewayDisplay').classList.add('none');
+                        }
+                    } else {
+                        document.getElementById('gatewayRow').style.display = 'none';
+                    }
+
                     // Render crawler options
                     renderCrawlerOptions();
                 })
@@ -1214,6 +1242,57 @@
             el.classList.add('show');
             document.getElementById('errorMsg').classList.remove('show');
             setTimeout(function() { el.classList.remove('show'); }, 5000);
+        }
+
+        // Gateway edit functions
+        function showGatewayEdit() {
+            var current = document.getElementById('gatewayDisplay').textContent;
+            document.getElementById('gatewayInput').value = (current === 'Not set') ? '' : current;
+            document.getElementById('gatewayEditRow').style.display = '';
+            document.getElementById('gatewayError').style.display = 'none';
+            document.getElementById('gatewaySuccess').style.display = 'none';
+        }
+
+        function cancelGatewayEdit() {
+            document.getElementById('gatewayEditRow').style.display = 'none';
+        }
+
+        function saveGateway() {
+            var gateway = document.getElementById('gatewayInput').value.trim();
+            var errorEl = document.getElementById('gatewayError');
+            var successEl = document.getElementById('gatewaySuccess');
+            errorEl.style.display = 'none';
+            successEl.style.display = 'none';
+
+            if (gateway && !/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(gateway)) {
+                errorEl.textContent = 'Invalid IP address format';
+                errorEl.style.display = '';
+                return;
+            }
+
+            fetch('/api/config/gateway', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gateway: gateway })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    document.getElementById('gatewayDisplay').textContent = gateway || 'Not set';
+                    document.getElementById('gatewayDisplay').classList.toggle('none', !gateway);
+                    successEl.style.display = '';
+                    setTimeout(function() {
+                        document.getElementById('gatewayEditRow').style.display = 'none';
+                    }, 1500);
+                } else {
+                    errorEl.textContent = data.error || 'Failed to save';
+                    errorEl.style.display = '';
+                }
+            })
+            .catch(function(err) {
+                errorEl.textContent = 'Network error';
+                errorEl.style.display = '';
+            });
         }
 
         // Allow Enter key in modals
