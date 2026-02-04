@@ -247,6 +247,8 @@ h1 {
     padding: 12px 16px 16px;
     max-height: calc(80vh - 50px);
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* ── Stats Rows ────────────────────────────────────────── */

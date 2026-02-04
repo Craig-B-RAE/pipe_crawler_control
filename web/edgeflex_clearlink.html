@@ -187,7 +187,7 @@
         /* Voice feedback overlay */
         .voice-feedback {
             position: fixed;
-            top: 8px;
+            top: 60px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1001;
@@ -1036,6 +1036,9 @@
             // Toggle the clicked one
             if (!isOpen) {
                 popup.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
             }
         }
 
@@ -1043,6 +1046,7 @@
             var popup = document.getElementById(popupId);
             popup.classList.remove('show');
             resetPopupPosition(popup);
+            document.body.style.overflow = '';
         }
 
         function resetPopupPosition(popup) {
@@ -1743,7 +1747,8 @@
         function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (compareVersions(CURRENT_VERSION, v) < 0) { document.getElementById('updateBanner').classList.add('show'); document.getElementById('newVersion').textContent = v; } }).catch(function(e) { }); }
         setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
 
-        var _wsUrl = 'ws://' + window.location.hostname + ':9090';
+        var _wsProto = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        var _wsUrl = _wsProto + window.location.host + '/ws';
 
         var ros = new ROSLIB.Ros({ url: _wsUrl });
 
@@ -2757,7 +2762,7 @@
             voiceCommandsEnabled = enabled;
             localStorage.setItem('voiceCommandsEnabled', enabled ? 'true' : 'false');
             var micBtn = document.getElementById('voiceMicBtn');
-            if (enabled && hasSpeechRecognition()) {
+            if (enabled) {
                 micBtn.style.display = 'flex';
             } else {
                 micBtn.style.display = 'none';
@@ -2772,12 +2777,6 @@
         function loadVoiceCommands() {
             var saved = localStorage.getItem('voiceCommandsEnabled');
             var toggle = document.getElementById('voiceCommandsToggle');
-            if (!hasSpeechRecognition()) {
-                // Hide toggle if browser doesn't support speech
-                var toggleRow = toggle.closest('.settings-row');
-                if (toggleRow) toggleRow.style.display = 'none';
-                return;
-            }
             if (saved === 'true') {
                 voiceCommandsEnabled = true;
                 toggle.checked = true;
@@ -2799,6 +2798,7 @@
                 clearInterval(activeMoveInterval);
                 activeMoveInterval = null;
                 showMoveStatus('Cancelled', 'cancelled');
+                hideVoiceFeedback();
                 setTimeout(hideMoveProgress, 2000);
             }
         }
@@ -2837,6 +2837,7 @@
             var fill = document.getElementById('moveProgressFill');
             fill.style.width = '100%';
             text.innerHTML = '<span class="move-progress-complete">Complete (' + traveled.toFixed(1) + unitStr + ')</span>';
+            hideVoiceFeedback();
             setTimeout(hideMoveProgress, 3000);
         }
 
@@ -3038,6 +3039,10 @@
         }
 
         function toggleVoiceListening() {
+            if (!hasSpeechRecognition()) {
+                addAlarm('Voice commands require HTTPS. Use Chrome or connect via HTTPS.');
+                return;
+            }
             if (!voiceRecognition) initVoiceRecognition();
             if (!voiceRecognition) return;
 
