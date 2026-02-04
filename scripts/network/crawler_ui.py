@@ -1150,6 +1150,30 @@ def save_full_config(crawler_id, ssid, password):
         # Also update the actual NetworkManager hotspot connection
         update_hotspot_connection(ssid, password)
 
+        # Configure ethernet: static for ClearLink, DHCP for all others
+        try:
+            if crawler_id == "edgeflex_clearlink":
+                gw = existing_gateway or "192.168.20.254"
+                subprocess.run(
+                    ["nmcli", "connection", "modify", "netplan-eth0",
+                     "ipv4.method", "manual",
+                     "ipv4.addresses", "192.168.20.1/24",
+                     "ipv4.gateway", gw,
+                     "ipv4.dns", "8.8.8.8,8.8.4.4"],
+                    capture_output=True, text=True, timeout=10
+                )
+            else:
+                subprocess.run(
+                    ["nmcli", "connection", "modify", "netplan-eth0",
+                     "ipv4.method", "auto",
+                     "ipv4.addresses", "",
+                     "ipv4.gateway", "",
+                     "ipv4.dns", ""],
+                    capture_output=True, text=True, timeout=10
+                )
+        except Exception as e:
+            print(f"Error configuring ethernet: {e}")
+
         return True
     except Exception as e:
         print(f"Error saving config: {e}")
@@ -1333,10 +1357,9 @@ def scan_wifi_networks():
     """Scan for available WiFi networks."""
     networks = []
     try:
-        subprocess.run(["nmcli", "device", "wifi", "rescan"], capture_output=True, timeout=5)
         result = subprocess.run(
-            ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "device", "wifi", "list"],
-            capture_output=True, text=True, timeout=5
+            ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "device", "wifi", "list", "--rescan", "yes"],
+            capture_output=True, text=True, timeout=15
         )
 
         seen = set()

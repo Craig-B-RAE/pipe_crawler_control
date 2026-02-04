@@ -103,7 +103,14 @@
             </div>
         </div>
         <div class="system-badge"><span>Magnetic Crawler System</span></div>
-        <div class="update-banner" id="updateBanner" onclick="installUpdate()">Update available! Click to install (v<span id="newVersion"></span>)</div>
+        <div class="update-banner" id="updateBanner">
+            <span id="updateText">Version <span id="newVersion"></span> available</span>
+            <span id="updateCountdown" class="update-countdown">Auto-updating in <span id="countdownTimer">0:59</span></span>
+            <span class="update-actions">
+                <button type="button" class="update-btn update-now" onclick="installUpdate()">Update Now</button>
+                <button type="button" class="update-btn update-dismiss" onclick="dismissUpdate()">Dismiss</button>
+            </span>
+        </div>
 
         <!-- Single motor info toolbar -->
         <div class="info-toolbar">
@@ -151,7 +158,7 @@
                             <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
                             <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label" style="color: var(--text-tertiary);">Rel. Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.2</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.3</span></div>
                         </div>
                     </div>
                 </div>
@@ -364,7 +371,7 @@
             </div>
         </div>
 
-        <div class="footer">v<span id="footerVersion">2.0.2</span> | Last updated: <span id="lastUpdated">--</span></div>
+        <div class="footer">v<span id="footerVersion">2.0.3</span> | Last updated: <span id="lastUpdated">--</span></div>
 
         <!-- Support Button -->
         <div class="support-section">
@@ -488,7 +495,7 @@
             console.log('ROSLIB loaded successfully from CDN');
         }
 
-        var CURRENT_VERSION = '2.0.2';
+        var CURRENT_VERSION = '2.0.3';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var SYSTEM_ID = 'magnetic_phased_array';
         var MOTOR_COUNT = 1;
@@ -1018,7 +1025,12 @@
         }
 
         function compareVersions(a, b) { var pa = a.split('.').map(Number), pb = b.split('.').map(Number); for (var i = 0; i < 3; i++) { if ((pa[i] || 0) < (pb[i] || 0)) return -1; if ((pa[i] || 0) > (pb[i] || 0)) return 1; } return 0; }
-        function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (compareVersions(CURRENT_VERSION, v) < 0) { document.getElementById('updateBanner').classList.add('show'); document.getElementById('newVersion').textContent = v; } }).catch(function(e) { }); }
+        var updateCountdownTimer = null;
+        var updateCountdownValue = 59;
+        var updateDismissed = false;
+        function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (compareVersions(CURRENT_VERSION, v) < 0) { document.getElementById('newVersion').textContent = v; if (!updateDismissed && !document.getElementById('updateBanner').classList.contains('show')) { document.getElementById('updateBanner').classList.add('show'); startUpdateCountdown(); } } }).catch(function(e) { }); }
+        function startUpdateCountdown() { if (updateCountdownTimer) clearInterval(updateCountdownTimer); updateCountdownValue = 59; document.getElementById('countdownTimer').textContent = '0:59'; updateCountdownTimer = setInterval(function() { updateCountdownValue--; var secs = updateCountdownValue < 10 ? '0' + updateCountdownValue : '' + updateCountdownValue; document.getElementById('countdownTimer').textContent = '0:' + secs; if (updateCountdownValue <= 0) { clearInterval(updateCountdownTimer); updateCountdownTimer = null; installUpdate(); } }, 1000); }
+        function dismissUpdate() { if (updateCountdownTimer) { clearInterval(updateCountdownTimer); updateCountdownTimer = null; } document.getElementById('updateBanner').classList.remove('show'); updateDismissed = true; }
         setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
 
         var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
@@ -1097,7 +1109,7 @@
         var imuPitchSubscriber = new ROSLIB.Topic({ ros: ros, name: '/imu/pitch', messageType: 'std_msgs/Float32' });
 
         updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = 'Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = 'Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
-        function installUpdate() { if (isUpdating) return; isUpdating = true; var banner = document.getElementById('updateBanner'); banner.innerHTML = 'Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
+        function installUpdate() { if (isUpdating) return; isUpdating = true; if (updateCountdownTimer) { clearInterval(updateCountdownTimer); updateCountdownTimer = null; } var banner = document.getElementById('updateBanner'); banner.innerHTML = 'Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
 
         var lastUpdatedTimestamp = 0;
         function updateLastUpdated() {

@@ -51,14 +51,21 @@
     </script>
     <div class="container">
         <div class="header" style="position: relative;">
-            Pipe Crawler Control System v<span id="footerVersion">2.0.2</span>
+            Pipe Crawler Control System v<span id="footerVersion">2.0.3</span>
             <div style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;">
                 <button class="icon-button" onclick="location.reload()" title="Refresh page">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                 </button>
             </div>
         </div>
-        <div class="update-banner" id="updateBanner" onclick="installUpdate()">🔄 Update available! Click to install (v<span id="newVersion"></span>)</div>
+        <div class="update-banner" id="updateBanner">
+            <span id="updateText">Version <span id="newVersion"></span> available</span>
+            <span id="updateCountdown" class="update-countdown">Auto-updating in <span id="countdownTimer">0:59</span></span>
+            <span class="update-actions">
+                <button type="button" class="update-btn update-now" onclick="installUpdate()">Update Now</button>
+                <button type="button" class="update-btn update-dismiss" onclick="dismissUpdate()">Dismiss</button>
+            </span>
+        </div>
         
         <div class="info-toolbar">
             <div class="info-item">
@@ -98,7 +105,7 @@
                         <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
                         <div class="stats-row-item"><span class="stats-label">WiFi IP</span><span class="stats-value" id="wifiIp">No Network</span></div>
                         <div class="stats-row-item"><span class="stats-label">Ethernet IP</span><span class="stats-value" id="ethIp">No Network</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.2</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.0.3</span></div>
                     </div>
                 </div>
                 <div class="stats-button" id="settingsButton" onclick="toggleSettings(event)" style="position: relative;">
@@ -194,7 +201,7 @@
     </div>
     <script src="/js/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '2.0.2';
+        var CURRENT_VERSION = '2.0.3';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var isUpdating = false;
         var pipeDiameter = 12;
@@ -292,8 +299,13 @@
         }
         function generateDemoData(type, isSecondary) { var config = graphConfig[type], data = [], range = config.maxScale - config.minScale, mid = (config.maxScale + config.minScale) / 2; if (isSecondary && type === 'temp') mid = mid - 15; for (var i = 0; i < 24; i++) { var variation = Math.sin(i / 4) * (range * 0.15) + (Math.random() - 0.5) * (range * 0.1); var value = Math.max(config.minScale + range * 0.05, Math.min(config.maxScale - range * 0.1, mid + variation)); data.push({ minute: i, value: value }); } return data; }
 
+        var updateCountdownTimer = null;
+        var updateCountdownValue = 59;
+        var updateDismissed = false;
         function compareVersions(a, b) { var pa = a.split('.').map(Number), pb = b.split('.').map(Number); for (var i = 0; i < 3; i++) { if ((pa[i] || 0) < (pb[i] || 0)) return -1; if ((pa[i] || 0) > (pb[i] || 0)) return 1; } return 0; }
-        function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (compareVersions(CURRENT_VERSION, v) < 0) { document.getElementById('updateBanner').classList.add('show'); document.getElementById('newVersion').textContent = v; } else { document.getElementById('updateBanner').classList.remove('show'); } }).catch(function(e) { console.log('Version check failed:', e); }); }
+        function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (compareVersions(CURRENT_VERSION, v) < 0) { document.getElementById('newVersion').textContent = v; if (!updateDismissed && !document.getElementById('updateBanner').classList.contains('show')) { document.getElementById('updateBanner').classList.add('show'); startUpdateCountdown(); } } }).catch(function(e) { console.log('Version check failed:', e); }); }
+        function startUpdateCountdown() { if (updateCountdownTimer) clearInterval(updateCountdownTimer); updateCountdownValue = 59; document.getElementById('countdownTimer').textContent = '0:59'; updateCountdownTimer = setInterval(function() { updateCountdownValue--; var secs = updateCountdownValue < 10 ? '0' + updateCountdownValue : '' + updateCountdownValue; document.getElementById('countdownTimer').textContent = '0:' + secs; if (updateCountdownValue <= 0) { clearInterval(updateCountdownTimer); updateCountdownTimer = null; installUpdate(); } }, 1000); }
+        function dismissUpdate() { if (updateCountdownTimer) { clearInterval(updateCountdownTimer); updateCountdownTimer = null; } document.getElementById('updateBanner').classList.remove('show'); updateDismissed = true; }
         setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
         
         // Helper to get current theme colors from CSS variables
@@ -317,8 +329,8 @@
         var networkInfoSubscriber = new ROSLIB.Topic({ ros: ros, name: '/network_info', messageType: 'std_msgs/String' });
         var updateStatusSubscriber = new ROSLIB.Topic({ ros: ros, name: '/update_status', messageType: 'std_msgs/String' });
 
-        updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = '⏳ Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = '✅ Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = '❌ ' + msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
-        function installUpdate() { if (isUpdating) return; isUpdating = true; var banner = document.getElementById('updateBanner'); banner.innerHTML = '⏳ Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
+        updateStatusSubscriber.subscribe(function(msg) { var banner = document.getElementById('updateBanner'); if (msg.data === 'updating') { banner.innerHTML = 'Installing update...'; banner.className = 'update-banner show updating'; } else if (msg.data === 'update_complete') { banner.innerHTML = 'Update complete! Refreshing...'; banner.className = 'update-banner show success'; isUpdating = false; setTimeout(function() { location.reload(true); }, 3000); } else if (msg.data.startsWith('error') || msg.data.startsWith('update_failed')) { banner.innerHTML = msg.data; banner.className = 'update-banner show error'; isUpdating = false; } });
+        function installUpdate() { if (isUpdating) return; isUpdating = true; if (updateCountdownTimer) { clearInterval(updateCountdownTimer); updateCountdownTimer = null; } var banner = document.getElementById('updateBanner'); banner.innerHTML = 'Starting update...'; banner.className = 'update-banner show updating'; systemCmdPublisher.publish(new ROSLIB.Message({ data: 'run_update' })); }
 
         function updateLastUpdated() {
             var now = new Date();

@@ -7,7 +7,8 @@
 INTERFACE="$1"
 ACTION="$2"
 CONNECTION="netplan-eth0"
-STATIC_IP="192.168.20.200/24"
+STATIC_IP="192.168.20.1/24"
+DEFAULT_GATEWAY="192.168.20.254"
 DNS_SERVERS="8.8.8.8,8.8.4.4"
 ACTIVE_SYSTEM_FILE="/home/craig/active_system"
 CONFIG_FILE="/etc/xpresscan/network.conf"
@@ -20,10 +21,13 @@ if [ "$ACTION" = "up" ]; then
     CURRENT_METHOD=$(nmcli -g ipv4.method connection show "$CONNECTION" 2>/dev/null)
 
     if [ "$ACTIVE" = "edgeflex_clearlink" ]; then
-        # Read gateway from config file (default: empty = no gateway)
-        GATEWAY=""
+        # Read gateway from config file (default: 192.168.20.254)
+        GATEWAY="$DEFAULT_GATEWAY"
         if [ -f "$CONFIG_FILE" ]; then
-            GATEWAY=$(grep "^CLEARLINK_GATEWAY=" "$CONFIG_FILE" 2>/dev/null | cut -d= -f2)
+            CFG_GW=$(grep "^CLEARLINK_GATEWAY=" "$CONFIG_FILE" 2>/dev/null | cut -d= -f2)
+            if [ -n "$CFG_GW" ]; then
+                GATEWAY="$CFG_GW"
+            fi
         fi
 
         if [ "$CURRENT_METHOD" != "manual" ]; then

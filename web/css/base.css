@@ -703,17 +703,42 @@ button.control-btn.btn-auto:hover { background: var(--button-success-hover); }
     padding: 12px 16px;
     border-radius: 12px;
     margin-bottom: 20px;
-    text-align: center;
     font-size: 14px;
     font-weight: 500;
-    cursor: pointer;
     transition: background 0.2s;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
-.update-banner:hover { background: var(--button-primary-hover); }
-.update-banner.show { display: block; }
+.update-banner.show { display: flex; }
+.update-banner.updating,
+.update-banner.success,
+.update-banner.error { text-align: center; justify-content: center; }
 .update-banner.updating { background: var(--status-warning); cursor: wait; }
 .update-banner.success { background: var(--status-ok); }
 .update-banner.error { background: var(--status-error); }
+.update-banner.updating .update-actions,
+.update-banner.updating .update-countdown,
+.update-banner.success .update-actions,
+.update-banner.success .update-countdown,
+.update-banner.error .update-actions,
+.update-banner.error .update-countdown { display: none; }
+.update-countdown { opacity: 0.9; font-size: 13px; }
+.update-actions { display: flex; gap: 8px; }
+.update-btn {
+    border: none;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    color: white;
+}
+.update-btn.update-now { background: var(--button-primary-bg); }
+.update-btn.update-now:hover { background: var(--button-primary-hover); }
+.update-btn.update-dismiss { background: var(--button-secondary-bg); }
+.update-btn.update-dismiss:hover { background: var(--button-secondary-hover); }
 
 /* ── Header & Footer ──────────────────────────────────── */
 .header {

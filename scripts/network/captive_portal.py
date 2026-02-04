@@ -132,16 +132,9 @@ def scan_wifi_networks():
     """Scan for available WiFi networks."""
     networks = []
     try:
-        # Trigger a rescan (don't wait for it, use --rescan yes on list instead)
-        subprocess.run(
-            ["nmcli", "device", "wifi", "rescan"],
-            capture_output=True, timeout=5
-        )
-
-        # Get list of networks with shorter timeout
         result = subprocess.run(
-            ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "device", "wifi", "list"],
-            capture_output=True, text=True, timeout=5
+            ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "device", "wifi", "list", "--rescan", "yes"],
+            capture_output=True, text=True, timeout=15
         )
 
         seen = set()

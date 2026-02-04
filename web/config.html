@@ -1059,11 +1059,9 @@
                     // Show gateway row only for ClearLink configs
                     if (data.crawler_id === 'edgeflex_clearlink') {
                         document.getElementById('gatewayRow').style.display = '';
-                        var gw = data.clearlink_gateway || '';
-                        document.getElementById('gatewayDisplay').textContent = gw || 'Not set';
-                        if (!gw) {
-                            document.getElementById('gatewayDisplay').classList.add('none');
-                        }
+                        var gw = data.clearlink_gateway || '192.168.20.254';
+                        document.getElementById('gatewayDisplay').textContent = gw;
+                        document.getElementById('gatewayDisplay').classList.remove('none');
                     } else {
                         document.getElementById('gatewayRow').style.display = 'none';
                     }
