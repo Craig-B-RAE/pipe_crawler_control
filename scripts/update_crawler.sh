@@ -2,7 +2,7 @@
 #
 # Crawler Update Script
 # Called by update_manager.py when user clicks "Update" in the web UI.
-# Pulls latest from GitHub main branch for all repos, rebuilds, and redeploys.
+# Pulls latest from GitHub main branch for all repos and redeploys.
 #
 set -e
 
@@ -33,15 +33,7 @@ done
 
 echo "All repos updated to latest main."
 
-# Step 2: Rebuild ROS2 workspace
-echo "Building ROS2 workspace..."
-cd "$WS"
-source /opt/ros/jazzy/setup.bash
-colcon build --symlink-install
-
-echo "Build complete."
-
-# Step 3: Deploy all files (web UI, backend, scripts) and restart services
+# Step 2: Deploy all files (web UI, backend, scripts) and restart services
 echo "Running deploy script..."
 sudo "$SRC/pipe_crawler_control/scripts/deploy.sh" --restart
 
