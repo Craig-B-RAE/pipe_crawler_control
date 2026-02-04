@@ -33,9 +33,14 @@ done
 
 echo "All repos updated to latest main."
 
-# Step 2: Deploy all files (web UI, backend, scripts) and restart services
+# Step 2: Deploy all files (web UI, backend, scripts) WITHOUT restart
 echo "Running deploy script..."
-sudo "$SRC/pipe_crawler_control/scripts/deploy.sh" --restart
+sudo "$SRC/pipe_crawler_control/scripts/deploy.sh"
+
+# Step 2b: Schedule delayed service restart (5 seconds)
+# This allows the update_manager to send 'update_complete' status before services restart
+echo "Scheduling service restart in 5 seconds..."
+nohup bash -c 'sleep 5 && sudo systemctl restart xpresscan-crawler-ui pipe_crawler crawler-heartbeat 2>/dev/null' >/dev/null 2>&1 &
 
 # Step 4: Set active system HTML if configured
 ACTIVE_SYSTEM_FILE=~/active_system

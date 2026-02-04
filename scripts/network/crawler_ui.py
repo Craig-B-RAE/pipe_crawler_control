@@ -1869,6 +1869,18 @@ def serve_js(filename):
     return send_from_directory(js_dir, filename)
 
 
+@app.route("/manifest.json")
+def serve_manifest():
+    """Serve PWA manifest."""
+    return send_from_directory(HTML_DIR, "manifest.json")
+
+
+@app.route("/sw.js")
+def serve_sw():
+    """Serve service worker."""
+    return send_from_directory(HTML_DIR, "sw.js")
+
+
 @app.route("/api/security/boot_status")
 def api_boot_status():
     """Get current boot/security check status."""
