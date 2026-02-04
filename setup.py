@@ -6,7 +6,7 @@ package_name = 'pipe_crawler_control'
 
 setup(
     name=package_name,
-    version='2.2.0',
+    version='2.0.2',
     packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
