@@ -583,6 +583,59 @@ def api_status():
     return jsonify(get_system_status())
 
 
+@app.route("/api/run_update", methods=["POST"])
+def api_run_update():
+    """Run system update: git pull, deploy, then delayed service restart."""
+    repo = "/home/craig/ros2_ws/src/pipe_crawler_control"
+    try:
+        # Step 1: Git pull on main branch for all repos
+        src = "/home/craig/ros2_ws/src"
+        repos = ["pipe_crawler_control", "clearlink_driver", "clearlink_interfaces",
+                 "roboclaw_driver2", "roboclaw_interfaces"]
+        for r in repos:
+            repo_path = os.path.join(src, r)
+            if os.path.isdir(repo_path):
+                env = os.environ.copy()
+                env["GIT_DIR"] = os.path.join(repo_path, ".git")
+                env["GIT_WORK_TREE"] = repo_path
+                subprocess.run(["git", "fetch", "origin", "main"], env=env,
+                               capture_output=True, timeout=30)
+                subprocess.run(["git", "checkout", "main"], env=env,
+                               capture_output=True, timeout=10)
+                subprocess.run(["git", "reset", "--hard", "origin/main"], env=env,
+                               capture_output=True, timeout=10)
+
+        # Step 2: Deploy WITHOUT restart
+        deploy_script = os.path.join(repo, "scripts", "deploy.sh")
+        result = subprocess.run(["sudo", deploy_script], capture_output=True, text=True, timeout=60)
+        if result.returncode != 0:
+            return jsonify({"status": "error", "message": result.stderr or "Deploy failed"}), 500
+
+        # Step 3: Switch repos back to development
+        for r in repos:
+            repo_path = os.path.join(src, r)
+            if os.path.isdir(repo_path):
+                env = os.environ.copy()
+                env["GIT_DIR"] = os.path.join(repo_path, ".git")
+                env["GIT_WORK_TREE"] = repo_path
+                subprocess.run(["git", "checkout", "development"], env=env,
+                               capture_output=True, timeout=10)
+
+        # Step 4: Schedule delayed service restart (5 seconds)
+        subprocess.Popen(
+            ["bash", "-c", "sleep 5 && sudo systemctl restart xpresscan-crawler-ui pipe_crawler crawler-heartbeat 2>/dev/null"],
+            start_new_session=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+        # Step 5: Return success BEFORE restart happens
+        return jsonify({"status": "success", "message": "Update complete"})
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route("/api/last_updated")
 def api_last_updated():
     """Return the date of the last git commit (i.e. last system update)."""
