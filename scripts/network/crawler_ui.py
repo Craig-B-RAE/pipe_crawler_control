@@ -1069,6 +1069,25 @@ def update_hotspot_connection(ssid, password):
 
         if result.returncode == 0:
             print(f"Updated hotspot connection: SSID={ssid}")
+
+            # Restart hotspot so changes take effect immediately
+            # Check if hotspot is currently active
+            active = subprocess.run(
+                ["nmcli", "-t", "-f", "GENERAL.STATE", "connection", "show", "--active", HOTSPOT_CONNECTION],
+                capture_output=True, text=True, timeout=5
+            )
+            if active.returncode == 0:
+                print("Restarting hotspot to apply new SSID/password...")
+                subprocess.run(
+                    ["sudo", "nmcli", "connection", "down", HOTSPOT_CONNECTION],
+                    capture_output=True, text=True, timeout=10
+                )
+                subprocess.run(
+                    ["sudo", "nmcli", "connection", "up", HOTSPOT_CONNECTION],
+                    capture_output=True, text=True, timeout=10
+                )
+                print("Hotspot restarted")
+
             return True
         else:
             print(f"Failed to update hotspot: {result.stderr}")
