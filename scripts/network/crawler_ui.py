@@ -7,7 +7,8 @@ Accessible at http://[hostname].local (port 80)
 
 Serves different HTML interfaces based on crawler type:
 - Magnetic Pipe Crawler: magnetic_phased_array.html
-- XPressCan: new_xpress_scan.html
+- Express Scan Single Wall: xpressscan_singlewall.html
+- Express Scan Double Wall: xpressscan_doublewall.html
 - EdgeFlex: edgeflex.html
 """
 
@@ -139,13 +140,14 @@ DEFAULT_UI_SETTINGS = {
     "pipeDiameter": 12,
     "speed": 4.0,
     "ramp": 50,
-    "motorDriver": "clearlink"  # Default for EdgeFlex; magnetic/xpresscan use "roboclaw"
+    "motorDriver": "clearlink"  # Default for EdgeFlex; magnetic/xpressscan use "roboclaw"
 }
 
 # Crawler type to HTML file mapping
 CRAWLER_HTML = {
     "magnetic": "magnetic_phased_array.html",
-    "xpresscan": "new_xpress_scan.html",
+    "xpressscan_singlewall": "xpressscan_singlewall.html",
+    "xpressscan_doublewall": "xpressscan_doublewall.html",
     "edgeflex": "edgeflex.html",
     "edgeflex_clearlink": "edgeflex_clearlink.html"
 }
@@ -212,7 +214,8 @@ def get_system_status():
             # Fallback to defaults based on hostname
             default_names = {
                 "magnetic": "Magnetic Pipe Crawler",
-                "xpresscan": "XPressCan",
+                "xpressscan-sw": "Express Scan - Single Wall",
+                "xpressscan-dw": "Express Scan - Double Wall",
                 "edgeflex": "EdgeFlex"
             }
             status["crawler_name"] = default_names.get(status["hostname"], status["hostname"])
@@ -936,12 +939,20 @@ DEFAULT_CRAWLERS = {
         "html": "magnetic_phased_array.html",
         "motor_driver": "roboclaw"
     },
-    "xpresscan": {
-        "hostname": "xpresscan",
-        "ip": "10.42.0.12/24",
-        "name": "XPressCan",
-        "yaml": "new_xpress_scan.yaml",
-        "html": "new_xpress_scan.html",
+    "xpressscan_singlewall": {
+        "hostname": "xpressscan-sw",
+        "ip": "10.42.0.15/24",
+        "name": "Express Scan - Single Wall",
+        "yaml": "xpressscan_singlewall.yaml",
+        "html": "xpressscan_singlewall.html",
+        "motor_driver": "roboclaw"
+    },
+    "xpressscan_doublewall": {
+        "hostname": "xpressscan-dw",
+        "ip": "10.42.0.16/24",
+        "name": "Express Scan - Double Wall",
+        "yaml": "xpressscan_doublewall.yaml",
+        "html": "xpressscan_doublewall.html",
         "motor_driver": "roboclaw"
     },
     "edgeflex": {
@@ -2831,7 +2842,7 @@ def get_support_system_info():
         # Get UI settings for all crawlers
         try:
             all_ui_settings = {}
-            for crawler_id in ["magnetic", "xpresscan", "edgeflex", "edgeflex_clearlink"]:
+            for crawler_id in ["magnetic", "xpressscan_singlewall", "xpressscan_doublewall", "edgeflex", "edgeflex_clearlink"]:
                 settings_path = f"/etc/xpresscan/ui_settings_{crawler_id}.json"
                 if os.path.exists(settings_path):
                     with open(settings_path, "r") as f:
