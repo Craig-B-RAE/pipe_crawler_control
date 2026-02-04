@@ -856,7 +856,7 @@
 
     <!-- Config Tools Modal -->
     <div id="configToolsModal" class="modal">
-        <div class="modal-content" style="max-width: 420px;">
+        <div class="modal-content" style="max-width: 420px; margin: auto;">
             <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">
                 <span>Config Tools</span>
                 <button onclick="closeConfigTools()" style="background: none; border: none; cursor: pointer; padding: 4px;">
@@ -876,39 +876,44 @@
             </div>
 
             <!-- Page Preview (Debug) -->
-            <div style="margin-bottom: 20px;">
-                <div class="section-title" style="margin-bottom: 10px;">Page Preview (Debug)</div>
-                <div style="background: #f9f9f9; border-radius: 10px; padding: 12px; max-height: 300px; overflow-y: auto;">
-                    <p style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 10px;">Test pages in debug mode:</p>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <a href="/boot_splash.html?debug=true" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            Boot Splash Screen
-                        </a>
-                        <a href="/device_mismatch.html?debug=true" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            Device Mismatch Page
-                        </a>
-                        <a href="/config.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                            Config Page
-                        </a>
-                        <a href="/index.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                            Index (Home)
-                        </a>
-                        <a href="/magnetic_phased_array.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                            Magnetic Phased Array
-                        </a>
-                        <a href="/edgeflex.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                            EdgeFlex RoboClaw
-                        </a>
-                        <a href="/edgeflex_clearlink.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                            EdgeFlex ClearLink
-                        </a>
+            <div style="margin-bottom: 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden;">
+                <div onclick="togglePagePreview()" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; cursor: pointer; -webkit-user-select: none; user-select: none;">
+                    <div class="section-title" style="margin-bottom: 0; font-size: 13px;">Page Preview (Debug)</div>
+                    <svg id="pagePreviewChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.3s ease; flex-shrink: 0;"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div id="pagePreviewBody" style="max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.35s ease, opacity 0.25s ease;">
+                    <div style="padding: 0 14px 14px 14px;">
+                        <p style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 10px;">Test pages in debug mode:</p>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <a href="/boot_splash.html?debug=true" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                Boot Splash Screen
+                            </a>
+                            <a href="/device_mismatch.html?debug=true" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                Device Mismatch Page
+                            </a>
+                            <a href="/config.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                Config Page
+                            </a>
+                            <a href="/index.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                Index (Home)
+                            </a>
+                            <a href="/magnetic_phased_array.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                Magnetic Phased Array
+                            </a>
+                            <a href="/edgeflex.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                EdgeFlex RoboClaw
+                            </a>
+                            <a href="/edgeflex_clearlink.html" style="display: flex; align-items: center; gap: 8px; color: var(--status-info); font-size: 12px; text-decoration: none; padding: 8px 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                EdgeFlex ClearLink
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1244,6 +1249,21 @@
 
         function closeConfigTools() {
             document.getElementById('configToolsModal').classList.remove('show');
+        }
+
+        function togglePagePreview() {
+            var body = document.getElementById('pagePreviewBody');
+            var chevron = document.getElementById('pagePreviewChevron');
+            var isOpen = body.style.maxHeight !== '0px' && body.style.maxHeight !== '0' && body.style.maxHeight !== '';
+            if (isOpen) {
+                body.style.maxHeight = '0';
+                body.style.opacity = '0';
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                body.style.maxHeight = '500px';
+                body.style.opacity = '1';
+                chevron.style.transform = 'rotate(180deg)';
+            }
         }
 
         function onCrawlerSelectChange() {
