@@ -51,7 +51,7 @@
     </script>
     <div class="container">
         <div class="header" style="position: relative;">
-            Pipe Crawler Control System v<span id="footerVersion">2.3.2</span>
+            Pipe Crawler Control System v<span id="footerVersion">2.3.3</span>
             <div style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;">
                 <button class="icon-button" onclick="location.reload()" title="Refresh page">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -105,7 +105,7 @@
                         <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="degreeValueStats">0</span>°</span></div>
                         <div class="stats-row-item"><span class="stats-label">WiFi IP</span><span class="stats-value" id="wifiIp">No Network</span></div>
                         <div class="stats-row-item"><span class="stats-label">Ethernet IP</span><span class="stats-value" id="ethIp">No Network</span></div>
-                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.3.2</span></div>
+                        <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.3.3</span></div>
                     </div>
                 </div>
                 <div class="stats-button" id="settingsButton" onclick="toggleSettings(event)" style="position: relative;">
@@ -201,7 +201,7 @@
     </div>
     <script src="/js/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '2.3.2';
+        var CURRENT_VERSION = '2.3.3';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var isUpdating = false;
         var pipeDiameter = 12;
