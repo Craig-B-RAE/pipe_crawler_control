@@ -353,12 +353,20 @@
             position: fixed;
             top: 0;
             left: 0;
+            right: 0;
+            bottom: 0;
             width: 100%;
             height: 100%;
             background: var(--modal-overlay);
             justify-content: center;
             align-items: center;
             z-index: 100;
+            border-radius: 0;
+            padding: 0;
+            max-width: none;
+            max-height: none;
+            overflow: visible;
+            box-shadow: none;
         }
         .modal.show { display: flex; }
         .modal-content {
@@ -852,6 +860,7 @@
                 <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 6px;">
                     Current: <span id="currentCrawlerName" style="font-weight: 500;">--</span>
                 </div>
+                <div style="font-size: 11px; color: var(--status-warning); margin-top: 6px;">A reboot is required to apply this change.</div>
             </div>
 
             <!-- Page Preview (Debug) -->
