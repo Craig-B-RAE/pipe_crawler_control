@@ -1,4 +1,4 @@
-var CACHE_NAME = 'pipe-crawler-v3';
+var CACHE_NAME = 'pipe-crawler-v4';
 var SHELL_URLS = [
   '/',
   '/index.html',
@@ -35,8 +35,8 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('fetch', function(event) {
   var url = new URL(event.request.url);
 
-  // Never cache websocket or API requests
-  if (url.protocol === 'ws:' || url.protocol === 'wss:' || url.pathname.startsWith('/api/')) {
+  // Never cache websocket, API, or external requests
+  if (url.protocol === 'ws:' || url.protocol === 'wss:' || url.pathname.startsWith('/api/') || url.origin !== self.location.origin) {
     return;
   }
 
