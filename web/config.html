@@ -837,7 +837,7 @@
         </div>
 
         <!-- Reboot Section -->
-        <div class="section" style="margin-top: 20px; text-align: center;">
+        <div class="section" data-no-collapse style="margin-top: 20px; text-align: center;">
             <div class="section-title">System Control</div>
             <div class="reboot-notice" style="text-align: center;">
                 Changes will be saved and applied after reboot.
@@ -2383,6 +2383,7 @@
             var allSections = document.querySelectorAll('.container > .section');
             allSections.forEach(function(section) {
                 if (section.style.display === 'none') return;
+                if (section.hasAttribute('data-no-collapse')) return;
                 var title = section.querySelector('.section-title');
                 if (!title) return;
 
