@@ -431,26 +431,31 @@
                             </div>
                             <button class="save-defaults-btn" onclick="saveAllDefaults()">Save as Defaults</button>
                             <div style="border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 12px;">
-                                <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Named Positions (degrees)</div>
-                                <div class="settings-row">
-                                    <span class="settings-label">Home Position</span>
-                                    <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                        <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
-                                        <input type="number" class="settings-input" id="namedPosHome" min="-360" max="360" step="0.1" value="0" onchange="saveNamedPosition('home', this.value)" style="width: 70px;">
-                                    </div>
+                                <div onclick="toggleNamedPositions()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                                    <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Named Positions (degrees)</div>
+                                    <svg id="namedPosChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary); transition: transform 0.25s ease;"><polyline points="6 9 12 15 18 9"/></svg>
                                 </div>
-                                <div class="settings-row">
-                                    <span class="settings-label">Start Position</span>
-                                    <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                        <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
-                                        <input type="number" class="settings-input" id="namedPosStart" min="-360" max="360" step="0.1" value="0" onchange="saveNamedPosition('start', this.value)" style="width: 70px;">
+                                <div id="namedPosContent" style="max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.3s ease, opacity 0.25s ease;">
+                                    <div class="settings-row">
+                                        <span class="settings-label">Home Position</span>
+                                        <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                            <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
+                                            <input type="number" class="settings-input" id="namedPosHome" min="-360" max="360" step="0.1" value="0" onchange="saveNamedPosition('home', this.value)" style="width: 70px;">
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="settings-row">
-                                    <span class="settings-label">Tube Removal</span>
-                                    <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                        <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
-                                        <input type="number" class="settings-input" id="namedPosTubeRemoval" min="-360" max="360" step="0.1" value="180" onchange="saveNamedPosition('tubeRemoval', this.value)" style="width: 70px;">
+                                    <div class="settings-row">
+                                        <span class="settings-label">Start Position</span>
+                                        <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                            <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
+                                            <input type="number" class="settings-input" id="namedPosStart" min="-360" max="360" step="0.1" value="0" onchange="saveNamedPosition('start', this.value)" style="width: 70px;">
+                                        </div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <span class="settings-label">Tube Removal</span>
+                                        <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                            <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
+                                            <input type="number" class="settings-input" id="namedPosTubeRemoval" min="-360" max="360" step="0.1" value="180" onchange="saveNamedPosition('tubeRemoval', this.value)" style="width: 70px;">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1339,6 +1344,19 @@
                     if (settings.imuPitchOffset !== undefined) {
                         imuPitchOffset = settings.imuPitchOffset;
                     }
+                    // Load named positions
+                    if (settings.namedPosHome !== undefined) {
+                        namedPosHome = settings.namedPosHome;
+                        document.getElementById('namedPosHome').value = namedPosHome;
+                    }
+                    if (settings.namedPosStart !== undefined) {
+                        namedPosStart = settings.namedPosStart;
+                        document.getElementById('namedPosStart').value = namedPosStart;
+                    }
+                    if (settings.namedPosTubeRemoval !== undefined) {
+                        namedPosTubeRemoval = settings.namedPosTubeRemoval;
+                        document.getElementById('namedPosTubeRemoval').value = namedPosTubeRemoval;
+                    }
                     console.log('Settings loaded: jogSpeedInSec=' + jogSpeedInSec + ', rampPercent=' + rampPercent + ', stepsPerInch=' + stepsPerInch + ', maxStepsPerSec=' + maxStepsPerSec);
                     savedDefaults = {
                         pipeDiameter: pipeDiameter,
@@ -1347,7 +1365,10 @@
                         rampPercent: rampPercent,
                         imuInvertAngle: imuInvertAngle,
                         imuRollOffset: imuRollOffset,
-                        imuPitchOffset: imuPitchOffset
+                        imuPitchOffset: imuPitchOffset,
+                        namedPosHome: namedPosHome,
+                        namedPosStart: namedPosStart,
+                        namedPosTubeRemoval: namedPosTubeRemoval
                     };
                 })
                 .catch(function(e) { console.error('Failed to load settings:', e); });
@@ -1385,7 +1406,10 @@
                 rampPercent: rampPercent,
                 imuInvertAngle: imuInvertAngle,
                 imuRollOffset: imuRollOffset,
-                imuPitchOffset: imuPitchOffset
+                imuPitchOffset: imuPitchOffset,
+                namedPosHome: namedPosHome,
+                namedPosStart: namedPosStart,
+                namedPosTubeRemoval: namedPosTubeRemoval
             };
             fetch('/api/settings', {
                 method: 'POST',
@@ -1401,7 +1425,10 @@
                         rampPercent: rampPercent,
                         imuInvertAngle: imuInvertAngle,
                         imuRollOffset: imuRollOffset,
-                        imuPitchOffset: imuPitchOffset
+                        imuPitchOffset: imuPitchOffset,
+                        namedPosHome: namedPosHome,
+                        namedPosStart: namedPosStart,
+                        namedPosTubeRemoval: namedPosTubeRemoval
                     };
                     btn.classList.add('saved');
                     var count = 3;
@@ -1531,6 +1558,9 @@
         // Jog speed and ramp settings for ClearLink (user-facing units)
         var jogSpeedInSec = 0.5;   // in/sec (user setting)
         var rampPercent = 50;      // % of max (user setting)
+        var namedPosHome = 0;
+        var namedPosStart = 0;
+        var namedPosTubeRemoval = 180;
         var savedDefaults = null;
 
         function checkDefaultsMatch() {
@@ -1540,7 +1570,10 @@
                 distanceMode !== savedDefaults.distanceMode ||
                 jogSpeedInSec !== savedDefaults.jogSpeedInSec ||
                 rampPercent !== savedDefaults.rampPercent ||
-                imuInvertAngle !== savedDefaults.imuInvertAngle) {
+                imuInvertAngle !== savedDefaults.imuInvertAngle ||
+                namedPosHome !== savedDefaults.namedPosHome ||
+                namedPosStart !== savedDefaults.namedPosStart ||
+                namedPosTubeRemoval !== savedDefaults.namedPosTubeRemoval) {
                 btn.classList.add('show');
             } else {
                 btn.classList.remove('show');
@@ -2746,23 +2779,37 @@
         // ============================================================
         // Named Positions
         // ============================================================
-        function saveNamedPosition(name, value) {
-            localStorage.setItem('namedPos_' + name, parseFloat(value) || 0);
+        var namedPosOpen = false;
+        function toggleNamedPositions() {
+            var content = document.getElementById('namedPosContent');
+            var chevron = document.getElementById('namedPosChevron');
+            namedPosOpen = !namedPosOpen;
+            if (namedPosOpen) {
+                content.style.maxHeight = '200px';
+                content.style.opacity = '1';
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                content.style.maxHeight = '0';
+                content.style.opacity = '0';
+                chevron.style.transform = 'rotate(0deg)';
+            }
         }
 
-        function loadNamedPositions() {
-            var home = localStorage.getItem('namedPos_home');
-            var start = localStorage.getItem('namedPos_start');
-            var tubeRemoval = localStorage.getItem('namedPos_tubeRemoval');
-            if (home !== null) document.getElementById('namedPosHome').value = parseFloat(home);
-            if (start !== null) document.getElementById('namedPosStart').value = parseFloat(start);
-            if (tubeRemoval !== null) document.getElementById('namedPosTubeRemoval').value = parseFloat(tubeRemoval);
+        function saveNamedPosition(name, value) {
+            var parsed = parseFloat(value) || 0;
+            var data = {};
+            if (name === 'home') { namedPosHome = parsed; data.namedPosHome = parsed; }
+            else if (name === 'start') { namedPosStart = parsed; data.namedPosStart = parsed; }
+            else if (name === 'tubeRemoval') { namedPosTubeRemoval = parsed; data.namedPosTubeRemoval = parsed; }
+            saveSettings(data);
+            checkDefaultsMatch();
         }
 
         function getNamedPosition(name) {
-            var defaults = { home: 0, start: 0, tubeRemoval: 180 };
-            var val = localStorage.getItem('namedPos_' + name);
-            return val !== null ? parseFloat(val) : (defaults[name] || 0);
+            if (name === 'home') return namedPosHome;
+            if (name === 'start') return namedPosStart;
+            if (name === 'tubeRemoval') return namedPosTubeRemoval;
+            return 0;
         }
 
         // ============================================================
@@ -3138,7 +3185,7 @@
             showVoiceFeedback('Command not recognized: "' + text + '"', 'error');
         }
 
-        window.onload = function() { recalculate(); loadSettings(); loadUsbDevices(); loadFanSpeed(); loadSystemStats(); setTimeout(function() { resetPosition(); }, 100); acquireOperatorLock(); loadNamedPositions(); loadVoiceCommands(); };
+        window.onload = function() { recalculate(); loadSettings(); loadUsbDevices(); loadFanSpeed(); loadSystemStats(); setTimeout(function() { resetPosition(); }, 100); acquireOperatorLock(); loadVoiceCommands(); };
         setInterval(loadUsbDevices, 10000); // Refresh USB info every 10 seconds
         setInterval(loadFanSpeed, 5000); // Refresh fan speed every 5 seconds
         setInterval(loadSystemStats, 3000); // Refresh system stats every 3 seconds
