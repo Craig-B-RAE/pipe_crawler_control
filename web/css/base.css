@@ -737,7 +737,7 @@ button.control-btn.btn-auto:hover { background: var(--button-success-hover); }
 }
 .update-btn.update-now { background: var(--button-primary-bg); }
 .update-btn.update-now:hover { background: var(--button-primary-hover); }
-.update-btn.update-dismiss { background: var(--button-secondary-bg); }
+.update-btn.update-dismiss { background: var(--button-secondary-bg); color: var(--text-primary); }
 .update-btn.update-dismiss:hover { background: var(--button-secondary-hover); }
 
 /* ── Header & Footer ──────────────────────────────────── */
