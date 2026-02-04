@@ -1794,15 +1794,15 @@
             resetBtn.style.display = hasFault ? 'block' : 'none';
             }
 
-            // When ClearLink is disconnected, skip motor data updates
+            // When ClearLink is disconnected, show fault (red)
             if (!isConnected) {
-                document.getElementById('m1Status').className = 'motor-status stopped';
-                document.getElementById('m2Status').className = 'motor-status stopped';
+                document.getElementById('m1Status').className = 'motor-status fault';
+                document.getElementById('m2Status').className = 'motor-status fault';
                 return;
             }
 
-            // Update motor status indicators (fault=red, running=green, stopped=yellow)
-            var m1StatusClass = 'stopped';  // default yellow
+            // Update motor status indicators (fault=red, running=green, stopped=amber)
+            var m1StatusClass = 'stopped';  // default amber
             if (m0Fault) {
                 m1StatusClass = 'fault';    // red
             } else if (m0Moving) {
@@ -1810,7 +1810,7 @@
             }
             document.getElementById('m1Status').className = 'motor-status ' + m1StatusClass;
 
-            var m2StatusClass = 'stopped';  // default yellow
+            var m2StatusClass = 'stopped';  // default amber
             if (m1Fault) {
                 m2StatusClass = 'fault';    // red
             } else if (m1Moving) {

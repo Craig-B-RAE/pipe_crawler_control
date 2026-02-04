@@ -41,7 +41,7 @@
 
     /* Motor Status */
     --motor-running: #34c759;
-    --motor-stopped: #8e8e93;
+    --motor-stopped: #ff9f0a;
 
     /* Inputs */
     --input-bg: #ffffff;
@@ -111,7 +111,7 @@
 
     /* Motor Status */
     --motor-running: #30d158;
-    --motor-stopped: #8e8e93;
+    --motor-stopped: #ffd60a;
 
     /* Inputs */
     --input-bg: #333333;
