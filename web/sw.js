@@ -1,4 +1,4 @@
-var CACHE_NAME = 'pipe-crawler-v2';
+var CACHE_NAME = 'pipe-crawler-v3';
 var SHELL_URLS = [
   '/',
   '/index.html',
