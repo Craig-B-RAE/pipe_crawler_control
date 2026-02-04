@@ -17,12 +17,14 @@ WEB_ROOT="/var/www/html"
 declare -A SYSTEMS
 SYSTEMS["1"]="magnetic_phased_array"
 SYSTEMS["2"]="edgeflex"
-SYSTEMS["3"]="new_xpress_scan"
+SYSTEMS["3"]="xpressscan_singlewall"
+SYSTEMS["4"]="xpressscan_doublewall"
 
 declare -A SYSTEM_NAMES
 SYSTEM_NAMES["magnetic_phased_array"]="Magnetic Phased Array Crawler"
 SYSTEM_NAMES["edgeflex"]="EdgeFlex"
-SYSTEM_NAMES["new_xpress_scan"]="New Xpress Scan"
+SYSTEM_NAMES["xpressscan_singlewall"]="Express Scan - Single Wall"
+SYSTEM_NAMES["xpressscan_doublewall"]="Express Scan - Double Wall"
 
 show_current() {
     if [ -f "$ACTIVE_SYSTEM_FILE" ]; then
@@ -44,7 +46,8 @@ show_menu() {
     echo "Select your system:"
     echo "  1) Magnetic Phased Array Crawler"
     echo "  2) EdgeFlex"
-    echo "  3) New Xpress Scan"
+    echo "  3) Express Scan - Single Wall"
+    echo "  4) Express Scan - Double Wall"
     echo
     echo "  q) Quit without changes"
     echo
@@ -99,10 +102,10 @@ setup_system() {
 # Main
 show_menu
 
-read -p "Enter choice [1-3, q]: " choice
+read -p "Enter choice [1-4, q]: " choice
 
 case "$choice" in
-    1|2|3)
+    1|2|3|4)
         system_id="${SYSTEMS[$choice]}"
         setup_system "$system_id"
         ;;

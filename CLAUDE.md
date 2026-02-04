@@ -25,7 +25,8 @@
 |------|------------|-----------------------|
 | `web/edgeflex_clearlink.html` | ClearLink motor | `jogSpeedInSec`, `rampPercent` |
 | `web/edgeflex.html` | Roboclaw motor | `speed`, `ramp` from DOM |
-| `web/new_xpress_scan.html` | Roboclaw motor | `speed`, `ramp` from DOM |
+| `web/xpressscan_singlewall.html` | Roboclaw motor | `speed`, `ramp` from DOM |
+| `web/xpressscan_doublewall.html` | Roboclaw motor | `speed`, `ramp` from DOM |
 | `web/magnetic_phased_array.html` | Roboclaw motor | `speed`, `ramp` from DOM |
 
 ### Other Pages

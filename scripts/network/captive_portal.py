@@ -31,12 +31,20 @@ DEFAULT_CRAWLERS = {
         "html": "magnetic_phased_array.html",
         "motor_driver": "roboclaw"
     },
-    "xpresscan": {
-        "hostname": "xpresscan",
-        "ip": "10.42.0.12/24",
-        "name": "XPressCan",
-        "yaml": "new_xpress_scan.yaml",
-        "html": "new_xpress_scan.html",
+    "xpressscan_singlewall": {
+        "hostname": "xpressscan-sw",
+        "ip": "10.42.0.15/24",
+        "name": "Express Scan - Single Wall",
+        "yaml": "xpressscan_singlewall.yaml",
+        "html": "xpressscan_singlewall.html",
+        "motor_driver": "roboclaw"
+    },
+    "xpressscan_doublewall": {
+        "hostname": "xpressscan-dw",
+        "ip": "10.42.0.16/24",
+        "name": "Express Scan - Double Wall",
+        "yaml": "xpressscan_doublewall.yaml",
+        "html": "xpressscan_doublewall.html",
         "motor_driver": "roboclaw"
     },
     "edgeflex": {
