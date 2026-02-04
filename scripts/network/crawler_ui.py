@@ -599,8 +599,9 @@ def api_run_update():
                 env["GIT_DIR"] = os.path.join(repo_path, ".git")
                 env["GIT_WORK_TREE"] = repo_path
                 # Clean __pycache__ to prevent checkout conflicts
-                subprocess.run(["git", "clean", "-fd", "--", "*/__pycache__"],
-                               env=env, capture_output=True, timeout=10, cwd=repo_path)
+                subprocess.run(["find", repo_path, "-type", "d", "-name", "__pycache__",
+                               "-exec", "rm", "-rf", "{}", "+"],
+                               capture_output=True, timeout=10)
                 subprocess.run(["git", "fetch", "origin", "main"], env=env,
                                capture_output=True, timeout=30)
                 subprocess.run(["git", "checkout", "main"], env=env,

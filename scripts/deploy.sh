@@ -24,6 +24,10 @@ echo "=== Deploying pipe_crawler_control ==="
 echo "  Repo: $REPO_DIR"
 echo ""
 
+# Clean __pycache__ from repo to prevent git conflicts
+find "$REPO_DIR" -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null
+echo "[OK] Cleaned __pycache__"
+
 # Ensure target directories exist
 mkdir -p /opt/xpresscan/html
 mkdir -p /opt/crawler

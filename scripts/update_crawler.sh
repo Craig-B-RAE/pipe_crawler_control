@@ -26,7 +26,7 @@ echo "=== Crawler Update Started ==="
 for repo in "${REPOS[@]}"; do
   echo "Updating $repo..."
   cd "$SRC/$repo"
-  git clean -fd -- '*/__pycache__' 2>/dev/null
+  find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null
   git fetch origin main
   git checkout main
   git reset --hard origin/main
