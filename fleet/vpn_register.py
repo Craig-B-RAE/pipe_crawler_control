@@ -146,12 +146,12 @@ def main():
             subprocess.run(["systemctl", "enable", "wg-quick@wg0"], capture_output=True)
             return 0
 
-    # Read token — if no token file, VPN is not configured; exit cleanly
-    if not os.path.exists(TOKEN_PATH):
-        log(f"No token file at {TOKEN_PATH} — VPN not configured, skipping registration.")
-        return 0
+    # Read token
     try:
         token = read_token()
+    except FileNotFoundError:
+        log(f"ERROR: Token file not found at {TOKEN_PATH}")
+        return 1
     except Exception as e:
         log(f"ERROR: Could not read token: {e}")
         return 1
