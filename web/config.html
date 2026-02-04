@@ -1162,12 +1162,31 @@
                 return;
             }
 
-            pendingHotspotSsid = ssid;
-            pendingHotspotPassword = password;
-            document.getElementById('currentSsidDisplay').textContent = ssid;
-
-            closeHotspotSettings();
-            showSuccess('Hotspot settings updated. Click "Reboot and Save Changes" to apply.');
+            // Save to backend immediately
+            fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    crawler_id: selectedCrawler,
+                    ssid: ssid,
+                    password: password
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    pendingHotspotSsid = ssid;
+                    pendingHotspotPassword = password;
+                    document.getElementById('currentSsidDisplay').textContent = ssid;
+                    closeHotspotSettings();
+                    showSuccess('Hotspot settings saved and applied.');
+                } else {
+                    alert('Failed to save: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(function() {
+                alert('Network error saving hotspot settings.');
+            });
         }
 
         function showError(msg) {
