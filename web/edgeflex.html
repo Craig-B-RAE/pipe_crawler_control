@@ -753,6 +753,13 @@
                         savedDriver = settings.motorDriver;
                         updateDriverToggle();
                     }
+                    // Load saved speed and ramp
+                    if (settings.speed != null) {
+                        document.getElementById('speedInput').value = parseFloat(settings.speed).toFixed(1);
+                    }
+                    if (settings.ramp != null) {
+                        document.getElementById('rampInput').value = parseInt(settings.ramp);
+                    }
                     savedDefaults = {
                         pipeDiameter: pipeDiameter,
                         distanceMode: distanceMode,
@@ -1122,7 +1129,7 @@
         }
         setInterval(checkForStaleConnection, 2000);
 
-        ros.on('connection', function() { connectionTime = Date.now(); updateConnectionStatus('Connected', true); updateSpeed(4.0); updateRamp(50); });
+        ros.on('connection', function() { connectionTime = Date.now(); updateConnectionStatus('Connected', true); updateSpeed(parseFloat(document.getElementById('speedInput').value) || 4.0); updateRamp(parseInt(document.getElementById('rampInput').value) || 50); });
         ros.on('error', function() { updateConnectionStatus('Error', false); });
         ros.on('close', function() { updateConnectionStatus('Disconnected', false); connectionTime = 0; });
 

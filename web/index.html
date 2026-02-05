@@ -322,7 +322,7 @@
         var _wsProto = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         var _wsUrl = window.location.protocol === 'https:' ? _wsProto + window.location.host + '/ws' : 'ws://' + window.location.hostname + ':9090';
         var ros = new ROSLIB.Ros({ url: _wsUrl });
-        ros.on('connection', function() { updateSpeed(50); updateRamp(50); });
+        ros.on('connection', function() { updateSpeed(parseInt(document.getElementById('speedInput').value) || 50); updateRamp(parseInt(document.getElementById('rampInput').value) || 50); });
         ros.on('error', function() { });
         ros.on('close', function() { });
 

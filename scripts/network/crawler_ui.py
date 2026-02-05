@@ -1204,6 +1204,15 @@ def save_full_config(crawler_id, ssid, password):
             f.write(f"MOTOR_DRIVER={motor_driver}\n")
             f.write(f"CLEARLINK_GATEWAY={existing_gateway}\n")
 
+        # Update active_system so the launch file uses the correct config
+        active_system = yaml_file.replace(".yaml", "") if yaml_file else crawler_id
+        try:
+            with open("/home/craig/active_system", "w") as asf:
+                asf.write(active_system + "\n")
+            print(f"Updated active_system to: {active_system}")
+        except Exception as e:
+            print(f"Error updating active_system: {e}")
+
         # Also update the actual NetworkManager hotspot connection
         update_hotspot_connection(ssid, password)
 

@@ -15,6 +15,59 @@
     <style>
         /* Page-specific styles for magnetic_phased_array.html */
         /* All shared component styles are now in base.css */
+
+        /* Voice mic button */
+        .voice-mic-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: none;
+            background: var(--accent-cyan);
+            color: #fff;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .voice-mic-btn:hover { background: var(--accent-cyan-hover); transform: scale(1.05); }
+        .voice-mic-btn.listening {
+            background: var(--status-error);
+            animation: micPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes micPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4); }
+            50% { box-shadow: 0 0 0 12px rgba(255, 59, 48, 0); }
+        }
+
+        /* Voice feedback overlay */
+        .voice-feedback {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            display: none;
+            max-width: 90vw;
+            text-align: center;
+        }
+        .voice-feedback.active { display: block; }
+        .voice-feedback.error { color: var(--status-error); }
+        .voice-feedback.success { color: var(--status-ok); }
+        .voice-feedback.info { color: var(--text-primary); }
     </style>
 </head>
 <body class="page-control">
@@ -86,20 +139,41 @@
             <button class="icon-button" onclick="togglePopup('systemPopup', event)" title="System Settings">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
+            <div class="icon-button" id="alarmsButton" onclick="togglePopup('alarmsPopup', event)" title="Alarms" style="position: relative;">
+                <svg id="alarmsIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="alarm-badge" id="alarmBadge" style="display:none;">0</span>
+            </div>
             <button class="icon-button" onclick="location.reload()" title="Refresh page">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
+        </div>
+        <div class="stats-popup" id="alarmsPopup" onclick="event.stopPropagation()" style="background-color: var(--popup-bg); border: 1px solid var(--border-color);">
+            <div class="popup-header" onmousedown="startDrag(event, 'alarmsPopup')" ontouchstart="startDragTouch(event, 'alarmsPopup')">
+                <span class="popup-title">Alarms</span>
+                <button class="popup-close" onclick="closePopup('alarmsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="popup-content" id="alarmsContent">
+                <div style="text-align:center; color:var(--text-tertiary); padding:20px;">No alarms</div>
+            </div>
         </div>
 
         <!-- Row 2: Status indicators - centered -->
         <div class="status-bar" id="connectionStatus">
             <div class="status-item">
-                <span id="rosDot" class="status-dot"></span>
-                <span id="connectionText">Disconnected</span>
+                <svg id="vpnIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--status-error);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span id="vpnText">VPN</span>
+            </div>
+            <div class="status-item">
+                <svg id="internetIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--status-error);"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span id="internetText">Offline</span>
             </div>
             <div class="status-item" style="cursor: pointer;" onclick="openWifiModal()" title="WiFi Settings">
                 <svg id="wifiIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--status-error);"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
                 <span id="wifiText">No WiFi</span>
+            </div>
+            <div class="status-item">
+                <span id="roboclawDot" class="status-dot"></span>
+                <span id="roboclawText">Roboclaw</span>
             </div>
         </div>
         <div class="system-badge"><span>Magnetic Crawler System</span></div>
@@ -156,9 +230,10 @@
                             <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value-group"><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span><button class="icon-btn" onclick="zeroIMU(event)" title="Zero IMU"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></button></span></div>
                             <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
                             <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
-                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label" style="color: var(--text-tertiary);">Rel. Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.3.9</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Calibrated Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label" style="color: var(--text-tertiary);">Calibrated Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Invert Angle</span><label class="toggle-switch"><input type="checkbox" id="invertAngleToggleStats" onchange="setInvertAngle(this.checked)"><span class="toggle-slider"></span></label></div>
+                            <div class="stats-row-item" style="justify-content: center; padding-top: 8px;"><button class="secondary-btn" onclick="openCalibrateModal()" style="font-size: 12px; padding: 6px 16px;">Calibrate</button></div>
                         </div>
                     </div>
                 </div>
@@ -205,7 +280,42 @@
                                     <button onclick="setDistanceMode('degrees')">Degrees</button>
                                 </div>
                             </div>
+                            <div style="border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 12px;">
+                                <div onclick="toggleNamedPositions()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                                    <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Named Positions (degrees)</div>
+                                    <svg id="namedPosChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary); transition: transform 0.25s ease;"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                                <div id="namedPosContent" style="max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.3s ease, opacity 0.25s ease;">
+                                    <div class="settings-row">
+                                        <span class="settings-label">Home Position</span>
+                                        <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                            <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
+                                            <input type="number" class="settings-input" id="namedPosHome" min="-360" max="360" step="0.1" value="0" onchange="saveNamedPosition('home', this.value)" style="width: 70px;">
+                                        </div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <span class="settings-label">Start Position</span>
+                                        <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                            <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
+                                            <input type="number" class="settings-input" id="namedPosStart" min="-360" max="360" step="0.1" value="0" onchange="saveNamedPosition('start', this.value)" style="width: 70px;">
+                                        </div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <span class="settings-label">Tube Removal</span>
+                                        <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                            <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
+                                            <input type="number" class="settings-input" id="namedPosTubeRemoval" min="-360" max="360" step="0.1" value="180" onchange="saveNamedPosition('tubeRemoval', this.value)" style="width: 70px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <button class="save-defaults-btn" onclick="saveAllDefaults()">Save as Defaults</button>
+                            <div style="border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 12px;">
+                                <div class="settings-row">
+                                    <span class="settings-label">Voice Commands</span>
+                                    <label class="toggle-switch"><input type="checkbox" id="voiceCommandsToggle" onchange="setVoiceCommands(this.checked)"><span class="toggle-slider"></span></label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -437,6 +547,46 @@
         </div>
     </div>
 
+    <!-- Voice Feedback Overlay -->
+    <div class="voice-feedback" id="voiceFeedback"></div>
+
+    <!-- Voice Mic Button -->
+    <button class="voice-mic-btn" id="voiceMicBtn" onclick="toggleVoiceListening()" title="Voice Command" style="display: none;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+
+    <!-- Calibration Modal -->
+    <div class="modal-overlay" id="calibrateModal" onclick="closeCalibrateModal()" style="display: none;">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 360px;">
+            <div class="modal-header">
+                <span class="modal-title">Calibrate Angle Sensor</span>
+                <button class="modal-close" onclick="closeCalibrateModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="padding: 20px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.5;">Before you start, place the crawler on a flat surface, or at the angle you want to calibrate.</p>
+                <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Live Angles</div>
+                <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="calLiveRoll">--</span>&deg;</span></div>
+                <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="calLivePitch">--</span>&deg;</span></div>
+                <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 8px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Calibrated Angles</div>
+                <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="calRelRoll">--</span>&deg;</span></div>
+                <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="calRelPitch">--</span>&deg;</span></div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="control-btn" onclick="performCalibration()" style="padding: 10px 24px; font-size: 14px;">Calibrate Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calibration Success Dialog -->
+    <div class="password-modal" id="calibrateSuccessModal">
+        <div class="password-dialog">
+            <h3>Angle sensor calibrated.</h3>
+            <div class="btn-row">
+                <button class="btn-unlock" onclick="closeCalibrateSuccess()">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- WiFi Settings Modal -->
     <div class="modal-overlay" id="wifiModal" onclick="closeWifiModal()" style="display: none;">
         <div class="modal" onclick="event.stopPropagation()" style="max-width: 420px;">
@@ -510,6 +660,12 @@
         var speedPublisher = null;
         var rampPublisher = null;
         var systemCmdPublisher = null;
+        var imuInvertAngle = false;
+        var calibrateModalOpen = false;
+        var namedPosHome = 0;
+        var namedPosStart = 0;
+        var namedPosTubeRemoval = 180;
+        var namedPosOpen = false;
 
         function checkDefaultsMatch() {
             if (!savedDefaults) return;
@@ -519,14 +675,16 @@
             if (pipeDiameter !== savedDefaults.pipeDiameter ||
                 distanceMode !== savedDefaults.distanceMode ||
                 currentSpeed !== savedDefaults.speed ||
-                currentRamp !== savedDefaults.ramp) {
+                currentRamp !== savedDefaults.ramp ||
+                namedPosHome !== savedDefaults.namedPosHome ||
+                namedPosStart !== savedDefaults.namedPosStart ||
+                namedPosTubeRemoval !== savedDefaults.namedPosTubeRemoval) {
                 btn.classList.add('show');
             } else {
                 btn.classList.remove('show');
             }
         }
 
-        document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
         document.getElementById('footerVersion').textContent = CURRENT_VERSION;
 
         var stats = { battery: { min: 999, max: 0, data: [] }, temp: { data: [], data2: [] }, m1: { min: 999, max: 0, data: [] }, torque: { min: 999, max: 0, data: [] }, fan: { min: 999, max: 0, data: [] } };
@@ -557,7 +715,7 @@
         };
 
         // Popup management
-        var allPopups = ['statsPopup', 'settingsPopup', 'motorParamsPopup', 'systemPopup'];
+        var allPopups = ['statsPopup', 'settingsPopup', 'motorParamsPopup', 'systemPopup', 'alarmsPopup'];
 
         function togglePopup(popupId, event) {
             event.stopPropagation();
@@ -739,11 +897,46 @@
                     if (settings.distanceMode) {
                         setDistanceMode(settings.distanceMode);
                     }
+                    // Load saved speed and ramp
+                    if (settings.speed != null) {
+                        document.getElementById('speedInput').value = parseFloat(settings.speed).toFixed(1);
+                    }
+                    if (settings.ramp != null) {
+                        document.getElementById('rampInput').value = parseInt(settings.ramp);
+                    }
+                    // Load invert angle setting
+                    if (settings.imuInvertAngle !== undefined) {
+                        imuInvertAngle = settings.imuInvertAngle;
+                        document.getElementById('invertAngleToggleStats').checked = imuInvertAngle;
+                    }
+                    // Load IMU calibration offsets
+                    if (settings.imuRollOffset !== undefined) {
+                        imuRollOffset = settings.imuRollOffset;
+                    }
+                    if (settings.imuPitchOffset !== undefined) {
+                        imuPitchOffset = settings.imuPitchOffset;
+                    }
+                    // Load named positions
+                    if (settings.namedPosHome !== undefined) {
+                        namedPosHome = settings.namedPosHome;
+                        document.getElementById('namedPosHome').value = namedPosHome;
+                    }
+                    if (settings.namedPosStart !== undefined) {
+                        namedPosStart = settings.namedPosStart;
+                        document.getElementById('namedPosStart').value = namedPosStart;
+                    }
+                    if (settings.namedPosTubeRemoval !== undefined) {
+                        namedPosTubeRemoval = settings.namedPosTubeRemoval;
+                        document.getElementById('namedPosTubeRemoval').value = namedPosTubeRemoval;
+                    }
                     savedDefaults = {
                         pipeDiameter: pipeDiameter,
                         distanceMode: distanceMode,
                         speed: parseFloat(document.getElementById('speedInput').value),
-                        ramp: parseInt(document.getElementById('rampInput').value)
+                        ramp: parseInt(document.getElementById('rampInput').value),
+                        namedPosHome: namedPosHome,
+                        namedPosStart: namedPosStart,
+                        namedPosTubeRemoval: namedPosTubeRemoval
                     };
                 })
                 .catch(function(e) { console.error('Failed to load settings:', e); });
@@ -785,7 +978,10 @@
                 pipeDiameter: pipeDiameter,
                 distanceMode: distanceMode,
                 speed: currentSpeed,
-                ramp: currentRamp
+                ramp: currentRamp,
+                namedPosHome: namedPosHome,
+                namedPosStart: namedPosStart,
+                namedPosTubeRemoval: namedPosTubeRemoval
             };
             fetch('/api/settings', {
                 method: 'POST',
@@ -798,7 +994,10 @@
                         pipeDiameter: pipeDiameter,
                         distanceMode: distanceMode,
                         speed: currentSpeed,
-                        ramp: currentRamp
+                        ramp: currentRamp,
+                        namedPosHome: namedPosHome,
+                        namedPosStart: namedPosStart,
+                        namedPosTubeRemoval: namedPosTubeRemoval
                     };
                     btn.classList.add('saved');
                     var count = 5;
@@ -1044,11 +1243,32 @@
         function getThemeColor(varName) {
             return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
         }
-        function updateConnectionStatus(text, isConnected) {
-            document.getElementById('connectionText').textContent = text;
-            var color = isConnected ? getThemeColor('--status-ok') : getThemeColor('--status-error');
-            document.getElementById('rosDot').style.background = color;
+        var roboclawDataReceived = false;
+        var roboclawLastUpdate = 0;
+
+        function updateRoboclawStatus(connected) {
+            var dot = document.getElementById('roboclawDot');
+            var text = document.getElementById('roboclawText');
+            var okColor = getThemeColor('--status-ok');
+            var errorColor = getThemeColor('--status-error');
+            var warnColor = getThemeColor('--status-warning');
+            if (!connected) {
+                dot.style.background = errorColor;
+                text.textContent = 'Roboclaw';
+            } else {
+                dot.style.background = okColor;
+                text.textContent = 'Roboclaw';
+            }
         }
+
+        // Check roboclaw status periodically based on stats data
+        setInterval(function() {
+            if (roboclawDataReceived && (Date.now() - roboclawLastUpdate) > 5000) {
+                updateRoboclawStatus(false);
+            } else if (!roboclawDataReceived) {
+                updateRoboclawStatus(false);
+            }
+        }, 2000);
         function updateWifiStatus(ssid) {
             var icon = document.getElementById('wifiIcon');
             var text = document.getElementById('wifiText');
@@ -1058,6 +1278,91 @@
             icon.style.stroke = connected ? okColor : errorColor;
             text.textContent = connected ? ssid : 'No WiFi';
         }
+
+        // ============================================================
+        // VPN & Internet Status
+        // ============================================================
+        function updateVpnStatus(connected) {
+            var icon = document.getElementById('vpnIcon');
+            var text = document.getElementById('vpnText');
+            var okColor = getThemeColor('--status-ok');
+            var errorColor = getThemeColor('--status-error');
+            icon.style.stroke = connected ? okColor : errorColor;
+            text.textContent = 'VPN';
+        }
+        function checkVpn() {
+            fetch('/api/vpn/status')
+                .then(function(r) { return r.json(); })
+                .then(function(data) { updateVpnStatus(data.connected); })
+                .catch(function() { updateVpnStatus(false); });
+        }
+        checkVpn(); setInterval(checkVpn, 10000);
+
+        function updateInternetStatus(online) {
+            var icon = document.getElementById('internetIcon');
+            var text = document.getElementById('internetText');
+            var okColor = getThemeColor('--status-ok');
+            var errorColor = getThemeColor('--status-error');
+            icon.style.stroke = online ? okColor : errorColor;
+            text.textContent = online ? 'Online' : 'Offline';
+        }
+        function checkInternet() {
+            fetch('https://www.google.com/favicon.ico?t=' + Date.now(), { mode: 'no-cors', cache: 'no-store' })
+                .then(function() { updateInternetStatus(true); })
+                .catch(function() { updateInternetStatus(navigator.onLine); });
+        }
+        checkInternet(); setInterval(checkInternet, 10000);
+
+        // ============================================================
+        // Alarms
+        // ============================================================
+        var alarms = [];
+        var alarmCounter = 0;
+
+        function addAlarm(message) {
+            alarmCounter++;
+            var now = new Date();
+            var timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0');
+            alarms.push({ id: alarmCounter, message: message, time: timeStr });
+            updateAlarmIcon();
+            renderAlarms();
+        }
+
+        function clearAlarms() {
+            alarms = [];
+            updateAlarmIcon();
+            renderAlarms();
+        }
+
+        function updateAlarmIcon() {
+            var icon = document.getElementById('alarmsIcon');
+            var badge = document.getElementById('alarmBadge');
+            if (alarms.length > 0) {
+                icon.style.color = 'var(--status-error)';
+                icon.setAttribute('stroke', '#ff3b30');
+                badge.textContent = alarms.length;
+                badge.style.display = 'flex';
+            } else {
+                icon.style.color = '';
+                icon.setAttribute('stroke', 'currentColor');
+                badge.style.display = 'none';
+            }
+        }
+
+        function renderAlarms() {
+            var container = document.getElementById('alarmsContent');
+            if (alarms.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:var(--text-tertiary); padding:20px;">No alarms</div>';
+                return;
+            }
+            var html = '';
+            for (var i = alarms.length - 1; i >= 0; i--) {
+                html += '<div class="stats-row-item"><span class="stats-label" style="color:var(--status-error);">\u26A0 ' + alarms[i].message + '</span><span class="stats-value" style="font-size:10px; color:var(--text-tertiary);">' + alarms[i].time + '</span></div>';
+            }
+            html += '<div style="border-top:1px solid var(--border-color); margin-top:8px; padding-top:8px; text-align:center;"><button class="secondary-btn" onclick="clearAlarms()" style="font-size:12px; padding:6px 16px;">Clear Alarms</button></div>';
+            container.innerHTML = html;
+        }
+
         var lastDataReceived = 0;
         var connectionTime = 0;
         var staleThreshold = 5000;
@@ -1099,9 +1404,9 @@
         }
         setInterval(checkForStaleConnection, 2000);
 
-        ros.on('connection', function() { connectionTime = Date.now(); updateConnectionStatus('Connected', true); updateSpeed(4.0); updateRamp(50); });
-        ros.on('error', function() { updateConnectionStatus('Error', false); });
-        ros.on('close', function() { connectionTime = 0; updateConnectionStatus('Disconnected', false); });
+        ros.on('connection', function() { connectionTime = Date.now(); updateSpeed(parseFloat(document.getElementById('speedInput').value) || 4.0); updateRamp(parseInt(document.getElementById('rampInput').value) || 50); });
+        ros.on('error', function() { });
+        ros.on('close', function() { connectionTime = 0; updateRoboclawStatus(false); });
 
         cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
         speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
@@ -1129,6 +1434,9 @@
         statsSubscriber.subscribe(function(msg) {
             updateLastDataTime();
             updateLastUpdated();
+            roboclawDataReceived = true;
+            roboclawLastUpdate = Date.now();
+            updateRoboclawStatus(true);
             var v = msg.battery_voltage;
             document.getElementById('voltage').textContent = v.toFixed(1) + 'V';
             document.getElementById('voltage').className = 'stats-value' + (v < 15 ? ' alarm' : v < 17 ? ' warning' : '');
@@ -1169,6 +1477,7 @@
         });
 
         cpuTempSubscriber.subscribe(function(msg) {
+            updateLastDataTime();
             var t = msg.data;
             document.getElementById('cpuTemp').textContent = t.toFixed(1) + '°C';
             document.getElementById('cpuTemp').className = 'stats-value' + (t > 80 ? ' alarm' : t > 70 ? ' warning' : '');
@@ -1176,6 +1485,7 @@
         });
 
         networkInfoSubscriber.subscribe(function(msg) {
+            updateLastDataTime();
             try {
                 var info = JSON.parse(msg.data);
                 var wifiIp = info.wifi === '--' ? '--' : info.wifi;
@@ -1196,12 +1506,52 @@
         var imuCurrentRoll = 0;
         var imuCurrentPitch = 0;
 
-        function zeroIMU(event) {
-            event.stopPropagation();
+        // ============================================================
+        // Invert Angle Toggle
+        // ============================================================
+        function setInvertAngle(checked) {
+            imuInvertAngle = checked;
+            document.getElementById('invertAngleToggleStats').checked = checked;
+            saveSettings({ imuInvertAngle: checked });
+            checkDefaultsMatch();
+        }
+
+        // ============================================================
+        // Calibration Modal
+        // ============================================================
+        function openCalibrateModal() {
+            calibrateModalOpen = true;
+            document.getElementById('calibrateModal').style.display = 'flex';
+            document.getElementById('calLiveRoll').textContent = imuCurrentRoll.toFixed(1);
+            document.getElementById('calLivePitch').textContent = imuCurrentPitch.toFixed(1);
+            document.getElementById('calRelRoll').textContent = (imuCurrentRoll - imuRollOffset).toFixed(1);
+            document.getElementById('calRelPitch').textContent = (imuCurrentPitch - imuPitchOffset).toFixed(1);
+        }
+
+        function closeCalibrateModal() {
+            calibrateModalOpen = false;
+            document.getElementById('calibrateModal').style.display = 'none';
+        }
+
+        function performCalibration() {
             imuRollOffset = imuCurrentRoll;
             imuPitchOffset = imuCurrentPitch;
             document.getElementById('imuRelRoll').textContent = '0.0';
             document.getElementById('imuRelPitch').textContent = '0.0';
+            closeCalibrateModal();
+            document.getElementById('calibrateSuccessModal').classList.add('show');
+            // Persist calibration offsets
+            saveSettings({ imuRollOffset: imuRollOffset, imuPitchOffset: imuPitchOffset });
+        }
+
+        function closeCalibrateSuccess() {
+            document.getElementById('calibrateSuccessModal').classList.remove('show');
+        }
+
+        // Keep zeroIMU for backwards compatibility (stats popup button was replaced with Calibrate)
+        function zeroIMU(event) {
+            event.stopPropagation();
+            openCalibrateModal();
         }
 
         imuRollSubscriber.subscribe(function(msg) {
@@ -1212,13 +1562,22 @@
             document.getElementById('imuRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
             document.getElementById('imuStatus').textContent = 'Connected';
             document.getElementById('imuStatus').style.color = '#34c759';
+            if (calibrateModalOpen) {
+                document.getElementById('calLiveRoll').textContent = msg.data.toFixed(1);
+                document.getElementById('calRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
+            }
         });
         imuPitchSubscriber.subscribe(function(msg) {
-            imuCurrentPitch = msg.data;
-            var relPitch = msg.data - imuPitchOffset;
-            document.getElementById('imuPitch').textContent = msg.data.toFixed(1);
+            var pitch = imuInvertAngle ? -msg.data : msg.data;
+            imuCurrentPitch = pitch;
+            var relPitch = pitch - imuPitchOffset;
+            document.getElementById('imuPitch').textContent = pitch.toFixed(1);
             document.getElementById('imuRelPitch').textContent = relPitch.toFixed(1);
-            document.getElementById('pipeRelAngleDisplay').textContent = relPitch.toFixed(1) + '°';
+            if (calibrateModalOpen) {
+                document.getElementById('calLivePitch').textContent = pitch.toFixed(1);
+                document.getElementById('calRelPitch').textContent = relPitch.toFixed(1);
+            }
+            document.getElementById('pipeRelAngleDisplay').value = relPitch.toFixed(1);
             document.getElementById('pipeContainer').style.transform = 'rotate(' + relPitch + 'deg)';
             // Degrees-based distance tracking
             if (distanceMode === 'degrees') {
@@ -1243,6 +1602,191 @@
                 document.getElementById('imuStatus').style.color = '#ff3b30';
             }
         }, 2000);
+
+        // ============================================================
+        // Named Positions
+        // ============================================================
+        function toggleNamedPositions() {
+            var content = document.getElementById('namedPosContent');
+            var chevron = document.getElementById('namedPosChevron');
+            namedPosOpen = !namedPosOpen;
+            if (namedPosOpen) {
+                content.style.maxHeight = '200px';
+                content.style.opacity = '1';
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                content.style.maxHeight = '0';
+                content.style.opacity = '0';
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function saveNamedPosition(name, value) {
+            var parsed = parseFloat(value) || 0;
+            var data = {};
+            if (name === 'home') { namedPosHome = parsed; data.namedPosHome = parsed; }
+            else if (name === 'start') { namedPosStart = parsed; data.namedPosStart = parsed; }
+            else if (name === 'tubeRemoval') { namedPosTubeRemoval = parsed; data.namedPosTubeRemoval = parsed; }
+            saveSettings(data);
+            checkDefaultsMatch();
+        }
+
+        function getNamedPosition(name) {
+            if (name === 'home') return namedPosHome;
+            if (name === 'start') return namedPosStart;
+            if (name === 'tubeRemoval') return namedPosTubeRemoval;
+            return 0;
+        }
+
+        // ============================================================
+        // Voice Commands Toggle
+        // ============================================================
+        var voiceCommandsEnabled = false;
+
+        function setVoiceCommands(enabled) {
+            voiceCommandsEnabled = enabled;
+            localStorage.setItem('voiceCommandsEnabled', enabled ? 'true' : 'false');
+            var micBtn = document.getElementById('voiceMicBtn');
+            if (enabled) {
+                micBtn.style.display = 'flex';
+            } else {
+                micBtn.style.display = 'none';
+                if (voiceRecognition && voiceIsListening) {
+                    voiceRecognition.abort();
+                    voiceIsListening = false;
+                    micBtn.classList.remove('listening');
+                }
+            }
+        }
+
+        function loadVoiceCommands() {
+            var saved = localStorage.getItem('voiceCommandsEnabled');
+            var toggle = document.getElementById('voiceCommandsToggle');
+            if (saved === 'true') {
+                voiceCommandsEnabled = true;
+                toggle.checked = true;
+                document.getElementById('voiceMicBtn').style.display = 'flex';
+            }
+        }
+
+        function hasSpeechRecognition() {
+            return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+        }
+
+        // ============================================================
+        // Voice Feedback
+        // ============================================================
+        var voiceFeedbackTimeout = null;
+
+        function showVoiceFeedback(message, type) {
+            var el = document.getElementById('voiceFeedback');
+            el.textContent = message;
+            el.className = 'voice-feedback active ' + (type || 'info');
+            if (voiceFeedbackTimeout) clearTimeout(voiceFeedbackTimeout);
+            if (type === 'success' || type === 'error') {
+                voiceFeedbackTimeout = setTimeout(function() {
+                    el.classList.remove('active');
+                }, 3000);
+            }
+        }
+
+        function hideVoiceFeedback() {
+            var el = document.getElementById('voiceFeedback');
+            el.classList.remove('active');
+            if (voiceFeedbackTimeout) { clearTimeout(voiceFeedbackTimeout); voiceFeedbackTimeout = null; }
+        }
+
+        // ============================================================
+        // Voice Command - Web Speech API
+        // ============================================================
+        var voiceRecognition = null;
+        var voiceIsListening = false;
+
+        function initVoiceRecognition() {
+            if (!hasSpeechRecognition()) return;
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            voiceRecognition = new SpeechRecognition();
+            voiceRecognition.continuous = false;
+            voiceRecognition.interimResults = false;
+            voiceRecognition.lang = 'en-US';
+
+            voiceRecognition.onresult = function(event) {
+                var text = event.results[0][0].transcript.toLowerCase().trim();
+                var confidence = event.results[0][0].confidence;
+                console.log('Voice recognized: "' + text + '" (confidence: ' + confidence.toFixed(2) + ')');
+
+                if (confidence < 0.6) {
+                    showVoiceFeedback('Not understood, try again', 'error');
+                    return;
+                }
+
+                parseAndExecuteCommand(text);
+            };
+
+            voiceRecognition.onerror = function(event) {
+                console.log('Voice error:', event.error);
+                voiceIsListening = false;
+                document.getElementById('voiceMicBtn').classList.remove('listening');
+                if (event.error === 'no-speech') {
+                    showVoiceFeedback('No speech detected', 'error');
+                } else if (event.error !== 'aborted') {
+                    showVoiceFeedback('Voice error: ' + event.error, 'error');
+                }
+            };
+
+            voiceRecognition.onend = function() {
+                voiceIsListening = false;
+                document.getElementById('voiceMicBtn').classList.remove('listening');
+            };
+        }
+
+        function toggleVoiceListening() {
+            if (!hasSpeechRecognition()) {
+                alert('Voice commands require HTTPS. Use Chrome or connect via HTTPS.');
+                return;
+            }
+            if (!voiceRecognition) initVoiceRecognition();
+            if (!voiceRecognition) return;
+
+            if (voiceIsListening) {
+                voiceRecognition.abort();
+                voiceIsListening = false;
+                document.getElementById('voiceMicBtn').classList.remove('listening');
+                hideVoiceFeedback();
+            } else {
+                voiceIsListening = true;
+                document.getElementById('voiceMicBtn').classList.add('listening');
+                showVoiceFeedback('Listening...', 'info');
+                voiceRecognition.start();
+            }
+        }
+
+        // ============================================================
+        // Command Parser (adapted for roboclaw motor)
+        // ============================================================
+        function parseAndExecuteCommand(text) {
+            // STOP — highest priority
+            if (text.indexOf('stop') !== -1) {
+                sendCommand('stop');
+                showVoiceFeedback('Stopped', 'success');
+                return;
+            }
+
+            // SIMPLE DIRECTION: "forward", "back"
+            if (text.match(/^(?:move\s+)?forward$/)) {
+                sendCommand('forward');
+                showVoiceFeedback('Moving forward', 'info');
+                return;
+            }
+            if (text.match(/^(?:move\s+)?(?:back|backward|reverse)$/)) {
+                sendCommand('backward');
+                showVoiceFeedback('Moving backward', 'info');
+                return;
+            }
+
+            // NOT RECOGNIZED
+            showVoiceFeedback('Command not recognized: "' + text + '"', 'error');
+        }
 
         function openConfiguration() {
             document.getElementById('configAuthPassword').value = '';
@@ -1612,7 +2156,7 @@
                 });
         }
 
-        window.onload = function() { loadSettings(); loadUsbDevices(); loadFanSpeed(); loadSystemStats(); setTimeout(function() { resetPosition(); }, 100); if (localStorage.getItem('pipeViewCollapsed') === 'true') { document.getElementById('pipeCollapsible').classList.add('collapsed'); document.getElementById('pipeToggleBtn').classList.add('collapsed'); } };
+        window.onload = function() { loadSettings(); loadUsbDevices(); loadFanSpeed(); loadSystemStats(); setTimeout(function() { resetPosition(); }, 100); if (localStorage.getItem('pipeViewCollapsed') === 'true') { document.getElementById('pipeCollapsible').classList.add('collapsed'); document.getElementById('pipeToggleBtn').classList.add('collapsed'); } loadVoiceCommands(); };
         setInterval(loadUsbDevices, 10000); // Refresh USB info every 10 seconds
         setInterval(loadFanSpeed, 5000); // Refresh fan speed every 5 seconds
         setInterval(loadSystemStats, 3000); // Refresh system stats every 3 seconds
