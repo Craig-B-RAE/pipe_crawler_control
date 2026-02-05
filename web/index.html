@@ -204,6 +204,10 @@
         var CURRENT_VERSION = '2.3.9';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var isUpdating = false;
+        var cmdPublisher = null;
+        var speedPublisher = null;
+        var rampPublisher = null;
+        var systemCmdPublisher = null;
         var pipeDiameter = 12;
         var totalDistance = 0;  // Total distance traveled in inches
         var lastM1Qpps = 0;
@@ -257,12 +261,12 @@
         function updateSpeed(val) {
             val = Math.max(0, Math.min(100, parseInt(val) || 0));
             document.getElementById('speedInput').value = val;
-            speedPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+            if (speedPublisher) speedPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
         }
         function updateRamp(val) {
             val = Math.max(0, Math.min(100, parseInt(val) || 50));
             document.getElementById('rampInput').value = val;
-            rampPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+            if (rampPublisher) rampPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
         }
 
         function drawGraph(type) {
@@ -315,15 +319,17 @@
         function checkInternet() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { if (r.ok) { document.getElementById('internetStatus').style.color = getThemeColor('--status-ok'); } else { throw new Error(); } }).catch(function() { document.getElementById('internetStatus').style.color = getThemeColor('--status-error'); }); }
         checkInternet(); setInterval(checkInternet, 30000);
 
-        var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
+        var _wsProto = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        var _wsUrl = window.location.protocol === 'https:' ? _wsProto + window.location.host + '/ws' : 'ws://' + window.location.hostname + ':9090';
+        var ros = new ROSLIB.Ros({ url: _wsUrl });
         ros.on('connection', function() { updateSpeed(50); updateRamp(50); });
         ros.on('error', function() { });
         ros.on('close', function() { });
 
-        var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
-        var speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
-        var rampPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_ramp', messageType: 'std_msgs/String' });
-        var systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
+        cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
+        speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
+        rampPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_ramp', messageType: 'std_msgs/String' });
+        systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
         var statsSubscriber = new ROSLIB.Topic({ ros: ros, name: '/stats', messageType: 'roboclaw_interfaces/Stats' });
         var cpuTempSubscriber = new ROSLIB.Topic({ ros: ros, name: '/cpu_temp', messageType: 'std_msgs/Float32' });
         var networkInfoSubscriber = new ROSLIB.Topic({ ros: ros, name: '/network_info', messageType: 'std_msgs/String' });

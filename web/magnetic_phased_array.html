@@ -506,6 +506,10 @@
         var prevRelPitch = null;
         var lastUpdateTime = Date.now();
         var savedDefaults = null;
+        var cmdPublisher = null;
+        var speedPublisher = null;
+        var rampPublisher = null;
+        var systemCmdPublisher = null;
 
         function checkDefaultsMatch() {
             if (!savedDefaults) return;
@@ -906,14 +910,14 @@
             val = Math.max(0, Math.min(MAX_SPEED_IPS, parseFloat(val) || 0));
             document.getElementById('speedInput').value = val.toFixed(1);
             var percentage = Math.round((val / MAX_SPEED_IPS) * 100);
-            speedPublisher.publish(new ROSLIB.Message({ data: percentage.toString() }));
+            if (speedPublisher) speedPublisher.publish(new ROSLIB.Message({ data: percentage.toString() }));
             checkDefaultsMatch();
         }
 
         function updateRamp(val) {
             val = Math.max(0, Math.min(100, parseInt(val) || 50));
             document.getElementById('rampInput').value = val;
-            rampPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
+            if (rampPublisher) rampPublisher.publish(new ROSLIB.Message({ data: val.toString() }));
             checkDefaultsMatch();
         }
 
@@ -1033,7 +1037,9 @@
         function dismissUpdate() { if (updateCountdownTimer) { clearInterval(updateCountdownTimer); updateCountdownTimer = null; } document.getElementById('updateBanner').classList.remove('show'); updateDismissed = true; }
         setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);
 
-        var ros = new ROSLIB.Ros({ url: 'ws://' + window.location.hostname + ':9090' });
+        var _wsProto = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        var _wsUrl = window.location.protocol === 'https:' ? _wsProto + window.location.host + '/ws' : 'ws://' + window.location.hostname + ':9090';
+        var ros = new ROSLIB.Ros({ url: _wsUrl });
         // Helper to get current theme colors from CSS variables
         function getThemeColor(varName) {
             return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
@@ -1075,7 +1081,7 @@
             reconnectAttempts++;
             ros.close();
             setTimeout(function() {
-                ros.connect('ws://' + window.location.hostname + ':9090');
+                ros.connect(_wsUrl);
                 reconnecting = false;
             }, 1000);
         }
@@ -1097,10 +1103,10 @@
         ros.on('error', function() { updateConnectionStatus('Error', false); });
         ros.on('close', function() { connectionTime = 0; updateConnectionStatus('Disconnected', false); });
 
-        var cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
-        var speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
-        var rampPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_ramp', messageType: 'std_msgs/String' });
-        var systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
+        cmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_command', messageType: 'std_msgs/String' });
+        speedPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_speed', messageType: 'std_msgs/String' });
+        rampPublisher = new ROSLIB.Topic({ ros: ros, name: '/robot_ramp', messageType: 'std_msgs/String' });
+        systemCmdPublisher = new ROSLIB.Topic({ ros: ros, name: '/system_command', messageType: 'std_msgs/String' });
         var statsSubscriber = new ROSLIB.Topic({ ros: ros, name: '/stats', messageType: 'roboclaw_interfaces/Stats' });
         var cpuTempSubscriber = new ROSLIB.Topic({ ros: ros, name: '/cpu_temp', messageType: 'std_msgs/Float32' });
         var networkInfoSubscriber = new ROSLIB.Topic({ ros: ros, name: '/network_info', messageType: 'std_msgs/String' });
