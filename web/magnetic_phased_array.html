@@ -172,8 +172,8 @@
                 <span id="wifiText">No WiFi</span>
             </div>
             <div class="status-item">
-                <span id="roboclawDot" class="status-dot"></span>
-                <span id="roboclawText">Roboclaw</span>
+                <svg id="roboclawIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--status-error);"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21"/><line x1="3" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21" y2="12"/></svg>
+                <span id="roboclawText">M-Driver</span>
             </div>
         </div>
         <div class="system-badge"><span>Magnetic Crawler System</span></div>
@@ -1257,20 +1257,20 @@
         var roboclawConnected = false;
 
         function updateRoboclawStatus(connected) {
-            var dot = document.getElementById('roboclawDot');
+            var icon = document.getElementById('roboclawIcon');
             var text = document.getElementById('roboclawText');
             var okColor = getThemeColor('--status-ok');
             var errorColor = getThemeColor('--status-error');
             if (roboclawConnected && !connected) {
-                addAlarm('Roboclaw disconnected');
+                addAlarm('M-Driver disconnected');
             }
             roboclawConnected = connected;
             if (!connected) {
-                dot.style.background = errorColor;
-                text.textContent = 'Roboclaw';
+                icon.style.stroke = errorColor;
+                text.textContent = 'M-Driver';
             } else {
-                dot.style.background = okColor;
-                text.textContent = 'Roboclaw';
+                icon.style.stroke = okColor;
+                text.textContent = 'M-Driver';
             }
         }
 
@@ -1992,7 +1992,7 @@
 
         function sendCommand(cmd) {
             if (!roboclawConnected) {
-                addAlarm('Cannot send command: Roboclaw not connected');
+                addAlarm('Cannot send command: M-Driver not connected');
                 return;
             }
             cmdPublisher.publish(new ROSLIB.Message({ data: cmd }));
