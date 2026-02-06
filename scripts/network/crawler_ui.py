@@ -653,10 +653,16 @@ def api_last_updated():
             env=env
         )
         if result.returncode == 0 and result.stdout.strip():
-            return jsonify({"last_updated": result.stdout.strip()})
+            branch_result = subprocess.run(
+                ["git", "branch", "--show-current"],
+                capture_output=True, text=True,
+                env=env
+            )
+            branch = branch_result.stdout.strip() if branch_result.returncode == 0 else None
+            return jsonify({"last_updated": result.stdout.strip(), "branch": branch})
     except Exception:
         pass
-    return jsonify({"last_updated": None})
+    return jsonify({"last_updated": None, "branch": None})
 
 
 @app.route("/api/reboot", methods=["POST"])
