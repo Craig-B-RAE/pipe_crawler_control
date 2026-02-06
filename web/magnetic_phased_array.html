@@ -1245,13 +1245,17 @@
         }
         var roboclawDataReceived = false;
         var roboclawLastUpdate = 0;
+        var roboclawConnected = false;
 
         function updateRoboclawStatus(connected) {
             var dot = document.getElementById('roboclawDot');
             var text = document.getElementById('roboclawText');
             var okColor = getThemeColor('--status-ok');
             var errorColor = getThemeColor('--status-error');
-            var warnColor = getThemeColor('--status-warning');
+            if (roboclawConnected && !connected) {
+                addAlarm('Roboclaw disconnected');
+            }
+            roboclawConnected = connected;
             if (!connected) {
                 dot.style.background = errorColor;
                 text.textContent = 'Roboclaw';
@@ -1977,7 +1981,13 @@
             }
         }
 
-        function sendCommand(cmd) { cmdPublisher.publish(new ROSLIB.Message({ data: cmd })); }
+        function sendCommand(cmd) {
+            if (!roboclawConnected) {
+                addAlarm('Cannot send command: Roboclaw not connected');
+                return;
+            }
+            cmdPublisher.publish(new ROSLIB.Message({ data: cmd }));
+        }
 
         var shots = [];
         function autoMove() {

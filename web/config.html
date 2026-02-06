@@ -359,7 +359,7 @@
 
         <h1>Crawler Configuration</h1>
         <p id="crawlerTypeDisplay" style="text-align: center; font-size: 12px; color: var(--text-tertiary); margin: -4px 0 8px 0; letter-spacing: 0.3px;"></p>
-        <p class="subtitle">Network and system settings</p>
+
 
         <div id="errorMsg" class="error"></div>
         <div id="successMsg" class="success"></div>
@@ -2564,16 +2564,7 @@
                 });
             });
 
-            // Default: expand Network Status (second visible section)
-            var visibleSections = [];
-            allSections.forEach(function(s) {
-                if (s.style.display !== 'none') visibleSections.push(s);
-            });
-            if (visibleSections.length >= 2) {
-                var t = visibleSections[1].querySelector('.section-title.collapsible');
-                var b = visibleSections[1].querySelector('.section-body');
-                if (t && b) { t.classList.add('expanded'); b.classList.add('open'); }
-            }
+            // All sections start collapsed
         }
 
         document.addEventListener('DOMContentLoaded', function() {
