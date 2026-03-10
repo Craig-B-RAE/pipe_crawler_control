@@ -57,12 +57,12 @@ class UpdateManager(Node):
             self.publish_status(f'error: {str(e)}')
 
     def forget_wifi(self):
-        """Forget current WiFi connection and enable hotspot."""
-        self.get_logger().info('Forgetting WiFi and enabling hotspot...')
+        """Forget current WiFi connection on wlan1 (USB dongle)."""
+        self.get_logger().info('Forgetting WiFi on wlan1...')
         try:
-            # Get current WiFi connection name
+            # Get current WiFi connection name on wlan1
             result = subprocess.run(
-                ['nmcli', '-t', '-f', 'GENERAL.CONNECTION', 'device', 'show', 'wlan0'],
+                ['nmcli', '-t', '-f', 'GENERAL.CONNECTION', 'device', 'show', 'wlan1'],
                 capture_output=True, text=True, timeout=5
             )
             connection_name = None
@@ -78,13 +78,9 @@ class UpdateManager(Node):
                     capture_output=True, timeout=10
                 )
                 self.get_logger().info(f'Forgot WiFi connection: {connection_name}')
+            else:
+                self.get_logger().info('No active WiFi connection on wlan1')
 
-            # Enable hotspot
-            subprocess.run(
-                ['sudo', 'nmcli', 'connection', 'up', 'Hotspot'],
-                capture_output=True, timeout=10
-            )
-            self.get_logger().info('Hotspot enabled')
             self.publish_status('wifi_forgotten')
         except Exception as e:
             self.get_logger().error(f'Error forgetting WiFi: {e}')

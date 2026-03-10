@@ -252,11 +252,12 @@ def read_roboclaw_id(port: str = None) -> str:
     Returns:
         12-character hex string ID, or empty string if not set/error
     """
-    ports = [port] if port else ["/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyUSB0"]
+    ports = [port] if port else ["/dev/ttyAMA2", "/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyUSB0"]
 
     for p in ports:
         try:
-            rc = RoboclawEEPROM(p)
+            rate = 38400 if "ttyAMA" in p else 115200
+            rc = RoboclawEEPROM(p, rate)
             if not rc.open():
                 continue
 
@@ -315,11 +316,12 @@ def write_roboclaw_id(unique_id: str, port: str = None) -> Tuple[bool, str]:
     except ValueError:
         return False, "ID must be valid hex string"
 
-    ports = [port] if port else ["/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyUSB0"]
+    ports = [port] if port else ["/dev/ttyAMA2", "/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyUSB0"]
 
     for p in ports:
         try:
-            rc = RoboclawEEPROM(p)
+            rate = 38400 if "ttyAMA" in p else 115200
+            rc = RoboclawEEPROM(p, rate)
             if not rc.open():
                 continue
 
@@ -383,9 +385,10 @@ def get_roboclaw_serial() -> str:
         sys.path.insert(0, "/home/craig/ros2_ws/src/roboclaw_driver2/roboclaw_driver2")
         from roboclaw_3 import Roboclaw
 
-        for port in ["/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyUSB0"]:
+        for port in ["/dev/ttyAMA2", "/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyUSB0"]:
             try:
-                rc = Roboclaw(port, 115200)
+                baud = 38400 if "ttyAMA" in port else 115200
+                rc = Roboclaw(port, baud)
                 if rc.Open():
                     version = rc.ReadVersion(0x80)
                     rc._port.close()

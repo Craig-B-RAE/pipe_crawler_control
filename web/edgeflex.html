@@ -318,7 +318,7 @@
                             </div>
                             <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
                                 <button class="secondary-btn" onclick="openConfiguration()">Configuration</button>
-                                <button class="secondary-btn" onclick="forgetWifi()">Forget WiFi</button>
+                                <button class="secondary-btn" onclick="disconnectWifiFromModal()">Disconnect WiFi</button>
                                 <button class="secondary-btn" onclick="rebootSystem()">Reboot</button>
                             </div>
                         </div>
@@ -410,7 +410,7 @@
                     </div>
                 </div>
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-                    <button onclick="forgetWifiFromModal()" style="width: 100%; padding: 10px; background: var(--button-danger-bg); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Forget WiFi & Enable Hotspot</button>
+                    <button onclick="disconnectWifiFromModal()" style="width: 100%; padding: 10px; background: var(--button-danger-bg); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Disconnect WiFi</button>
                 </div>
             </div>
         </div>
@@ -1304,13 +1304,6 @@
             }
         });
 
-        function forgetWifi() {
-            if (confirm('This will disconnect from WiFi and enable the hotspot. Continue?')) {
-                systemCmdPublisher.publish(new ROSLIB.Message({ data: 'forget_wifi' }));
-                alert('WiFi will be forgotten and hotspot enabled. You may need to reconnect to the crawler hotspot.');
-            }
-        }
-
         function rebootSystem() {
             if (confirm('Are you sure you want to reboot the system?')) {
                 systemCmdPublisher.publish(new ROSLIB.Message({ data: 'reboot' }));
@@ -1570,16 +1563,28 @@
             });
         }
 
-        function forgetWifiFromModal() {
-            if (confirm('This will disconnect from WiFi and enable the hotspot. Continue?')) {
-                closeWifiModal();
-                forgetWifi();
+        function disconnectWifiFromModal() {
+            if (confirm('Disconnect from WiFi? The crawler hotspot will remain active on wlan0.')) {
+                var btn = event.target;
+                btn.textContent = 'Disconnecting...';
+                btn.disabled = true;
+                fetch('/api/wifi/disconnect', { method: 'POST' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        btn.textContent = 'Disconnect WiFi';
+                        btn.disabled = false;
+                        if (data.success) {
+                            closeWifiModal();
+                        } else {
+                            alert('Failed: ' + (data.message || 'Unknown error'));
+                        }
+                    })
+                    .catch(function() {
+                        btn.textContent = 'Disconnect WiFi';
+                        btn.disabled = false;
+                        alert('Network error');
+                    });
             }
-        }
-
-        function forgetWifi() {
-            systemCmdPublisher.publish(new ROSLIB.Message({ data: 'forget_wifi' }));
-            alert('WiFi will be forgotten and hotspot enabled. You may need to reconnect to the crawler hotspot.');
         }
 
         // Handle Enter key in WiFi password

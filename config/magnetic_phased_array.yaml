@@ -5,8 +5,8 @@ system:
 
 driver:
   type: roboclaw
-  device: /dev/ttyACM0
-  baud_rate: 115200
+  device: /dev/ttyAMA2
+  baud_rate: 38400
   address: 128
   loop_hz: 10
   deadman_secs: 3

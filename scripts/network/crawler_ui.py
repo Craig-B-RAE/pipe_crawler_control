@@ -1038,6 +1038,7 @@ def get_network_info():
     """Get current network interface information."""
     info = {
         "wifi": {"ip": None, "ssid": None},
+        "hotspot": {"ip": None, "ssid": None},
         "ethernet": {"ip": None},
         "hostname": None
     }
@@ -1051,7 +1052,6 @@ def get_network_info():
         result = subprocess.run(["ip", "-j", "addr", "show"], capture_output=True, text=True, timeout=2)
         interfaces = json.loads(result.stdout) if result.stdout else []
 
-        wifi_iface = None
         for iface in interfaces:
             name = iface.get("ifname", "")
             addr_info = iface.get("addr_info", [])
@@ -1065,21 +1065,32 @@ def get_network_info():
             if not ipv4 or ipv4.startswith("127."):
                 continue
 
-            if name.startswith("wlan"):
+            if name == "wlan1":
+                # USB dongle - client WiFi
                 info["wifi"]["ip"] = ipv4
-                wifi_iface = name
+            elif name == "wlan0":
+                # Onboard - hotspot
+                info["hotspot"]["ip"] = ipv4
             elif name.startswith("eth") or name.startswith("enp"):
                 info["ethernet"]["ip"] = ipv4
 
-        # Get SSID
-        if wifi_iface:
-            try:
-                result = subprocess.run(["iwgetid", "-r"], capture_output=True, text=True, timeout=2)
-                ssid = result.stdout.strip()
-                if ssid:
-                    info["wifi"]["ssid"] = ssid
-            except Exception:
-                pass
+        # Get client WiFi SSID from wlan1
+        try:
+            result = subprocess.run(["iwgetid", "wlan1", "-r"], capture_output=True, text=True, timeout=2)
+            ssid = result.stdout.strip()
+            if ssid:
+                info["wifi"]["ssid"] = ssid
+        except Exception:
+            pass
+
+        # Get hotspot SSID from wlan0
+        try:
+            result = subprocess.run(["iwgetid", "wlan0", "-r"], capture_output=True, text=True, timeout=2)
+            ssid = result.stdout.strip()
+            if ssid:
+                info["hotspot"]["ssid"] = ssid
+        except Exception:
+            pass
 
     except Exception as e:
         print(f"Error getting network info: {e}")
@@ -1165,6 +1176,99 @@ def update_hotspot_connection(ssid, password):
             return False
     except Exception as e:
         print(f"Error updating hotspot connection: {e}")
+        return False
+
+
+def migrate_wifi_connections_to_wlan1():
+    """Migrate any client WiFi connections from wlan0 to wlan1.
+
+    In dual-radio mode, wlan0 is reserved for the hotspot.
+    All client WiFi connections should use wlan1 (USB dongle).
+    """
+    try:
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"],
+            capture_output=True, text=True, timeout=5
+        )
+        for line in result.stdout.strip().split("\n"):
+            if not line or ":802-11-wireless" not in line:
+                continue
+            conn_name = line.split(":")[0]
+            if conn_name == HOTSPOT_CONNECTION:
+                continue
+            # Check if this connection is bound to wlan0
+            iface_result = subprocess.run(
+                ["nmcli", "-t", "-f", "connection.interface-name", "connection", "show", conn_name],
+                capture_output=True, text=True, timeout=5
+            )
+            for iline in iface_result.stdout.strip().split("\n"):
+                if "connection.interface-name:" in iline:
+                    iface = iline.split(":", 1)[1].strip()
+                    if iface == "wlan0" or iface == "" or iface == "--":
+                        subprocess.run(
+                            ["sudo", "nmcli", "connection", "modify", conn_name,
+                             "connection.interface-name", "wlan1"],
+                            capture_output=True, text=True, timeout=5
+                        )
+                        print(f"Migrated WiFi connection '{conn_name}' to wlan1")
+                    break
+    except Exception as e:
+        print(f"Error migrating WiFi connections: {e}")
+
+
+def ensure_hotspot_running():
+    """Ensure hotspot is running on wlan0. Called at boot."""
+    try:
+        # Check if hotspot connection exists
+        result = subprocess.run(
+            ["nmcli", "connection", "show", HOTSPOT_CONNECTION],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode != 0:
+            print("Hotspot connection not found, cannot start")
+            return False
+
+        # Migrate any client WiFi connections off wlan0
+        migrate_wifi_connections_to_wlan1()
+
+        # Disconnect any client WiFi from wlan0 if active
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "GENERAL.CONNECTION", "device", "show", "wlan0"],
+            capture_output=True, text=True, timeout=5
+        )
+        for line in result.stdout.split("\n"):
+            if "GENERAL.CONNECTION:" in line:
+                active_conn = line.split(":", 1)[1].strip()
+                if active_conn and active_conn != "--" and active_conn != HOTSPOT_CONNECTION:
+                    print(f"Disconnecting '{active_conn}' from wlan0 (reserved for hotspot)")
+                    subprocess.run(
+                        ["sudo", "nmcli", "connection", "down", active_conn],
+                        capture_output=True, text=True, timeout=10
+                    )
+                break
+
+        # Check if hotspot already active
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "GENERAL.STATE", "connection", "show", "--active", HOTSPOT_CONNECTION],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0:
+            print("Hotspot already running")
+            return True
+
+        # Start it
+        result = subprocess.run(
+            ["sudo", "nmcli", "connection", "up", HOTSPOT_CONNECTION],
+            capture_output=True, text=True, timeout=15
+        )
+        if result.returncode == 0:
+            print(f"Hotspot started: {HOTSPOT_CONNECTION}")
+            return True
+        else:
+            print(f"Failed to start hotspot: {result.stderr}")
+            return False
+    except Exception as e:
+        print(f"Error starting hotspot: {e}")
         return False
 
 
@@ -1424,7 +1528,7 @@ def scan_wifi_networks():
     networks = []
     try:
         result = subprocess.run(
-            ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "device", "wifi", "list", "--rescan", "yes"],
+            ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "device", "wifi", "list", "ifname", "wlan1", "--rescan", "yes"],
             capture_output=True, text=True, timeout=15
         )
 
@@ -1635,7 +1739,7 @@ def api_wifi_connect():
                     "nmcli", "connection", "add",
                     "type", "wifi",
                     "con-name", ssid,
-                    "ifname", "wlan0",
+                    "ifname", "wlan1",
                     "ssid", ssid,
                     "wifi-sec.key-mgmt", "wpa-psk",
                     "wifi-sec.psk", password,
@@ -1648,7 +1752,7 @@ def api_wifi_connect():
                     "nmcli", "connection", "add",
                     "type", "wifi",
                     "con-name", ssid,
-                    "ifname", "wlan0",
+                    "ifname", "wlan1",
                     "ssid", ssid,
                     "connection.autoconnect", "yes",
                     "connection.autoconnect-priority", "100"
@@ -1668,6 +1772,33 @@ def api_wifi_connect():
             return jsonify({"success": False, "message": result.stderr.strip() or "Connection failed"})
     except subprocess.TimeoutExpired:
         return jsonify({"success": False, "message": "Connection timed out"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+
+@app.route("/api/wifi/disconnect", methods=["POST"])
+def api_wifi_disconnect():
+    """Disconnect from WiFi on wlan1."""
+    try:
+        # Get current connection on wlan1
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "GENERAL.CONNECTION", "device", "show", "wlan1"],
+            capture_output=True, text=True, timeout=5
+        )
+        connection_name = None
+        for line in result.stdout.split("\n"):
+            if "GENERAL.CONNECTION:" in line:
+                connection_name = line.split(":", 1)[1].strip()
+                break
+
+        if connection_name and connection_name != "--":
+            subprocess.run(
+                ["nmcli", "connection", "down", connection_name],
+                capture_output=True, text=True, timeout=10
+            )
+            return jsonify({"success": True, "message": f"Disconnected from {connection_name}"})
+        else:
+            return jsonify({"success": True, "message": "Not connected to any WiFi network"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
@@ -2404,7 +2535,7 @@ def get_support_system_info():
             pass
 
         try:
-            result = subprocess.run(["iwgetid", "-r"], capture_output=True, text=True, timeout=2)
+            result = subprocess.run(["iwgetid", "wlan1", "-r"], capture_output=True, text=True, timeout=2)
             info["network"]["wifi_ssid"] = result.stdout.strip() or "Not connected"
         except:
             info["network"]["wifi_ssid"] = "unknown"
@@ -4477,6 +4608,9 @@ def main():
         boot_state["start_time"] = time.time()
         boot_state["result"] = None
         boot_state["redirect"] = None
+
+    # Ensure hotspot is running on wlan0
+    ensure_hotspot_running()
 
     # Start security checks in background thread
     security_thread = threading.Thread(target=run_boot_security_checks, daemon=True)
