@@ -3,7 +3,26 @@
 ## Repository
 - **Local path:** ~/ros2_ws/src/pipe_crawler_control/
 - **Remote:** https://github.com/Craig-B-RAE/pipe_crawler_control.git
-- **Primary branch:** development
+- **Branch:** `main` — single-branch workflow. The old `development` branch was retired across all three crawler repos (`pipe_crawler_control`, `roboclaw_driver2`, `roboclaw_interfaces`). Commit and push directly to `main`; fleet crawlers pull from `main`.
+
+## Versioning
+
+Version is tracked in three files that must stay in sync:
+- `VERSION` (top-level, plain text)
+- `package.xml` (`<version>` element)
+- `setup.py` (`version=` keyword)
+
+**Format: `X.Y.Z.D`** (4 segments).
+- `X.Y.Z` is the fleet-visible version. **Fleet crawlers compare on the first three digits only** — they treat upstream as a new release iff `X.Y.Z` is newer.
+- `D` is a dev iteration counter that fleet update logic ignores. Use it for in-progress changes not yet blessed for rollout (local testing, WIP commits, debug builds).
+
+**Bump rules:**
+- Bump `D` (e.g. `2.4.0.0` → `2.4.0.1`): in-progress / unreleased changes. Fleet does not see this as a new version, so the iteration stays invisible to deployed crawlers.
+- Bump `Z` (e.g. `2.4.0.x` → `2.4.1.0`): tested and ready for fleet rollout. Reset `D` to `0`.
+- Bump `Y` (e.g. `2.4.x.x` → `2.5.0.0`): feature release. Reset `Z` and `D` to `0`.
+- Bump `X` (e.g. `2.x.x.x` → `3.0.0.0`): breaking changes. Reset `Y`, `Z`, `D` to `0`.
+
+Always bump all three files in the same commit so they don't drift. The most recent fleet-ready bump was `2.3.11 → 2.4.0.0`.
 
 ## Deployment
 - **Web source:** ~/ros2_ws/src/pipe_crawler_control/web/
