@@ -377,10 +377,10 @@
                             <div class="stats-row-item"><span class="stats-label">Motor 2 Encoder</span><span class="stats-value" id="motor2Position">0</span></div>
                             <div class="stats-row-item"><span class="stats-label"></span><button class="secondary-btn" id="resetFaultBtn" onclick="resetFaults(event)" style="display: none; font-size: 12px; padding: 6px 12px;">Reset Faults</button></div>
                             <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
-                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Calibrated Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label" style="color: var(--text-tertiary);">Calibrated Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Calibrated Roll</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label" style="color: var(--text-tertiary);">Calibrated Angle</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
                             <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Invert Angle</span><label class="toggle-switch"><input type="checkbox" id="invertAngleToggleStats" onchange="setInvertAngle(this.checked)"><span class="toggle-slider"></span></label></div>
                             <div class="stats-row-item" style="justify-content: center; padding-top: 8px;"><button class="secondary-btn" onclick="openCalibrateModal()" style="font-size: 12px; padding: 6px 16px;">Calibrate</button></div>
                         </div>
@@ -743,11 +743,11 @@
             <div style="padding: 20px;">
                 <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.5;">Before you start, place the crawler on a flat surface, or at the angle you want to calibrate.</p>
                 <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Live Angles</div>
-                <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="calLiveRoll">--</span>&deg;</span></div>
-                <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="calLivePitch">--</span>&deg;</span></div>
+                <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="calLivePitch">--</span>&deg;</span></div>
+                <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="calLiveRoll">--</span>&deg;</span></div>
                 <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 8px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Calibrated Angles</div>
-                <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="calRelRoll">--</span>&deg;</span></div>
-                <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="calRelPitch">--</span>&deg;</span></div>
+                <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="calRelPitch">--</span>&deg;</span></div>
+                <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="calRelRoll">--</span>&deg;</span></div>
                 <div style="margin-top: 20px; text-align: center;">
                     <button class="control-btn" onclick="performCalibration()" style="padding: 10px 24px; font-size: 14px;">Calibrate Now</button>
                 </div>
@@ -2184,18 +2184,33 @@
             updateLastDataTime();
             imuDataReceived = true;
             imuLastUpdate = Date.now();
-            imuCurrentRoll = msg.data;
-            document.getElementById('imuRoll').textContent = msg.data.toFixed(1);
-            document.getElementById('imuRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
+            var roll = imuInvertAngle ? -msg.data : msg.data;
+            imuCurrentRoll = roll;
+            var relRoll = roll - imuRollOffset;
+            document.getElementById('imuRoll').textContent = roll.toFixed(1);
+            document.getElementById('imuRelRoll').textContent = relRoll.toFixed(1);
             document.getElementById('imuStatus').textContent = 'Connected';
             document.getElementById('imuStatus').style.color = getThemeColor('--status-ok');
             if (calibrateModalOpen) {
-                document.getElementById('calLiveRoll').textContent = msg.data.toFixed(1);
-                document.getElementById('calRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
+                document.getElementById('calLiveRoll').textContent = roll.toFixed(1);
+                document.getElementById('calRelRoll').textContent = relRoll.toFixed(1);
+            }
+            document.getElementById('pipeRelAngleDisplay').textContent = relRoll.toFixed(1);
+            document.getElementById('pipeContainer').style.transform = 'rotate(' + relRoll + 'deg)';
+
+            if (distanceMode === 'degrees') {
+                if (prevRelPitch !== null) {
+                    var deltaDeg = relRoll - prevRelPitch;
+                    var circumference = Math.PI * pipeDiameter;
+                    var deltaInches = (deltaDeg / 360) * circumference;
+                    totalDistance += deltaInches;
+                    updatePositionFromDistance();
+                }
+                prevRelPitch = relRoll;
             }
         });
         imuPitchSubscriber.subscribe(function(msg) {
-            var pitch = imuInvertAngle ? -msg.data : msg.data;
+            var pitch = msg.data;
             imuCurrentPitch = pitch;
             var relPitch = pitch - imuPitchOffset;
             document.getElementById('imuPitch').textContent = pitch.toFixed(1);
@@ -2203,20 +2218,6 @@
             if (calibrateModalOpen) {
                 document.getElementById('calLivePitch').textContent = pitch.toFixed(1);
                 document.getElementById('calRelPitch').textContent = relPitch.toFixed(1);
-            }
-            document.getElementById('pipeRelAngleDisplay').textContent = relPitch.toFixed(1);
-            document.getElementById('pipeContainer').style.transform = 'rotate(' + relPitch + 'deg)';
-
-            // Degrees-based distance tracking
-            if (distanceMode === 'degrees') {
-                if (prevRelPitch !== null) {
-                    var deltaDeg = relPitch - prevRelPitch;
-                    var circumference = Math.PI * pipeDiameter;
-                    var deltaInches = (deltaDeg / 360) * circumference;
-                    totalDistance += deltaInches;
-                    updatePositionFromDistance();
-                }
-                prevRelPitch = relPitch;
             }
         });
 

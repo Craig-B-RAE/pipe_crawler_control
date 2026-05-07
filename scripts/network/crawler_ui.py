@@ -1723,59 +1723,52 @@ def api_wifi_connect():
         return jsonify({"success": False, "message": "SSID required"})
 
     try:
-        # Check if connection exists
-        result = subprocess.run(["nmcli", "connection", "show", ssid], capture_output=True, text=True)
+        # Delete any stale profile with this name so we start from a known state.
+        # Avoids "Secrets were required, but not provided" when an existing
+        # profile has empty/wrong secrets in NM's runtime state.
+        subprocess.run(
+            ["nmcli", "connection", "delete", ssid],
+            capture_output=True, text=True, timeout=10
+        )
 
-        if result.returncode == 0:
-            # Connection exists - update password if provided, then activate
-            if password:
-                subprocess.run(
-                    ["nmcli", "connection", "modify", ssid,
-                     "wifi-sec.key-mgmt", "wpa-psk",
-                     "wifi-sec.psk", password],
-                    capture_output=True, text=True
-                )
-            result = subprocess.run(["nmcli", "connection", "up", ssid], capture_output=True, text=True, timeout=30)
-        else:
-            # Create new PERSISTENT connection (not volatile 'device wifi connect')
-            # This stores credentials in /etc/NetworkManager/system-connections/
-            # which gets converted to netplan files on Ubuntu
-            if password:
-                cmd = [
-                    "nmcli", "connection", "add",
-                    "type", "wifi",
-                    "con-name", ssid,
-                    "ifname", "wlan1",
-                    "ssid", ssid,
-                    "wifi-sec.key-mgmt", "wpa-psk",
-                    "wifi-sec.psk", password,
-                    "connection.autoconnect", "yes",
-                    "connection.autoconnect-priority", "100"
-                ]
-            else:
-                # Open network (no password)
-                cmd = [
-                    "nmcli", "connection", "add",
-                    "type", "wifi",
-                    "con-name", ssid,
-                    "ifname", "wlan1",
-                    "ssid", ssid,
-                    "connection.autoconnect", "yes",
-                    "connection.autoconnect-priority", "100"
-                ]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        # Create a fresh PERSISTENT connection on wlan1 (wlan0 is the hotspot).
+        # Pin to 2.4GHz and disable power save: the RTL8811AU dongle on wlan1
+        # associates fine on 5GHz but stalls during the WPA2 4-way EAPOL handshake.
+        cmd = [
+            "nmcli", "connection", "add",
+            "type", "wifi",
+            "con-name", ssid,
+            "ifname", "wlan1",
+            "ssid", ssid,
+            "802-11-wireless.band", "bg",
+            "wifi.powersave", "2",
+            "connection.autoconnect", "yes",
+            "connection.autoconnect-priority", "100",
+        ]
+        if password:
+            cmd += [
+                "wifi-sec.key-mgmt", "wpa-psk",
+                "wifi-sec.psk", password,
+            ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            return jsonify({"success": False, "message": result.stderr.strip() or "Failed to create connection"})
 
-            if result.returncode == 0:
-                # Now activate the connection
-                result = subprocess.run(
-                    ["nmcli", "connection", "up", ssid],
-                    capture_output=True, text=True, timeout=30
-                )
+        # Reload so any netplan-managed secrets are picked up before activation.
+        subprocess.run(["nmcli", "connection", "reload"], capture_output=True, text=True, timeout=10)
 
+        result = subprocess.run(
+            ["nmcli", "connection", "up", ssid],
+            capture_output=True, text=True, timeout=45
+        )
         if result.returncode == 0:
             return jsonify({"success": True, "message": "Connected successfully"})
-        else:
-            return jsonify({"success": False, "message": result.stderr.strip() or "Connection failed"})
+        # On failure, remove the half-configured profile so the next attempt starts clean.
+        subprocess.run(
+            ["nmcli", "connection", "delete", ssid],
+            capture_output=True, text=True, timeout=10
+        )
+        return jsonify({"success": False, "message": result.stderr.strip() or "Connection failed"})
     except subprocess.TimeoutExpired:
         return jsonify({"success": False, "message": "Connection timed out"})
     except Exception as e:
