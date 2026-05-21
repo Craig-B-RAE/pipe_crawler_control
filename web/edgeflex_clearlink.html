@@ -1467,7 +1467,6 @@
             motorParams.motorTorque = parseFloat(document.getElementById('motorTorqueInput').value) || 0.5;
             MAX_SPEED_IPS = calculateMaxSpeed();
             document.getElementById('maxSpeedDisplay').textContent = MAX_SPEED_IPS.toFixed(1);
-            document.getElementById('speedInput').max = MAX_SPEED_IPS.toFixed(1);
             updateCrawlerTorque();
             // Recalculate conversion factors with new motor params
             recalculate();
