@@ -15,6 +15,7 @@ Serves different HTML interfaces based on crawler type:
 import os
 import subprocess
 import json
+import copy
 import time
 import logging
 import threading
@@ -848,7 +849,7 @@ def api_system_stats():
 @app.route("/api/settings", methods=["GET"])
 def api_get_settings():
     """API endpoint to get UI settings for the current crawler config."""
-    settings = DEFAULT_UI_SETTINGS.copy()
+    settings = copy.deepcopy(DEFAULT_UI_SETTINGS)
     settings_file = get_settings_file()
 
     if os.path.exists(settings_file):
@@ -878,7 +879,7 @@ def api_save_settings():
         settings_file = get_settings_file()
 
         # Load existing settings and merge
-        settings = DEFAULT_UI_SETTINGS.copy()
+        settings = copy.deepcopy(DEFAULT_UI_SETTINGS)
         if os.path.exists(settings_file):
             try:
                 with open(settings_file, "r") as f:
