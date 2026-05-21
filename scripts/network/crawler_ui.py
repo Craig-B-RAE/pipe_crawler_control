@@ -615,16 +615,6 @@ def api_run_update():
         if result.returncode != 0:
             return jsonify({"status": "error", "message": result.stderr or "Deploy failed"}), 500
 
-        # Step 3: Switch repos back to development
-        for r in repos:
-            repo_path = os.path.join(src, r)
-            if os.path.isdir(repo_path):
-                env = os.environ.copy()
-                env["GIT_DIR"] = os.path.join(repo_path, ".git")
-                env["GIT_WORK_TREE"] = repo_path
-                subprocess.run(["git", "checkout", "development"], env=env,
-                               capture_output=True, timeout=10)
-
         # Step 4: Schedule delayed service restart (5 seconds)
         subprocess.Popen(
             ["bash", "-c", "sleep 5 && sudo systemctl restart xpresscan-crawler-ui pipe_crawler crawler-heartbeat 2>/dev/null"],

@@ -53,12 +53,6 @@ if [ -f "$ACTIVE_SYSTEM_FILE" ]; then
   fi
 fi
 
-# Step 5: Switch repos back to development for continued work
-for repo in "${REPOS[@]}"; do
-  cd "$SRC/$repo"
-  git checkout development 2>/dev/null || true
-done
-
 # Step 7: Delete all WiFi connections except hotspot
 echo "Resetting WiFi connections..."
 HOTSPOT_CON="XPressCan-Hotspot"
