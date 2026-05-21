@@ -53,18 +53,4 @@ if [ -f "$ACTIVE_SYSTEM_FILE" ]; then
   fi
 fi
 
-# Step 7: Delete all WiFi connections except hotspot
-echo "Resetting WiFi connections..."
-HOTSPOT_CON="XPressCan-Hotspot"
-nmcli -t -f NAME,TYPE connection show | while IFS=: read name type; do
-    if [ "$type" = "802-11-wireless" ] && [ "$name" != "$HOTSPOT_CON" ]; then
-        sudo nmcli connection delete "$name" 2>/dev/null || true
-        echo "Deleted WiFi: $name"
-    fi
-done
-
-# Step 8: Restart hotspot
-sudo nmcli connection up "$HOTSPOT_CON" 2>/dev/null || true
-echo "Hotspot restarted"
-
 echo "=== Update complete! ==="
