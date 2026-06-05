@@ -12,6 +12,11 @@
     <title>EdgeFlex RoboClaw Controller</title>
     <link rel="stylesheet" href="/css/theme.css">
     <link rel="stylesheet" href="/css/base.css">
+    <style>
+        /* X-ray beam graphic (from edgeflex_clearlink.html) for the rotating pipe view */
+        .xray-beam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .xray-beam line { stroke: var(--text-primary); stroke-width: 0.5; stroke-dasharray: 0.5, 3; stroke-linecap: round; opacity: 0.4; }
+    </style>
 </head>
 <body class="page-control">
     <!-- Global error handler for Safari debugging -->
@@ -139,27 +144,31 @@
             <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
                 <div class="stats-button" onclick="togglePopup('statsPopup', event)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Stats
-                    <div class="stats-popup" id="statsPopup" onclick="event.stopPropagation()">
+                    <div class="stats-popup" id="statsPopup" onclick="event.stopPropagation()" style="background-color: var(--popup-bg); border: 1px solid var(--border-color);">
                         <div class="popup-header" onmousedown="startDrag(event, 'statsPopup')" ontouchstart="startDragTouch(event, 'statsPopup')">
                             <span class="popup-title">Stats</span>
                             <button class="popup-close" onclick="closePopup('statsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                         </div>
                         <div class="popup-content">
-                            <div class="stats-row-item"><span class="stats-label">Battery</span><span class="stats-value-group"><span class="stats-value" id="voltage">--.-V</span><button class="icon-btn" onclick="showGraph(event,'battery')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                            <div class="stats-row-item"><span class="stats-label">Motor Current</span><span class="stats-value-group"><span class="stats-value" id="m1Current">--A</span><button class="icon-btn" onclick="showGraph(event,'m1')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                            <div class="stats-row-item"><span class="stats-label">Motor Torque</span><span class="stats-value-group"><span class="stats-value" id="m1Torque">-- Nm</span><button class="icon-btn" onclick="showGraph(event,'torque')" title="View graph"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button></span></div>
-                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value-group"><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span><button class="icon-btn" onclick="zeroIMU(event)" title="Zero IMU"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></button></span></div>
-                            <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
-                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Rel. Roll</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label" style="color: var(--text-tertiary);">Rel. Angle</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
-                            <div class="stats-row-item"><span class="stats-label">Version</span><span class="stats-value" id="currentVersionDisplay">2.4.0.0</span></div>
+                            <div class="stats-row-item" style="padding-top: 4px;"><span class="stats-label" style="font-weight: 600;">ClearLink</span><span class="stats-value" id="clearlinkConnStatus" style="font-size: 11px;">--</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 1 Fault</span><span class="stats-value" id="motor1FaultStatus" style="color: var(--status-ok);">OK</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 2 Fault</span><span class="stats-value" id="motor2FaultStatus" style="color: var(--status-ok);">OK</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 1 Encoder</span><span class="stats-value" id="motor1Position">0</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Motor 2 Encoder</span><span class="stats-value" id="motor2Position">0</span></div>
+                            <div class="stats-row-item"><span class="stats-label"></span><button class="secondary-btn" id="resetFaultBtn" onclick="resetFaults(event)" style="display: none; font-size: 12px; padding: 6px 12px;">Reset Faults</button></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 12px;"><span class="stats-label" style="font-weight: 600;">IMU Sensor</span><span class="stats-value" id="imuStatus" style="font-size: 11px;">--</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="imuPitch">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="imuRoll">--</span>°</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Calibrated Roll</span><span class="stats-value"><span id="imuRelPitch">--</span>°</span></div>
+                            <div class="stats-row-item"><span class="stats-label" style="color: var(--text-tertiary);">Calibrated Angle</span><span class="stats-value"><span id="imuRelRoll">--</span>°</span></div>
+                            <div class="stats-row-item" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;"><span class="stats-label" style="color: var(--text-tertiary);">Invert Angle</span><label class="toggle-switch"><input type="checkbox" id="invertAngleToggleStats" onchange="setInvertAngle(this.checked)"><span class="toggle-slider"></span></label></div>
+                            <div class="stats-row-item" style="justify-content: center; padding-top: 8px;"><button class="secondary-btn" onclick="openCalibrateModal()" style="font-size: 12px; padding: 6px 16px;">Calibrate</button></div>
                         </div>
                     </div>
                 </div>
                 <div class="stats-button" id="settingsButton" onclick="togglePopup('settingsPopup', event)" style="position: relative;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings
-                    <div class="settings-popup" id="settingsPopup" onclick="event.stopPropagation()">
+                    <div class="settings-popup" id="settingsPopup" onclick="event.stopPropagation()" style="background-color: var(--popup-bg); border: 1px solid var(--border-color);">
                         <div class="popup-header" onmousedown="startDrag(event, 'settingsPopup')" ontouchstart="startDragTouch(event, 'settingsPopup')">
                             <span class="popup-title">Settings</span>
                             <button class="popup-close" onclick="closePopup('settingsPopup')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -180,27 +189,62 @@
                                 </div>
                             </div>
                             <div class="settings-row">
-                                <span class="settings-label">Speed</span>
-                                <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                    <span class="settings-unit" style="margin-right: 6px;">"/s</span>
-                                    <input type="number" class="settings-input" id="speedInput" min="0" max="8.3" step="0.1" value="4.0" onchange="updateSpeed(this.value)">
-                                </div>
-                            </div>
-                            <div class="settings-row">
-                                <span class="settings-label">Ramp</span>
-                                <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                    <span class="settings-unit" style="margin-right: 6px;">%</span>
-                                    <input type="number" class="settings-input" id="rampInput" min="0" max="100" value="50" onchange="updateRamp(this.value)">
-                                </div>
-                            </div>
-                            <div class="settings-row">
                                 <span class="settings-label">Distance Mode</span>
                                 <div class="seg-toggle" id="distanceModeToggle">
                                     <button class="active" onclick="setDistanceMode('encoder')">Encoder</button>
                                     <button onclick="setDistanceMode('degrees')">Degrees</button>
                                 </div>
                             </div>
+                            <div class="settings-row">
+                                <span class="settings-label">Jog Speed</span>
+                                <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                    <span class="settings-unit" style="margin-right: 6px;">in/s</span>
+                                    <input type="number" class="settings-input" id="jogSpeedInput" min="0.01" max="10" step="0.01" value="0.5" onchange="updateJogSpeed(this.value)" style="width: 70px;">
+                                </div>
+                            </div>
+                            <div class="settings-row">
+                                <span class="settings-label">Ramp</span>
+                                <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                    <span class="settings-unit" style="margin-right: 6px;">%</span>
+                                    <input type="number" class="settings-input" id="rampInput" min="1" max="100" step="1" value="50" onchange="updateRamp(this.value)" style="width: 70px;">
+                                </div>
+                            </div>
+                            <div style="border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 12px;">
+                                <div onclick="toggleNamedPositions()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                                    <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Named Positions (degrees)</div>
+                                    <svg id="namedPosChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary); transition: transform 0.25s ease;"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                                <div id="namedPosContent" style="max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.3s ease, opacity 0.25s ease;">
+                                    <div class="settings-row">
+                                        <span class="settings-label">Home Position</span>
+                                        <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                            <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
+                                            <input type="number" class="settings-input" id="namedPosHome" min="-360" max="360" step="0.1" value="0" onchange="saveNamedPosition('home', this.value)" style="width: 70px;">
+                                        </div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <span class="settings-label">Start Position</span>
+                                        <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                            <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
+                                            <input type="number" class="settings-input" id="namedPosStart" min="-360" max="360" step="0.1" value="0" onchange="saveNamedPosition('start', this.value)" style="width: 70px;">
+                                        </div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <span class="settings-label">Tube Removal</span>
+                                        <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                            <span class="settings-unit" style="margin-right: 6px;">&deg;</span>
+                                            <input type="number" class="settings-input" id="namedPosTubeRemoval" min="-360" max="360" step="0.1" value="180" onchange="saveNamedPosition('tubeRemoval', this.value)" style="width: 70px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <button class="save-defaults-btn" onclick="saveAllDefaults()">Save as Defaults</button>
+                            <div style="border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 12px;">
+                                <div class="settings-row">
+                                    <span class="settings-label">Voice Commands</span>
+                                    <label class="toggle-switch"><input type="checkbox" id="voiceCommandsToggle" onchange="setVoiceCommands(this.checked)"><span class="toggle-slider"></span></label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -340,7 +384,18 @@
                 <div class="shots-column" id="shotsLeft"></div>
                 <div class="pipe-container" id="pipeContainer">
                     <div class="pipe-circle"></div>
-                    <div class="bug" id="bug"><svg viewBox="0 0 100 40"><path d="M10,28 Q5,28 5,25 L8,22 Q15,15 30,14 L45,13 Q55,12 65,13 L80,15 Q90,17 95,22 L95,25 Q95,28 90,28 Z" fill="#5856d6"/><path d="M32,14 Q37,9 50,8 Q63,9 68,14 L65,14 Q60,11 50,10 Q40,11 35,14 Z" fill="#636366"/><circle cx="22" cy="28" r="6" fill="#1d1d1f"/><circle cx="22" cy="28" r="3" fill="#636366"/><circle cx="78" cy="28" r="6" fill="#1d1d1f"/><circle cx="78" cy="28" r="3" fill="#636366"/><path d="M88,12 L95,12 L95,14 L88,15 Z" fill="#1d1d1f"/></svg></div>
+                    <!-- X-ray beam with 40-degree spread (20 deg each side) -->
+                    <svg class="xray-beam" viewBox="0 0 100 100">
+                        <line x1="50" y1="88" x2="30" y2="16"/>
+                        <line x1="50" y1="88" x2="70" y2="16"/>
+                        <line x1="50" y1="88" x2="40" y2="16"/>
+                        <line x1="50" y1="88" x2="60" y2="16"/>
+                        <line x1="50" y1="88" x2="50" y2="16"/>
+                    </svg>
+                    <!-- Wall-E at top -->
+                    <div class="walle" id="walle"><img src="/images/wall-e.png" alt="Wall-E"></div>
+                    <!-- Radiation trefoil symbol at bottom (no fill, outline only) -->
+                    <div class="xray-source" id="xraySource" style="color: var(--text-primary);"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="12" fill="none" stroke="currentColor" stroke-width="3"/><path d="M50 38 L50 8 A42 42 0 0 1 86.4 71 L61 56 A12 12 0 0 0 50 38" fill="none" stroke="currentColor" stroke-width="3"/><path d="M61 56 L86.4 71 A42 42 0 0 1 13.6 71 L39 56 A12 12 0 0 0 61 56" fill="none" stroke="currentColor" stroke-width="3"/><path d="M39 56 L13.6 71 A42 42 0 0 1 50 8 L50 38 A12 12 0 0 0 39 56" fill="none" stroke="currentColor" stroke-width="3"/></svg></div>
                 </div>
                 <div class="shots-column" id="shotsRight"></div>
             </div>
@@ -366,7 +421,7 @@
             </div>
         </div>
 
-        <div class="footer">v<span id="footerVersion">2.4.0.0</span> | Last updated: <span id="lastUpdated">--</span></div>
+        <div class="footer">v<span id="footerVersion">2.4.0.2</span> | Last updated: <span id="lastUpdated">--</span></div>
 
         <!-- Support Button -->
         <div class="support-section">
@@ -471,9 +526,49 @@
         </div>
     </div>
 
+    <!-- Calibrate Angle Sensor modal (from ClearLink) — drives the Stats popup Calibrate button -->
+    <div class="modal-overlay" id="calibrateModal" onclick="closeCalibrateModal()" style="display: none;">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 360px;">
+            <div class="modal-header">
+                <span class="modal-title">Calibrate Angle Sensor</span>
+                <button class="modal-close" onclick="closeCalibrateModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="padding: 20px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.5;">Before you start, place the crawler on a flat surface, or at the angle you want to calibrate.</p>
+                <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Live Angles</div>
+                <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="calLivePitch">--</span>&deg;</span></div>
+                <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="calLiveRoll">--</span>&deg;</span></div>
+                <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 8px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Calibrated Angles</div>
+                <div class="stats-row-item"><span class="stats-label">Roll</span><span class="stats-value"><span id="calRelPitch">--</span>&deg;</span></div>
+                <div class="stats-row-item"><span class="stats-label">Angle</span><span class="stats-value"><span id="calRelRoll">--</span>&deg;</span></div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="control-btn" onclick="performCalibration()" style="padding: 10px 24px; font-size: 14px;">Calibrate Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calibration Success Dialog -->
+    <div class="password-modal" id="calibrateSuccessModal">
+        <div class="password-dialog">
+            <h3>Angle sensor calibrated.</h3>
+            <div class="btn-row">
+                <button class="btn-unlock" onclick="closeCalibrateSuccess()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compat carriers: IDs still referenced by RoboClaw JS after the verbatim ClearLink Stats/Settings swap. Placed BEFORE the main script because some (e.g. currentVersionDisplay) are read at parse-time. Display/relocation wiring deferred to next round. -->
+    <div style="display: none !important;" aria-hidden="true">
+        <input type="number" id="speedInput" value="4.0" max="8.3">
+        <span id="voltage"></span>
+        <span id="m1Current"></span>
+        <span id="m1Torque"></span>
+        <span id="currentVersionDisplay"></span>
+    </div>
     <script src="/js/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '2.4.0.0';
+        var CURRENT_VERSION = '2.4.0.2';
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var SYSTEM_ID = 'edgeflex';
         var MOTOR_COUNT = 1;
@@ -694,10 +789,15 @@
         var savedDriver = 'clearlink';
 
         function updateDriverToggle() {
-            document.getElementById('driverClearLink').classList.toggle('active', currentDriver === 'clearlink');
-            document.getElementById('driverRoboClaw').classList.toggle('active', currentDriver === 'roboclaw');
+            // edgeflex is single-driver (RoboClaw) and has no driver-switch UI; skip if those elements are absent.
+            var dcl = document.getElementById('driverClearLink');
+            var drc = document.getElementById('driverRoboClaw');
+            var drb = document.getElementById('driverRestartBanner');
+            if (!dcl || !drc || !drb) { return; }
+            dcl.classList.toggle('active', currentDriver === 'clearlink');
+            drc.classList.toggle('active', currentDriver === 'roboclaw');
             var needsRestart = currentDriver !== savedDriver;
-            document.getElementById('driverRestartBanner').style.display = needsRestart ? 'block' : 'none';
+            drb.style.display = needsRestart ? 'block' : 'none';
         }
 
         function setDriver(driver) {
@@ -902,9 +1002,11 @@
             document.querySelectorAll('.protected-input').forEach(function(input) {
                 input.disabled = false;
             });
-            // Enable driver toggle buttons
-            document.getElementById('driverClearLink').disabled = false;
-            document.getElementById('driverRoboClaw').disabled = false;
+            // Enable driver toggle buttons (absent on edgeflex single-driver page)
+            var _dclu = document.getElementById('driverClearLink');
+            var _drcu = document.getElementById('driverRoboClaw');
+            if (_dclu) { _dclu.disabled = false; }
+            if (_drcu) { _drcu.disabled = false; }
             document.getElementById('lockBtn').classList.add('unlocked');
             document.getElementById('lockText').textContent = 'Lock';
             document.getElementById('lockIcon').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
@@ -916,9 +1018,11 @@
             document.querySelectorAll('.protected-input').forEach(function(input) {
                 input.disabled = true;
             });
-            // Disable driver toggle buttons
-            document.getElementById('driverClearLink').disabled = true;
-            document.getElementById('driverRoboClaw').disabled = true;
+            // Disable driver toggle buttons (absent on edgeflex single-driver page)
+            var _dcll = document.getElementById('driverClearLink');
+            var _drcl = document.getElementById('driverRoboClaw');
+            if (_dcll) { _dcll.disabled = true; }
+            if (_drcl) { _drcl.disabled = true; }
             document.getElementById('lockBtn').classList.remove('unlocked');
             document.getElementById('lockText').textContent = 'Unlock';
             document.getElementById('lockIcon').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
@@ -1242,12 +1346,20 @@
             document.getElementById('imuRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
             document.getElementById('imuStatus').textContent = 'Connected';
             document.getElementById('imuStatus').style.color = '#34c759';
+            if (calibrateModalOpen) {
+                document.getElementById('calLiveRoll').textContent = msg.data.toFixed(1);
+                document.getElementById('calRelRoll').textContent = (msg.data - imuRollOffset).toFixed(1);
+            }
         });
         imuPitchSubscriber.subscribe(function(msg) {
             imuCurrentPitch = msg.data;
             var relPitch = msg.data - imuPitchOffset;
             document.getElementById('imuPitch').textContent = msg.data.toFixed(1);
             document.getElementById('imuRelPitch').textContent = relPitch.toFixed(1);
+            if (calibrateModalOpen) {
+                document.getElementById('calLivePitch').textContent = msg.data.toFixed(1);
+                document.getElementById('calRelPitch').textContent = relPitch.toFixed(1);
+            }
             document.getElementById('pipeRelAngleDisplay').textContent = relPitch.toFixed(1) + '°';
             document.getElementById('pipeContainer').style.transform = 'rotate(' + relPitch + 'deg)';
 
@@ -1673,6 +1785,61 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(function(){});
     }
+    </script>
+    <script>
+    /* === Shims for ClearLink popups copied into RoboClaw UI (render-only; backend wiring next round). === */
+    var namedPosOpen = false;
+    function toggleNamedPositions() {
+        var content = document.getElementById('namedPosContent');
+        var chevron = document.getElementById('namedPosChevron');
+        if (!content || !chevron) { return; }
+        namedPosOpen = !namedPosOpen;
+        if (namedPosOpen) {
+            content.style.maxHeight = '200px';
+            content.style.opacity = '1';
+            chevron.style.transform = 'rotate(180deg)';
+        } else {
+            content.style.maxHeight = '0';
+            content.style.opacity = '0';
+            chevron.style.transform = 'rotate(0deg)';
+        }
+    }
+    function updateJogSpeed(val) {
+        var el = document.getElementById('jogSpeedInput');
+        if (el && val !== undefined && val !== null) { el.value = parseFloat(val).toFixed(2); }
+    }
+    function saveNamedPosition(name, value) { /* TODO: wire to settings backend */ }
+    function setVoiceCommands(enabled) { /* TODO: wire voice-command backend */ }
+    function setInvertAngle(checked) {
+        var el = document.getElementById('invertAngleToggleStats');
+        if (el) { el.checked = !!checked; }
+    }
+    var calibrateModalOpen = false;
+    function openCalibrateModal() {
+        calibrateModalOpen = true;
+        document.getElementById('calibrateModal').style.display = 'flex';
+        document.getElementById('calLiveRoll').textContent = imuCurrentRoll.toFixed(1);
+        document.getElementById('calLivePitch').textContent = imuCurrentPitch.toFixed(1);
+        document.getElementById('calRelRoll').textContent = (imuCurrentRoll - imuRollOffset).toFixed(1);
+        document.getElementById('calRelPitch').textContent = (imuCurrentPitch - imuPitchOffset).toFixed(1);
+    }
+    function closeCalibrateModal() {
+        calibrateModalOpen = false;
+        document.getElementById('calibrateModal').style.display = 'none';
+    }
+    function performCalibration() {
+        imuRollOffset = imuCurrentRoll;
+        imuPitchOffset = imuCurrentPitch;
+        document.getElementById('imuRelRoll').textContent = '0.0';
+        document.getElementById('imuRelPitch').textContent = '0.0';
+        closeCalibrateModal();
+        document.getElementById('calibrateSuccessModal').classList.add('show');
+        saveSettings({ imuRollOffset: imuRollOffset, imuPitchOffset: imuPitchOffset });
+    }
+    function closeCalibrateSuccess() {
+        document.getElementById('calibrateSuccessModal').classList.remove('show');
+    }
+    function resetFaults(event) { if (event) { event.stopPropagation(); } /* TODO: wire RoboClaw fault reset */ }
     </script>
 </body>
 </html>
