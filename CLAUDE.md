@@ -7,6 +7,8 @@
 
 ## Versioning
 
+> **Signpost — authoritative rule lives in the vault, not here.** Bump `VERSION`/`package.xml`/`setup.py` only; the HTML reads `/api/version` at runtime (no hardcoded `CURRENT_VERSION`). Full rule + rationale (incl. the update-loop footgun that bricked the fleet twice): vault `discoveries/crawler-fleet-versioning-and-update-loop-fix.md`.
+
 Version is tracked in three files that must stay in sync:
 - `VERSION` (top-level, plain text)
 - `package.xml` (`<version>` element)
