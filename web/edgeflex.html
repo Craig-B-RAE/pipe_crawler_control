@@ -568,7 +568,11 @@
     </div>
     <script src="/js/roslib.min.js"></script>
     <script>
-        var CURRENT_VERSION = '2.4.1.0';
+        // Version is read at runtime from /api/version (the deployed VERSION file).
+        // Single source of truth -- do NOT hardcode a version here.
+        var DEPLOYED_VERSION = null;
+        function setVerText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+        function loadDeployedVersion() { return fetch('/api/version?t=' + Date.now()).then(function(r){ return r.json(); }).then(function(d){ DEPLOYED_VERSION = (d && d.version ? String(d.version).trim() : ''); setVerText('footerVersion', DEPLOYED_VERSION || '?'); setVerText('currentVersionDisplay', DEPLOYED_VERSION || '?'); return DEPLOYED_VERSION; }).catch(function(){ return ''; }); }
         var GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/Craig-B-RAE/pipe_crawler_control/main/VERSION';
         var SYSTEM_ID = 'edgeflex';
         var MOTOR_COUNT = 1;
@@ -599,8 +603,7 @@
             }
         }
 
-        document.getElementById('currentVersionDisplay').textContent = CURRENT_VERSION;
-        document.getElementById('footerVersion').textContent = CURRENT_VERSION;
+        loadDeployedVersion();
 
         var stats = { battery: { min: 999, max: 0, data: [] }, temp: { data: [], data2: [] }, m1: { min: 999, max: 0, data: [] }, torque: { min: 999, max: 0, data: [] }, fan: { min: 999, max: 0, data: [] } };
         var currentGraphType = 'battery';
@@ -1163,7 +1166,7 @@
         var updateCountdownTimer = null;
         var updateCountdownValue = 59;
         var updateDismissed = false;
-        function checkForUpdates() { fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r) { return r.text(); }).then(function(v) { v = v.trim(); if (compareVersions(CURRENT_VERSION, v) < 0) { document.getElementById('newVersion').textContent = v; if (!updateDismissed && !document.getElementById('updateBanner').classList.contains('show')) { document.getElementById('updateBanner').classList.add('show'); startUpdateCountdown(); } } }).catch(function(e) { }); }
+        function checkForUpdates() { Promise.all([ fetch('/api/version?t=' + Date.now()).then(function(r){ return r.json(); }).then(function(d){ return (d && d.version ? String(d.version).trim() : ''); }).catch(function(){ return ''; }), fetch(GITHUB_VERSION_URL + '?t=' + Date.now()).then(function(r){ return r.text(); }).then(function(t){ return t.trim(); }) ]).then(function(res){ var cur = res[0], remote = res[1]; if (cur) { DEPLOYED_VERSION = cur; setVerText('footerVersion', cur); setVerText('currentVersionDisplay', cur); } if (cur && remote && compareVersions(cur, remote) < 0) { document.getElementById('newVersion').textContent = remote; if (!updateDismissed && !document.getElementById('updateBanner').classList.contains('show')) { document.getElementById('updateBanner').classList.add('show'); startUpdateCountdown(); } } }).catch(function(e){}); }
         function startUpdateCountdown() { if (updateCountdownTimer) clearInterval(updateCountdownTimer); updateCountdownValue = 59; document.getElementById('countdownTimer').textContent = '0:59'; updateCountdownTimer = setInterval(function() { updateCountdownValue--; var secs = updateCountdownValue < 10 ? '0' + updateCountdownValue : '' + updateCountdownValue; document.getElementById('countdownTimer').textContent = '0:' + secs; if (updateCountdownValue <= 0) { clearInterval(updateCountdownTimer); updateCountdownTimer = null; installUpdate(); } }, 1000); }
         function dismissUpdate() { if (updateCountdownTimer) { clearInterval(updateCountdownTimer); updateCountdownTimer = null; } document.getElementById('updateBanner').classList.remove('show'); updateDismissed = true; }
         setTimeout(checkForUpdates, 1000); setInterval(checkForUpdates, 300000);

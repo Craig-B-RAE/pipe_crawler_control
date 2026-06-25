@@ -584,6 +584,21 @@ def api_status():
     return jsonify(get_system_status())
 
 
+@app.route("/api/version")
+def api_version():
+    """The actually-deployed version (contents of the local VERSION file).
+
+    Single source of truth for the UI. The HTML reads this at runtime instead
+    of hardcoding a per-page CURRENT_VERSION, so a future VERSION-only bump can
+    never desync the pages into an infinite update-banner loop.
+    """
+    try:
+        with open("/home/craig/ros2_ws/src/pipe_crawler_control/VERSION") as f:
+            return jsonify({"version": f.read().strip()})
+    except Exception:
+        return jsonify({"version": None})
+
+
 @app.route("/api/run_update", methods=["POST"])
 def api_run_update():
     """Run system update: git pull, deploy, then delayed service restart."""
