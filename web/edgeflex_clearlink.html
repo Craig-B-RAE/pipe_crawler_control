@@ -296,6 +296,7 @@
             <div class="popup-content" id="alarmsContent">
                 <div style="text-align:center; color:var(--text-tertiary); padding:20px;">No alarms</div>
             </div>
+            <div style="text-align:center; padding:0 12px 12px;"><button class="secondary-btn" id="resetFaultBtnAlarm" onclick="resetFaults(event)" style="display: none; font-size: 12px; padding: 6px 16px;">Reset Faults</button></div>
         </div>
 
         <!-- Row 2: Status indicators - centered -->
@@ -995,17 +996,26 @@
             }
         });
 
-        function addAlarm(message) {
+        function addAlarm(message, type) {
             alarmCounter++;
             var now = new Date();
             var timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0');
-            alarms.push({ id: alarmCounter, message: message, time: timeStr });
+            alarms.push({ id: alarmCounter, message: message, time: timeStr, type: type || null });
             updateAlarmIcon();
             renderAlarms();
         }
 
         function clearAlarms() {
+            // Dismiss all alarms. A still-active motor fault is re-raised by the status
+            // handler on the next message (so it can't be permanently "fake-cleared"); a
+            // resolved fault auto-clears there too.
             alarms = [];
+            updateAlarmIcon();
+            renderAlarms();
+        }
+
+        function clearAlarmType(type) {
+            alarms = alarms.filter(function(a) { return a.type !== type; });
             updateAlarmIcon();
             renderAlarms();
         }
@@ -1035,7 +1045,6 @@
             for (var i = alarms.length - 1; i >= 0; i--) {
                 html += '<div class="stats-row-item"><span class="stats-label" style="color:var(--status-error);">\u26A0 ' + alarms[i].message + '</span><span class="stats-value" style="font-size:10px; color:var(--text-tertiary);">' + alarms[i].time + '</span></div>';
             }
-            html += '<div style="border-top:1px solid var(--border-color); margin-top:8px; padding-top:8px; text-align:center;"><button class="secondary-btn" onclick="clearAlarms()" style="font-size:12px; padding:6px 16px;">Clear Alarms</button></div>';
             container.innerHTML = html;
         }
 
@@ -1984,9 +1993,25 @@
                 m2FaultEl.style.color = okColor;
             }
 
-            // Show reset button if any motor has fault
+            // Show reset button(s) if any motor has fault — Stats popup AND Alarms popup.
             var hasFault = m0Fault || m1Fault;
             resetBtn.style.display = hasFault ? 'block' : 'none';
+            var resetBtnAlarm = document.getElementById('resetFaultBtnAlarm');
+            if (resetBtnAlarm) { resetBtnAlarm.style.display = hasFault ? 'block' : 'none'; }
+
+            // The fault alarm mirrors the LIVE fault: present while a motor is actually
+            // faulted and auto-cleared only when the fault truly clears (via Reset Faults).
+            // It is system-managed (no manual dismiss), so a live fault can't be hidden.
+            var faultAlarmShown = false;
+            for (var ai = 0; ai < alarms.length; ai++) {
+                if (alarms[ai].type === 'clearlink_fault') { faultAlarmShown = true; break; }
+            }
+            if (hasFault && !faultAlarmShown) {
+                var faultMotors = (m0Fault && m1Fault) ? 'M1 & M2' : (m0Fault ? 'M1' : 'M2');
+                addAlarm(faultMotors + ' motor fault — both motors disabled (gear protection); Reset Faults to re-arm', 'clearlink_fault');
+            } else if (!hasFault && faultAlarmShown) {
+                clearAlarmType('clearlink_fault');
+            }
             }
 
             // When ClearLink is disconnected, show fault (red)
@@ -2106,6 +2131,8 @@
         var imuRollOffset = 0;
         var imuPitchOffset = 0;
         var imuCurrentRoll = 0;
+        // Crawler angle around the pipe is shown 0-360 (not +/-180).
+        function to360(deg) { return ((deg % 360) + 360) % 360; }
         var imuCurrentPitch = 0;
         var imuInvertAngle = false;
 
@@ -2121,9 +2148,9 @@
         function openCalibrateModal() {
             calibrateModalOpen = true;
             document.getElementById('calibrateModal').style.display = 'flex';
-            document.getElementById('calLiveRoll').textContent = imuCurrentRoll.toFixed(1);
+            document.getElementById('calLiveRoll').textContent = to360(imuCurrentRoll).toFixed(1);
             document.getElementById('calLivePitch').textContent = imuCurrentPitch.toFixed(1);
-            document.getElementById('calRelRoll').textContent = (imuCurrentRoll - imuRollOffset).toFixed(1);
+            document.getElementById('calRelRoll').textContent = to360(imuCurrentRoll - imuRollOffset).toFixed(1);
             document.getElementById('calRelPitch').textContent = (imuCurrentPitch - imuPitchOffset).toFixed(1);
         }
 
@@ -2156,29 +2183,33 @@
 
         function resetFaults(event) {
             event.stopPropagation();
+            // Drive BOTH reset buttons (Stats popup + Alarms popup) so feedback shows wherever
+            // the operator clicked.
+            var btns = [document.getElementById('resetFaultBtn'), document.getElementById('resetFaultBtnAlarm')];
+            function setBtns(text, disabled) {
+                for (var i = 0; i < btns.length; i++) { if (btns[i]) { btns[i].textContent = text; btns[i].disabled = disabled; } }
+            }
+            setBtns('Clearing...', true);
+            // Build the client against the CURRENT ros connection at click-time, so a client
+            // cached from before a reconnect/auto-reload can't be bound to a closed socket.
+            var client = new ROSLIB.Service({ ros: ros, name: '/clearlink/clear_faults', serviceType: 'clearlink_interfaces/srv/ClearFaults' });
             var request = new ROSLIB.ServiceRequest({
                 axis1: true,
                 axis2: true,
                 axis3: false,
                 axis4: false
             });
-            var resetBtn = document.getElementById('resetFaultBtn');
-            resetBtn.textContent = 'Clearing...';
-            resetBtn.disabled = true;
-            clearFaultsClient.callService(request, function(result) {
-                resetBtn.disabled = false;
+            client.callService(request, function(result) {
                 if (result.success) {
-                    resetBtn.textContent = 'Reset Faults';
-                    // Status will update from the next status message
+                    setBtns('Reset Faults', false);
                 } else {
-                    resetBtn.textContent = 'Reset Failed';
-                    setTimeout(function() { resetBtn.textContent = 'Reset Faults'; }, 2000);
+                    setBtns('Reset Failed', false);
+                    setTimeout(function() { setBtns('Reset Faults', false); }, 2000);
                     console.error('Clear faults failed:', result.message);
                 }
             }, function(error) {
-                resetBtn.disabled = false;
-                resetBtn.textContent = 'Reset Error';
-                setTimeout(function() { resetBtn.textContent = 'Reset Faults'; }, 2000);
+                setBtns('Reset Error', false);
+                setTimeout(function() { setBtns('Reset Faults', false); }, 2000);
                 console.error('Clear faults service error:', error);
             });
         }
@@ -2190,15 +2221,15 @@
             var roll = imuInvertAngle ? -msg.data : msg.data;
             imuCurrentRoll = roll;
             var relRoll = roll - imuRollOffset;
-            document.getElementById('imuRoll').textContent = roll.toFixed(1);
-            document.getElementById('imuRelRoll').textContent = relRoll.toFixed(1);
+            document.getElementById('imuRoll').textContent = to360(roll).toFixed(1);
+            document.getElementById('imuRelRoll').textContent = to360(relRoll).toFixed(1);
             document.getElementById('imuStatus').textContent = 'Connected';
             document.getElementById('imuStatus').style.color = getThemeColor('--status-ok');
             if (calibrateModalOpen) {
-                document.getElementById('calLiveRoll').textContent = roll.toFixed(1);
-                document.getElementById('calRelRoll').textContent = relRoll.toFixed(1);
+                document.getElementById('calLiveRoll').textContent = to360(roll).toFixed(1);
+                document.getElementById('calRelRoll').textContent = to360(relRoll).toFixed(1);
             }
-            document.getElementById('pipeRelAngleDisplay').textContent = relRoll.toFixed(1);
+            document.getElementById('pipeRelAngleDisplay').textContent = to360(relRoll).toFixed(1);
             document.getElementById('pipeContainer').style.transform = 'rotate(' + relRoll + 'deg)';
 
             if (distanceMode === 'degrees') {
@@ -2275,7 +2306,7 @@
                 imuPitchSubscriber = newPitch;
 
                 // Update service client
-                clearFaultsClient = new ROSLIB.Service({ ros: ros, name: '/clearlink/clear_faults', serviceType: 'clearlink_interfaces/ClearFaults' });
+                clearFaultsClient = new ROSLIB.Service({ ros: ros, name: '/clearlink/clear_faults', serviceType: 'clearlink_interfaces/srv/ClearFaults' });
             }, 2000);
         }
 

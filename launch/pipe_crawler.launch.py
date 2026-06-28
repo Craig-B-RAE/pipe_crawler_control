@@ -110,6 +110,9 @@ def generate_launch_description():
                     'num_axes': driver_config.get('num_axes', 4),
                     'loop_hz': driver_config.get('loop_hz', 10),
                     'deadman_secs': driver_config.get('deadman_secs', 3),
+                    # Class 1 cyclic backend is the proven/required driver for ClearLink
+                    # (owns the connection + sends the HLFB config assembly + interlock).
+                    'use_cyclic': driver_config.get('use_cyclic', True),
                 }]
             )
         )

@@ -1,7 +1,5 @@
-var CACHE_NAME = 'pipe-crawler-v4';
+var CACHE_NAME = 'pipe-crawler-v6';
 var SHELL_URLS = [
-  '/',
-  '/index.html',
   '/css/theme.css',
   '/js/theme.js',
   '/images/icon-192.png',
@@ -40,9 +38,18 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
+  // App HTML / navigations: ALWAYS network, NEVER cache. The page is no-store from Flask;
+  // serving a cached HTML (e.g. after a reload during a network blip) would run stale app
+  // JS. Network-only here guarantees the latest code, so fixes take effect on reload.
+  var accept = event.request.headers.get('accept') || '';
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html') || accept.indexOf('text/html') !== -1) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Static assets (css/js/images): network-first, fall back to cache for offline.
   event.respondWith(
     fetch(event.request).then(function(response) {
-      // Cache successful GET responses
       if (event.request.method === 'GET' && response.status === 200) {
         var clone = response.clone();
         caches.open(CACHE_NAME).then(function(cache) {
